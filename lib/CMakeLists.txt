@@ -1,0 +1,61 @@
+set(LLVM_NO_RTTI 1)
+
+set(MEMINSTRUMENT_HEADER_FILES)
+if (MSVC_IDE OR XCODE)
+  file(GLOB_RECURSE MEMINSTRUMENT_HEADER_FILES "${MEMINSTRUMENT_SOURCE_DIR}/include/meminstrument/*.h")
+endif ()
+
+# add all source files of the project that should be linked together
+add_meminstrument_library(meminstrument
+  GatherITargetsPass.cpp
+  MemInstrumentPass.cpp
+  ITarget.cpp
+  InstrumentationPolicy.cpp
+  RegisterPasses.cpp
+)
+
+# List external library dependencies that need to be linked to your library
+# (see project/myproject level CMakelists to enforce that these libraries are found)
+# target_link_libraries(PMDA ${ISL_LIBRARY})
+
+if (BUILD_SHARED_LIBS)
+  target_link_libraries(meminstrument
+    LLVMSupport
+    LLVMCore
+    LLVMTransformUtils
+    LLVMAnalysis
+    LLVMipo
+    LLVMMC
+  )
+  link_directories(
+    ${LLVM_LIBRARY_DIR}
+  )
+endif()
+
+# Build a monolithic meminstrument.a and a thin module LLVMMEMINSTRUMENT.moduleext that links to
+# that static library.
+if (MSVC)
+  # Add dummy target, because loadable modules are not supported on Windows
+  add_custom_target(LLVMMEMINSTRUMENT)
+  set_target_properties(LLVMMEMINSTRUMENT PROPERTIES FOLDER "meminstrument")
+else ()
+  # Specify the files clang needs for the pass manager
+  add_meminstrument_loadable_module(LLVMMEMINSTRUMENT
+    GatherITargetsPass.cpp
+    MemInstrumentPass.cpp
+    RegisterPasses.cpp
+  )
+
+  target_link_libraries(LLVMMEMINSTRUMENT meminstrument)
+
+  set_target_properties(LLVMMEMINSTRUMENT
+    PROPERTIES
+    LINKER_LANGUAGE CXX
+    PREFIX "")
+endif ()
+
+if (TARGET intrinsics_gen)
+  # Check if we are building as part of an LLVM build
+  add_dependencies(meminstrument intrinsics_gen)
+endif()
+

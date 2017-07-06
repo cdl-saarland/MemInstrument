@@ -1,0 +1,79 @@
+# Custom Vim stuff
+.*.swp
+.*.swo
+.project.vim
+project.debug
+.clang_complete
+.ycm_extra_conf.py
+
+# ctags
+tags
+
+# Make
+default.cfg
+
+# Archives
+*.zip
+*.tar
+*.7z
+*.rar
+
+# Binaries
+*.exe
+*.bin
+
+# Documents
+*.pdf
+*.ps
+*.odt
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.psd
+
+# Audio
+*.mp2
+*.mp3
+*.ogg
+*.flac
+*.wav
+
+# Videos
+*.avi
+*.mpg
+*.mpeg
+*.flv
+*.mkv
+*.mp4
+
+# Latex stuff
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bcf
+*.run.xml
+*.toc
+# Rubber
+*.out
+
+# C/C++
+*.o
+
+# Python
+.*.pyc
+
+# QtCreator
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
+*.pro
+*.user
+*.pro.user.*
+*.2-pre1
