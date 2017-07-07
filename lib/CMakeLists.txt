@@ -10,6 +10,7 @@ add_meminstrument_library(meminstrument
   GatherITargetsPass.cpp
   MemInstrumentPass.cpp
   ITarget.cpp
+  InstrumentationMechanism.cpp
   InstrumentationPolicy.cpp
   RegisterPasses.cpp
 )
