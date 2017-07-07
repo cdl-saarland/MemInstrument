@@ -52,16 +52,38 @@ struct ITarget {
   // ITarget(llvm::Value* i, llvm::Instruction* loc);
 
   friend llvm::raw_ostream& operator<< (llvm::raw_ostream& stream, const ITarget& it) {
+    std::string loc_name = it.location->getName().str();
+    if (loc_name.empty()) {
+      switch (it.location->getOpcode()) {
+        case llvm::Instruction::Store:
+          loc_name = "[store]";
+        break;
+
+        case llvm::Instruction::Ret:
+          loc_name = "[ret]";
+        break;
+
+        default:
+          loc_name = "[unnamed]";
+      }
+    }
+
     stream << "<" << it.instrumentee->getName().str() << ", "
-      << it.location->getName().str() << ", " << it.accessSize << " bytes, ";
+      << loc_name << ", " << it.accessSize << " bytes, ";
     if (it.checkUpperBound) {
       stream << "u";
+    } else {
+      stream << "_";
     }
     if (it.checkLowerBound) {
       stream << "l";
+    } else {
+      stream << "_";
     }
     if (it.checkTemporal) {
       stream << "t";
+    } else {
+      stream << "_";
     }
     stream << ">";
     return stream;

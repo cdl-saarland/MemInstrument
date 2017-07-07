@@ -18,6 +18,7 @@
 #include "llvm/Support/Debug.h"
 #include <iostream>
 
+#define DEBUG_TYPE "meminstrument"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -32,7 +33,10 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (F.empty())
       continue;
 
-    std::cout << "MemInstrumentPass: processing function `" << F.getName().str() << std::endl;
+    DEBUG(
+      dbgs() << "MemInstrumentPass: processing function `" << F.getName().str()
+        << "`\n";
+    );
     auto& IT = getAnalysis<GatherITargetsPass>(F);
   }
   return true;
