@@ -32,6 +32,7 @@ GatherITargetsPass::GatherITargetsPass()
 bool GatherITargetsPass::runOnFunction(Function &F) {
   const DataLayout& dl = F.getParent()->getDataLayout();
 
+  //TODO make configurable
   auto ip = std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(dl));
 
   std::vector<ITarget> dest;
