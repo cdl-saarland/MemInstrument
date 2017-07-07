@@ -99,7 +99,6 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
 
-# FIXME
 # these macros define everything with _meminstrument_ in its name, not optional!
 include("meminstrument_macros")
 
@@ -142,7 +141,7 @@ install(DIRECTORY ${MEMINSTRUMENT_BINARY_DIR}/include/
 add_definitions( -D_GNU_SOURCE )
 
 add_subdirectory(lib)
-# add_subdirectory(test)
+add_subdirectory(test)
 #add_subdirectory(tools)
 # TODO: docs.
 
