@@ -27,6 +27,9 @@ public:
   virtual void classifyTarget(std::vector<ITarget> &dest,
                               llvm::Instruction *loc) = 0;
 
+  virtual void instrumentFunction(llvm::Function *func,
+                                  std::vector<ITarget> &targets) = 0;
+
   virtual ~InstrumentationPolicy() {}
 };
 
@@ -35,11 +38,16 @@ public:
   virtual void classifyTarget(std::vector<ITarget> &dest,
                               llvm::Instruction *loc) override;
 
+  virtual void instrumentFunction(llvm::Function *func,
+                                  std::vector<ITarget> &targets) override;
+
   BeforeOutflowPolicy(const llvm::DataLayout &dl) : datalayout(dl) {}
 
 private:
   const llvm::DataLayout &datalayout;
   size_t getPointerAccessSize(llvm::Value *v);
+
+  llvm::Value *createWitness(llvm::Value *instrumentee);
 };
 
 } // end namespace meminstrument

@@ -11,6 +11,7 @@
 
 #include "meminstrument/InstrumentationPolicy.h"
 
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Debug.h"
 
@@ -97,5 +98,105 @@ void BeforeOutflowPolicy::classifyTarget(std::vector<ITarget> &dest,
 
   default:
     break;
+  }
+}
+
+Value *BeforeOutflowPolicy::createWitness(Value *instrumentee) {
+
+  if (auto *inst = dyn_cast<Instruction>(instrumentee)) {
+    // insert code after the source instruction
+    IRBuilder<> builder(inst->getNextNode());
+    switch (inst->getOpcode()) {
+    case Instruction::Alloca:
+    case Instruction::Call:
+    case Instruction::Load:
+      // the assumption is that the validity of these has already been checked
+      return insertGetBoundWitness(builder, inst);
+
+    case Instruction::PHI: {
+      auto *ptr_phi = cast<PHINode>(inst);
+      unsigned num_ops = ptr_phi->getNumIncomingValues();
+      auto *new_type = getWitnessType();
+      auto *new_phi = builder.CreatePHI(new_type, num_ops); // TODO give name
+      for (unsigned i = 0; i < num_ops; ++i) {
+        auto *inval = ptr_phi->getIncomingValue(i);
+        auto *inbb = ptr_phi->getIncomingBlock(i);
+        auto *new_inval = createWitness(inval);
+        new_phi->addIncoming(new_inval, inbb);
+      }
+      return new_phi;
+    }
+
+    case Instruction::Select: {
+      auto *ptr_select = cast<SelectInst>(inst);
+      auto *cond = ptr_select->getCondition();
+
+      auto *true_val = createWitness(ptr_select->getTrueValue());
+      auto *false_val = createWitness(ptr_select->getFalseValue());
+
+      builder.CreateSelect(cond, true_val, false_val); // TODO give name
+    }
+
+    case Instruction::GetElementPtr: {
+      // pointer arithmetic doesn't change the pointer bounds
+      auto *op = cast<GetElementPtrInst>(inst);
+      return createWitness(op->getPointerOperand());
+    }
+
+    case Instruction::IntToPtr: {
+      // FIXME is this what we want?
+      return insertGetBoundWitness(builder, inst);
+    }
+
+    case Instruction::BitCast: {
+      // bit casts don't change the pointer bounds
+      auto *op = cast<BitCastInst>(inst);
+      return createWitness(op->getOperand(0));
+    }
+
+    default:
+      llvm_unreachable("Unsupported instruction!");
+    }
+
+  } else if (isa<Argument>(instrumentee)) {
+    // should have already been checked at the call site
+    return insertGetBoundWitness(builder, instrumentee);
+  } else if (isa<GlobalValue>(instrumentee)) {
+    llvm_unreachable("Global Values are not yet supported!"); // FIXME
+    return insertGetBoundWitness(builder, instrumentee);
+  } else {
+    // TODO constexpr
+    llvm_unreachable("Unsupported value operand!");
+  }
+}
+
+void BeforeOutflowPolicy::instrumentFunction(llvm::Function &func,
+                                             std::vector<ITarget> &targets) {
+  for (auto &bb : func) {
+    for (auto &inst : bb) {
+      if (auto *alloca_inst = dyn_cast<AllocaInst>(&inst)) {
+        handleAlloca(alloca_inst);
+      }
+    }
+  }
+  // TODO when to change allocas?
+
+  for (const auto &it : targets) {
+    if (it.checkTemporal)
+      llvm_unreachable("Temporal checks are not supported by this policy!");
+
+    if (!(it.checkLowerBound || it.checkUpperBound))
+      continue; // nothing to do!
+
+    auto *witness = createWitness(it.instrumentee);
+    IRBuilder<> builder(it.location);
+
+    if (it.checkLowerBound && it.checkUpperBound) {
+      insertCheckBoundWitness(builder, it.instrumentee, witness);
+    } else if (it.checkUpperBound) {
+      insertCheckBoundWitnessUpper(builder, it.instrumentee, witness);
+    } else {
+      insertCheckBoundWitnessLower(builder, it.instrumentee, witness);
+    }
   }
 }
