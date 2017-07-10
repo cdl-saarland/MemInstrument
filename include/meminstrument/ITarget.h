@@ -14,10 +14,10 @@
 #ifndef MEMINSTRUMENT_ITARGET_H
 #define MEMINSTRUMENT_ITARGET_H
 
-#include "llvm/IR/Value.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/Value.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace meminstrument {
@@ -28,10 +28,10 @@ namespace meminstrument {
 // certain expressions
 struct ITarget {
   /// value that should be checked by the instrumentation
-  llvm::Value* instrumentee;
+  llvm::Value *instrumentee;
 
   /// instruction before which the instrumentee should be checked
-  llvm::Instruction* location;
+  llvm::Instruction *location;
 
   /// access size in bytes that should be checked starting from the instrumentee
   size_t accessSize;
@@ -45,18 +45,20 @@ struct ITarget {
   /// indicator whether temporal safety of instrumentee should be checked
   bool checkTemporal;
 
-  ITarget(llvm::Value* i, llvm::Instruction* loc, size_t sz, bool ub, bool lb,
-      bool temp);
-  // ITarget(llvm::Value* i, llvm::Instruction* loc, bool ub, bool lb, bool temp);
-  ITarget(llvm::Value* i, llvm::Instruction* loc, size_t sz, bool ub, bool lb);
+  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub, bool lb,
+          bool temp);
+  // ITarget(llvm::Value* i, llvm::Instruction* loc, bool ub, bool lb, bool
+  // temp);
+  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub, bool lb);
   // ITarget(llvm::Value* i, llvm::Instruction* loc, bool ub, bool lb);
-  ITarget(llvm::Value* i, llvm::Instruction* loc, size_t sz);
+  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz);
   // ITarget(llvm::Value* i, llvm::Instruction* loc);
 
-  friend llvm::raw_ostream& operator<< (llvm::raw_ostream& stream, const ITarget& it);
+  friend llvm::raw_ostream &operator<<(llvm::raw_ostream &stream,
+                                       const ITarget &it);
 };
 
-llvm::raw_ostream& operator<< (llvm::raw_ostream& stream, const ITarget& it);
+llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &it);
 
 } // end namespace meminstrument
 

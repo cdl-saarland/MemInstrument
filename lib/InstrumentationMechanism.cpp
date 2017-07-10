@@ -11,11 +11,10 @@
 
 #include "meminstrument/InstrumentationMechanism.h"
 
-#include "llvm/Support/Debug.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "meminstrument"
 
 using namespace llvm;
 using namespace meminstrument;
-

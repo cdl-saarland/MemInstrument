@@ -11,22 +11,21 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/MemInstrumentPass.h"
 #include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/MemInstrumentPass.h"
 #include "llvm/IR/PassManager.h"
 
 using namespace meminstrument;
 using namespace llvm;
 
 namespace meminstrument {
-static RegisterPass<MemInstrumentPass> RegisterMemInstrumentPass("meminstrument",
-    "MemInstrument",
-    false,  // CFGOnly
-    false); // isAnalysis
+static RegisterPass<MemInstrumentPass>
+    RegisterMemInstrumentPass("meminstrument", "MemInstrument",
+                              false,  // CFGOnly
+                              false); // isAnalysis
 
-static RegisterPass<GatherITargetsPass> RegisterGatherITargetsPass(
-    "gatheritargets",
-    "GatherITargets",
-    true,  // CFGOnly
-    true); // isAnalysis
+static RegisterPass<GatherITargetsPass>
+    RegisterGatherITargetsPass("gatheritargets", "GatherITargets",
+                               true,  // CFGOnly
+                               true); // isAnalysis
 }

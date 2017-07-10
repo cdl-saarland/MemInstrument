@@ -22,22 +22,25 @@ namespace meminstrument {
 
 class InstrumentationMechanism {
 public:
+  virtual llvm::Value *insertGetBoundWitness(llvm::IRBuilder &builder,
+                                             llvm::Value *toCheck) = 0;
 
-virtual llvm::Value* insertGetBoundWitness(llvm::IRBuilder& builder, llvm::Value* toCheck) = 0;
+  virtual void insertCheckBoundWitnessLower(llvm::IRBuilder &builder,
+                                            llvm::Value *toCheck,
+                                            llvm::Value *witness) = 0;
+  virtual void insertCheckBoundWitnessUpper(llvm::IRBuilder &builder,
+                                            llvm::Value *toCheck,
+                                            llvm::Value *witness) = 0;
+  // TODO temporal checks?
 
-virtual void insertCheckBoundWitnessLower(llvm::IRBuilder& builder, llvm::Value* toCheck, llvm::Value* witness) = 0;
-virtual void insertCheckBoundWitnessUpper(llvm::IRBuilder& builder, llvm::Value* toCheck, llvm::Value* witness) = 0;
-// TODO temporal checks?
-
-virtual void insertCheckBoundWitness(llvm::IRBuilder& builder, llvm::Value* toCheck, llvm::Value* witness) {
-  insertCheckBoundWitnessLower(builder, toCheck, witness);
-  insertCheckBoundWitnessUpper(builder, toCheck, witness);
-}
-
-
+  virtual void insertCheckBoundWitness(llvm::IRBuilder &builder,
+                                       llvm::Value *toCheck,
+                                       llvm::Value *witness) {
+    insertCheckBoundWitnessLower(builder, toCheck, witness);
+    insertCheckBoundWitnessUpper(builder, toCheck, witness);
+  }
 };
 
 } // end namespace meminstrument
 
 #endif // MEMINSTRUMENT_INSTRUMENTATIONMECHANISM_H
-

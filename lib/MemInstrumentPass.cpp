@@ -23,21 +23,17 @@
 using namespace meminstrument;
 using namespace llvm;
 
-MemInstrumentPass::MemInstrumentPass()
-    : ModulePass(ID) {
-}
+MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
-  for (auto& F : M) {
+  for (auto &F : M) {
     if (F.empty())
       continue;
 
-    DEBUG(
-      dbgs() << "MemInstrumentPass: processing function `" << F.getName().str()
-        << "`\n";
-    );
-    auto& IT = getAnalysis<GatherITargetsPass>(F);
+    DEBUG(dbgs() << "MemInstrumentPass: processing function `"
+                 << F.getName().str() << "`\n";);
+    auto &IT = getAnalysis<GatherITargetsPass>(F);
   }
   return true;
 }
@@ -47,4 +43,3 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 char MemInstrumentPass::ID = 0;
-

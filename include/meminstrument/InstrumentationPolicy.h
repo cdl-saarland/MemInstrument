@@ -16,30 +16,30 @@
 
 #include "meminstrument/ITarget.h"
 
-#include "llvm/IR/Value.h"
-#include "llvm/IR/Instruction.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Value.h"
 
 namespace meminstrument {
 
 class InstrumentationPolicy {
 public:
-  virtual void classifyTarget(std::vector<ITarget>& dest,
-      llvm::Instruction* loc) = 0;
+  virtual void classifyTarget(std::vector<ITarget> &dest,
+                              llvm::Instruction *loc) = 0;
 
   virtual ~InstrumentationPolicy() {}
 };
 
 class BeforeOutflowPolicy : public InstrumentationPolicy {
 public:
-  virtual void
-    classifyTarget(std::vector<ITarget>& dest, llvm::Instruction* loc) override;
+  virtual void classifyTarget(std::vector<ITarget> &dest,
+                              llvm::Instruction *loc) override;
 
-  BeforeOutflowPolicy(const llvm::DataLayout& dl): datalayout(dl) { }
+  BeforeOutflowPolicy(const llvm::DataLayout &dl) : datalayout(dl) {}
 
 private:
-  const llvm::DataLayout& datalayout;
-  size_t getPointerAccessSize(llvm::Value* v);
+  const llvm::DataLayout &datalayout;
+  size_t getPointerAccessSize(llvm::Value *v);
 };
 
 } // end namespace meminstrument
