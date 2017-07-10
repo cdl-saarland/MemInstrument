@@ -39,6 +39,19 @@ public:
     insertCheckBoundWitnessLower(builder, toCheck, witness);
     insertCheckBoundWitnessUpper(builder, toCheck, witness);
   }
+
+  virtual llvm::Value *insertGetLowerBound(llvm::IRBuilder &builder,
+                                           llvm::Value *ptr) = 0;
+  virtual llvm::Value *insertGetUpperBound(llvm::IRBuilder &builder,
+                                           llvm::Value *ptr) = 0;
+  virtual void insertGetBounds(llvm::Value *&lowerDest, llvm::Value *&upperDest,
+                               llvm::IRBuilder &builder, llvm::Value *ptr) = 0;
+
+  virtual void handleAlloca(llvm::AllocaInst *ai) = 0;
+
+  virtual llvm::Type *getWitnessType(void) = 0;
+
+  virtual ~InstrumentationMechanism() {}
 };
 
 } // end namespace meminstrument
