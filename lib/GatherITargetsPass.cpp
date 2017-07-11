@@ -27,25 +27,26 @@ using namespace llvm;
 GatherITargetsPass::GatherITargetsPass() : FunctionPass(ID) {}
 
 bool GatherITargetsPass::runOnFunction(Function &F) {
-  const DataLayout &dl = F.getParent()->getDataLayout();
+  const DataLayout &DL = F.getParent()->getDataLayout();
 
   // TODO make configurable
-  auto ip = std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(dl));
+  auto Policy =
+      std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(DL));
 
-  std::vector<ITarget> dest;
+  std::vector<ITarget> Destination;
 
   for (auto &BB : F) {
     DEBUG(dbgs() << "GatherITargetsPass: processing block `"
                  << F.getName().str() << "::" << BB.getName().str() << "`\n";);
     for (auto &I : BB) {
-      ip->classifyTarget(dest, &I);
+      Policy->classifyTargets(Destination, &I);
     }
   }
   DEBUG(dbgs() << "identified instrumentation targets:"
                << "\n";
-        for (auto &it
-             : dest) {
-          dbgs() << "  " << it << "\n";
+        for (auto &Target
+             : Destination) {
+          dbgs() << "  " << Target << "\n";
 
         });
   return false;

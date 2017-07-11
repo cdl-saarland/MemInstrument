@@ -14,56 +14,62 @@
 using namespace llvm;
 using namespace meminstrument;
 
-ITarget::ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub,
-                 bool lb, bool temp)
-    : instrumentee(i), location(loc), accessSize(sz), checkUpperBound(ub),
-      checkLowerBound(lb), checkTemporal(temp) {}
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 size_t AccessSize, bool CheckUpperBoundFlag,
+                 bool CheckLowerBoundFlag, bool CheckTemporalFlag)
+    : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
+      CheckUpperBoundFlag(CheckUpperBoundFlag),
+      CheckLowerBoundFlag(CheckLowerBoundFlag),
+      CheckTemporalFlag(CheckTemporalFlag) {}
 
-ITarget::ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub,
-                 bool lb)
-    : ITarget(i, loc, sz, ub, lb, false) {}
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 size_t AccessSize, bool CheckUpperBoundFlag,
+                 bool CheckLowerBoundFlag)
+    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
+              CheckLowerBoundFlag, false) {}
 
-ITarget::ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz)
-    : ITarget(i, loc, sz, true, true) {}
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 size_t AccessSize)
+    : ITarget(Instrumentee, Location, AccessSize, true, true) {}
 
-llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &stream,
-                                             const ITarget &it) {
-  std::string loc_name = it.location->getName().str();
-  if (loc_name.empty()) {
-    switch (it.location->getOpcode()) {
+llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
+                                             const ITarget &IT) {
+  std::string LocName = IT.Location->getName().str();
+  if (LocName.empty()) {
+    switch (IT.Location->getOpcode()) {
     case llvm::Instruction::Store:
-      loc_name = "[store]";
+      LocName = "[store]";
       break;
 
     case llvm::Instruction::Ret:
-      loc_name = "[ret]";
+      LocName = "[ret]";
       break;
 
     default:
-      loc_name = "[unnamed]";
+      LocName = "[unnamed]";
     }
   }
 
-  stream << "<" << it.instrumentee->getName() << ", ";
-  auto *bb = it.location->getParent();
-  stream << bb->getParent()->getName() << "::" << bb->getName()
-         << "::" << loc_name << ", ";
-  stream << it.accessSize << " bytes, ";
-  if (it.checkUpperBound) {
-    stream << "u";
+  Stream << "<" << IT.Instrumentee->getName() << ", ";
+  auto *BB = IT.Location->getParent();
+  Stream << BB->getParent()->getName() << "::" << BB->getName()
+         << "::" << LocName << ", ";
+  Stream << IT.AccessSize << " bytes, ";
+  if (IT.CheckUpperBoundFlag) {
+    Stream << "u";
   } else {
-    stream << "_";
+    Stream << "_";
   }
-  if (it.checkLowerBound) {
-    stream << "l";
+  if (IT.CheckLowerBoundFlag) {
+    Stream << "l";
   } else {
-    stream << "_";
+    Stream << "_";
   }
-  if (it.checkTemporal) {
-    stream << "t";
+  if (IT.CheckTemporalFlag) {
+    Stream << "t";
   } else {
-    stream << "_";
+    Stream << "_";
   }
-  stream << ">";
-  return stream;
+  Stream << ">";
+  return Stream;
 }

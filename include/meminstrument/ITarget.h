@@ -28,37 +28,37 @@ namespace meminstrument {
 // certain expressions
 struct ITarget {
   /// value that should be checked by the instrumentation
-  llvm::Value *instrumentee;
+  llvm::Value *Instrumentee;
 
   /// instruction before which the instrumentee should be checked
-  llvm::Instruction *location;
+  llvm::Instruction *Location;
 
   /// access size in bytes that should be checked starting from the instrumentee
-  size_t accessSize;
+  size_t AccessSize;
 
   /// indicator whether instrumentee should be checked against its upper bound
-  bool checkUpperBound;
+  bool CheckUpperBoundFlag;
 
   /// indicator whether instrumentee should be checked against its lower bound
-  bool checkLowerBound;
+  bool CheckLowerBoundFlag;
 
   /// indicator whether temporal safety of instrumentee should be checked
-  bool checkTemporal;
+  bool CheckTemporalFlag;
 
-  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub, bool lb,
-          bool temp);
-  // ITarget(llvm::Value* i, llvm::Instruction* loc, bool ub, bool lb, bool
-  // temp);
-  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz, bool ub, bool lb);
-  // ITarget(llvm::Value* i, llvm::Instruction* loc, bool ub, bool lb);
-  ITarget(llvm::Value *i, llvm::Instruction *loc, size_t sz);
-  // ITarget(llvm::Value* i, llvm::Instruction* loc);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          size_t AccessSize, bool CheckUpperBoundFlag, bool CheckLowerBoundFlag,
+          bool CheckTemporalFlag);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          size_t AccessSize, bool CheckUpperBoundFlag,
+          bool CheckLowerBoundFlag);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          size_t AccessSize);
 
-  friend llvm::raw_ostream &operator<<(llvm::raw_ostream &stream,
-                                       const ITarget &it);
+  friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
+                                       const ITarget &It);
 };
 
-llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &it);
+llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &IT);
 
 } // end namespace meminstrument
 

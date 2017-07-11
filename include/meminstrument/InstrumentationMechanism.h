@@ -16,42 +16,47 @@
 
 #include "meminstrument/ITarget.h"
 
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Value.h"
 
 namespace meminstrument {
 
 class InstrumentationMechanism {
 public:
-  virtual llvm::Value *insertGetBoundWitness(llvm::IRBuilder &builder,
-                                             llvm::Value *toCheck) = 0;
-
-  virtual void insertCheckBoundWitnessLower(llvm::IRBuilder &builder,
-                                            llvm::Value *toCheck,
-                                            llvm::Value *witness) = 0;
-  virtual void insertCheckBoundWitnessUpper(llvm::IRBuilder &builder,
-                                            llvm::Value *toCheck,
-                                            llvm::Value *witness) = 0;
-  // TODO temporal checks?
-
-  virtual void insertCheckBoundWitness(llvm::IRBuilder &builder,
-                                       llvm::Value *toCheck,
-                                       llvm::Value *witness) {
-    insertCheckBoundWitnessLower(builder, toCheck, witness);
-    insertCheckBoundWitnessUpper(builder, toCheck, witness);
-  }
-
-  virtual llvm::Value *insertGetLowerBound(llvm::IRBuilder &builder,
-                                           llvm::Value *ptr) = 0;
-  virtual llvm::Value *insertGetUpperBound(llvm::IRBuilder &builder,
-                                           llvm::Value *ptr) = 0;
-  virtual void insertGetBounds(llvm::Value *&lowerDest, llvm::Value *&upperDest,
-                               llvm::IRBuilder &builder, llvm::Value *ptr) = 0;
-
-  virtual void handleAlloca(llvm::AllocaInst *ai) = 0;
-
-  virtual llvm::Type *getWitnessType(void) = 0;
-
-  virtual ~InstrumentationMechanism() {}
+  // virtual llvm::Value *insertGetBoundWitness(llvm::IRBuilder &Builder,
+  //                                            llvm::Value *ToCheck) = 0;
+  //
+  // virtual void insertCheckBoundWitnessLower(llvm::IRBuilder &Builder,
+  //                                           llvm::Value *ToCheck,
+  //                                           llvm::Value *Witness) = 0;
+  // virtual void insertCheckBoundWitnessUpper(llvm::IRBuilder &Builder,
+  //                                           llvm::Value *ToCheck,
+  //                                           size_t AccessSize,
+  //                                           llvm::Value *Witness) = 0;
+  // // TODO temporal checks?
+  //
+  // virtual void insertCheckBoundWitness(llvm::IRBuilder &Builder,
+  //                                      llvm::Value *ToCheck,
+  //                                      size_t AccessSize,
+  //                                      llvm::Value *Witness) {
+  //   insertCheckBoundWitnessLower(Builder, ToCheck, Witness);
+  //   insertCheckBoundWitnessUpper(Builder, ToCheck, AccessSize, Witness);
+  // }
+  //
+  // virtual llvm::Value *insertGetLowerBound(llvm::IRBuilder &Builder,
+  //                                          llvm::Value *Ptr) = 0;
+  // virtual llvm::Value *insertGetUpperBound(llvm::IRBuilder &Builder,
+  //                                          llvm::Value *Ptr) = 0;
+  // virtual void insertGetBounds(llvm::Value *&LowerDest, llvm::Value
+  // *&UpperDest,
+  //                              llvm::IRBuilder &Builder, llvm::Value *Ptr) =
+  //                              0;
+  //
+  // virtual void handleAlloca(llvm::AllocaInst *AI) = 0;
+  //
+  // virtual llvm::Type *getWitnessType(void) = 0;
+  //
+  // virtual ~InstrumentationMechanism(void) {}
 };
 
 } // end namespace meminstrument

@@ -24,30 +24,30 @@ namespace meminstrument {
 
 class InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<ITarget> &dest,
-                              llvm::Instruction *loc) = 0;
+  virtual void classifyTargets(std::vector<ITarget> &Dest,
+                               llvm::Instruction *Loc) = 0;
 
-  virtual void instrumentFunction(llvm::Function *func,
-                                  std::vector<ITarget> &targets) = 0;
+  virtual void instrumentFunction(llvm::Function &Func,
+                                  std::vector<ITarget> &Targets) = 0;
 
   virtual ~InstrumentationPolicy() {}
 };
 
 class BeforeOutflowPolicy : public InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<ITarget> &dest,
-                              llvm::Instruction *loc) override;
+  virtual void classifyTargets(std::vector<ITarget> &Dest,
+                               llvm::Instruction *Loc) override;
 
-  virtual void instrumentFunction(llvm::Function *func,
-                                  std::vector<ITarget> &targets) override;
+  virtual void instrumentFunction(llvm::Function &Func,
+                                  std::vector<ITarget> &Targets) override;
 
-  BeforeOutflowPolicy(const llvm::DataLayout &dl) : datalayout(dl) {}
+  BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}
 
 private:
-  const llvm::DataLayout &datalayout;
-  size_t getPointerAccessSize(llvm::Value *v);
+  const llvm::DataLayout &DL;
+  size_t getPointerAccessSize(llvm::Value *V);
 
-  llvm::Value *createWitness(llvm::Value *instrumentee);
+  llvm::Value *createWitness(llvm::Value *Instrumentee);
 };
 
 } // end namespace meminstrument
