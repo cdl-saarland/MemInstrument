@@ -31,7 +31,7 @@ size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *v) {
   return sz;
 }
 
-void BeforeOutflowPolicy::classifyTarget(std::vector<ITarget> &dest,
+void BeforeOutflowPolicy::classifyTargets(std::vector<ITarget> &dest,
                                          llvm::Instruction *loc) {
   switch (loc->getOpcode()) {
   case Instruction::Ret: {
@@ -104,8 +104,8 @@ void BeforeOutflowPolicy::classifyTarget(std::vector<ITarget> &dest,
 Value *BeforeOutflowPolicy::createWitness(Value *instrumentee) {
 
   if (auto *inst = dyn_cast<Instruction>(instrumentee)) {
-    // insert code after the source instruction
     IRBuilder<> builder(inst->getNextNode());
+    // insert code after the source instruction
     switch (inst->getOpcode()) {
     case Instruction::Alloca:
     case Instruction::Call:
@@ -163,7 +163,7 @@ Value *BeforeOutflowPolicy::createWitness(Value *instrumentee) {
     return insertGetBoundWitness(builder, instrumentee);
   } else if (isa<GlobalValue>(instrumentee)) {
     llvm_unreachable("Global Values are not yet supported!"); // FIXME
-    return insertGetBoundWitness(builder, instrumentee);
+    // return insertGetBoundWitness(builder, instrumentee);
   } else {
     // TODO constexpr
     llvm_unreachable("Unsupported value operand!");

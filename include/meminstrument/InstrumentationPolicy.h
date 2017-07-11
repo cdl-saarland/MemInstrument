@@ -24,7 +24,7 @@ namespace meminstrument {
 
 class InstrumentationPolicy {
 public:
-  virtual void classifyTarget(std::vector<ITarget> &dest,
+  virtual void classifyTargets(std::vector<ITarget> &dest,
                               llvm::Instruction *loc) = 0;
 
   virtual void instrumentFunction(llvm::Function *func,
@@ -35,7 +35,7 @@ public:
 
 class BeforeOutflowPolicy : public InstrumentationPolicy {
 public:
-  virtual void classifyTarget(std::vector<ITarget> &dest,
+  virtual void classifyTargets(std::vector<ITarget> &dest,
                               llvm::Instruction *loc) override;
 
   virtual void instrumentFunction(llvm::Function *func,
