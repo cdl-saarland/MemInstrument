@@ -35,7 +35,7 @@ bool GenerateChecksPass::runOnFunction(Function &F) {
 }
 
 void GenerateChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<FancyChecksPass>();
+  AU.addRequiredTransitive<FancyChecksPass>();
 }
 
 char GenerateChecksPass::ID = 0;

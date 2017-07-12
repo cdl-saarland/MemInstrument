@@ -24,7 +24,7 @@ public:
   /// \brief Identification
   static char ID;
 
-  /// \brief Default constructor to initialize the module pass interface
+  /// \brief Default constructor to initialize the function pass interface
   GenerateWitnessesPass();
 
   /// doInitialization - Virtual method overridden by subclasses to do

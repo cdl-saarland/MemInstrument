@@ -34,7 +34,7 @@ bool FancyChecksPass::runOnFunction(Function &F) {
 }
 
 void FancyChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<GenerateWitnessesPass>();
+  AU.addRequiredTransitive<GenerateWitnessesPass>();
 }
 
 char FancyChecksPass::ID = 0;
