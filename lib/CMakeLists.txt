@@ -8,9 +8,13 @@ endif ()
 # add all source files of the project that should be linked together
 add_meminstrument_library(meminstrument
   GatherITargetsPass.cpp
-  MemInstrumentPass.cpp
+  MemSafetyAnalysisPass.cpp
+  MemInstrumentSetupPass.cpp
+  GenerateWitnessesPass.cpp
+  GenerateChecksPass.cpp
   ITarget.cpp
   InstrumentationMechanism.cpp
+  WitnessStrategy.cpp
   InstrumentationPolicy.cpp
   RegisterPasses.cpp
 )
@@ -43,7 +47,10 @@ else ()
   # Specify the files clang needs for the pass manager
   add_meminstrument_loadable_module(LLVMMEMINSTRUMENT
     GatherITargetsPass.cpp
-    MemInstrumentPass.cpp
+    MemSafetyAnalysisPass.cpp
+    MemInstrumentSetupPass.cpp
+    GenerateWitnessesPass.cpp
+    GenerateChecksPass.cpp
     RegisterPasses.cpp
   )
 

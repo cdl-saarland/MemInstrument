@@ -1,4 +1,4 @@
-//===- meminstrument/InstrumentationMechanism.h -- TODO doku ---*- C++ -*--===//
+//=== meminstrument/InstrumentationMechanism.h - MemSafety Instr -*- C++ -*-==//
 //
 //                     The LLVM Compiler Infrastructure
 //

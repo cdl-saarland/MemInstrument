@@ -11,21 +11,46 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "meminstrument/FancyChecksPass.h"
 #include "meminstrument/GatherITargetsPass.h"
-#include "meminstrument/MemInstrumentPass.h"
+#include "meminstrument/GenerateChecksPass.h"
+#include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/MemInstrumentSetupPass.h"
+#include "meminstrument/MemSafetyAnalysisPass.h"
 #include "llvm/IR/PassManager.h"
 
 using namespace meminstrument;
 using namespace llvm;
 
 namespace meminstrument {
-static RegisterPass<MemInstrumentPass>
-    RegisterMemInstrumentPass("meminstrument", "MemInstrument",
-                              false,  // CFGOnly
-                              false); // isAnalysis
+static RegisterPass<GenerateChecksPass>
+    RegisterGenerateChecksPass("memsafety-genchecks", "GenerateChecks",
+                               false,  // CFGOnly
+                               false); // isAnalysis
+
+static RegisterPass<FancyChecksPass>
+    RegisterFancyChecksPass("memsafety-fancychecks", "FancyChecks",
+                            false,  // CFGOnly
+                            false); // isAnalysis
+
+static RegisterPass<GenerateWitnessesPass>
+    RegisterGenerateWitnessesPass("memsafety-genwitnesses", "GenerateWitnesses",
+                                  false,  // CFGOnly
+                                  false); // isAnalysis
+
+static RegisterPass<MemInstrumentSetupPass>
+    RegisterMemInstrumentSetupPass("memsafety-instrumentsetup",
+                                   "MemInstrumentSetup",
+                                   false,  // CFGOnly
+                                   false); // isAnalysis
+
+static RegisterPass<MemSafetyAnalysisPass>
+    RegisterMemSafetyAnalysisPass("memsafety-analysis", "MemSafetyAnalysis",
+                                  true,  // CFGOnly
+                                  true); // isAnalysis
 
 static RegisterPass<GatherITargetsPass>
-    RegisterGatherITargetsPass("gatheritargets", "GatherITargets",
+    RegisterGatherITargetsPass("memsafety-gatheritargets", "GatherITargets",
                                true,  // CFGOnly
                                true); // isAnalysis
 }

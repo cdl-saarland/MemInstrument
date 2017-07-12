@@ -1,4 +1,4 @@
-//===-------- GatherITargetsPass.cpp -- Memory Instrumentation ------------===//
+//===-------- GatherITargetsPass.cpp -- MemSafety Instrumentation ---------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -16,9 +16,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Debug.h"
-#include <iostream>
 
-// Debug
 #define DEBUG_TYPE "meminstrument"
 
 using namespace meminstrument;

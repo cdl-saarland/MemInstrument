@@ -1,4 +1,4 @@
-//===--------------- meminstrument/ITarget.h -- TODO doku ------*- C++ -*--===//
+//===---- meminstrument/ITarget.h -- MemSafety Instrumentation  -*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

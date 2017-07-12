@@ -1,4 +1,4 @@
-//===------------ ITarget.cpp -- Memory Instrumentation -------------------===//
+//===------------ ITarget.cpp -- MemSafety Instrumentation ----------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //

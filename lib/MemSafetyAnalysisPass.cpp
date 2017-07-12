@@ -1,4 +1,4 @@
-//===---- InstrumentationMechanism.cpp -- MemSafety Instrumentation -------===//
+//===----- MemSafetyAnalysisPass.cpp -- MemSafety Instrumentation ---------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -9,12 +9,21 @@
 /// \file TODO doku
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/InstrumentationMechanism.h"
+#include "meminstrument/MemSafetyAnalysisPass.h"
 
-#include "llvm/IR/Instructions.h"
 #include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "meminstrument"
 
-using namespace llvm;
 using namespace meminstrument;
+using namespace llvm;
+
+MemSafetyAnalysisPass::MemSafetyAnalysisPass() : FunctionPass(ID) {}
+
+bool MemSafetyAnalysisPass::runOnFunction(Function &F) { return false; }
+
+void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.setPreservesAll();
+}
+
+char MemSafetyAnalysisPass::ID = 0;

@@ -1,4 +1,4 @@
-//===----- InstrumentationPolicy.cpp -- Memory Instrumentation ------------===//
+//===----- InstrumentationPolicy.cpp -- MemSafety Instrumentation ---------===//
 //
 //                     The LLVM Compiler Infrastructure
 //

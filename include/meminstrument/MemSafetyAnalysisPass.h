@@ -1,4 +1,4 @@
-//===--- meminstrument/GatherITargetsPass.h -- MemSafety Instr. -*- C++ -*-===//
+//===- meminstrument/MemSafetyAnalysisPass.h - MemSafety Instr. -*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,21 +11,21 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_GATHERITARGETSPASS_H
-#define MEMINSTRUMENT_GATHERITARGETSPASS_H
+#ifndef MEMINSTRUMENT_MEMSAFETYANALYSISPASS_H
+#define MEMINSTRUMENT_MEMSAFETYANALYSISPASS_H
 
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class GatherITargetsPass : public llvm::FunctionPass {
+class MemSafetyAnalysisPass : public llvm::FunctionPass {
 public:
   /// \brief Identification
   static char ID;
 
   /// \brief Default constructor to initialize the module pass interface
-  GatherITargetsPass();
+  MemSafetyAnalysisPass();
 
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary initialization before any pass is run.
@@ -44,4 +44,4 @@ public:
 
 } // end namespace meminstrument
 
-#endif // MEMINSTRUMENT_GATHERITARGETSPASS_H
+#endif // MEMINSTRUMENT_MEMSAFETYANALYSISPASS_H
