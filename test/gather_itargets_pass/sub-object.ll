@@ -1,4 +1,4 @@
-; RUN: %opt -load %passlib -gatheritargets -debug %s > /dev/null 2> %t.log
+; RUN: %opt -load %passlib -memsafety-gatheritargets -debug %s > /dev/null 2> %t.log
 ; RUN: fgrep "<add.ptr, foo::entry::tmp, 4 bytes, ul_>" %t.log
 ; RUN: fgrep "<arrayidx, bar::for.body::[store], 4 bytes, ul_>" %t.log
 ; RUN: fgrep "<tmp, bar::for.end::call1, 4 bytes, ul_>" %t.log

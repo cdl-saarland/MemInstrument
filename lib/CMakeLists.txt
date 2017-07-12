@@ -12,6 +12,7 @@ add_meminstrument_library(meminstrument
   MemInstrumentSetupPass.cpp
   GenerateWitnessesPass.cpp
   GenerateChecksPass.cpp
+  FancyChecksPass.cpp
   ITarget.cpp
   InstrumentationMechanism.cpp
   WitnessStrategy.cpp
