@@ -23,9 +23,6 @@
 namespace meminstrument {
 
 /// TODO document
-///
-// TODO maybe make ITarget abstract and have one subclass for this and one for
-// certain expressions
 struct ITarget {
   /// value that should be checked by the instrumentation
   llvm::Value *Instrumentee;
