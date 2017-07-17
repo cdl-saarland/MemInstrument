@@ -14,6 +14,8 @@
 #ifndef MEMINSTRUMENT_ITARGET_H
 #define MEMINSTRUMENT_ITARGET_H
 
+#include "meminstrument/Witness.h"
+
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
@@ -41,6 +43,8 @@ struct ITarget {
 
   /// indicator whether temporal safety of instrumentee should be checked
   bool CheckTemporalFlag;
+
+  std::shared_ptr<Witness> BoundWitness;
 
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize, bool CheckUpperBoundFlag, bool CheckLowerBoundFlag,

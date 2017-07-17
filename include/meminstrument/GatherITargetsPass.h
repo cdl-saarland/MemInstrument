@@ -14,12 +14,14 @@
 #ifndef MEMINSTRUMENT_GATHERITARGETSPASS_H
 #define MEMINSTRUMENT_GATHERITARGETSPASS_H
 
+#include "meminstrument/ITargetProvider.h"
+
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class GatherITargetsPass : public llvm::FunctionPass {
+class GatherITargetsPass : public llvm::FunctionPass, public ITargetProvider {
 public:
   /// \brief Identification
   static char ID;

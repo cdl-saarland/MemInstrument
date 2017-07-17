@@ -1,4 +1,4 @@
-//===- meminstrument/ITargetProviderPass.h -- MemSafety Instr. --*- C++ -*-===//
+//===--- meminstrument/ITargetProvider.h -- MemSafety Instr. --*- C++ -*---===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -14,20 +14,32 @@
 #ifndef MEMINSTRUMENT_ITARGETPROVIDERPASS_H
 #define MEMINSTRUMENT_ITARGETPROVIDERPASS_H
 
+#include "meminstrument/ITarget.h"
+
 #include "llvm/IR/Function.h"
+#include "llvm/IR/ValueMap.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class ITargetProviderPass : public llvm::FunctionPass {
+/// TODO document
+class ITargetProvider {
 public:
+  ITargetProvider(void);
 
-  /// \brief Default constructor to initialize the function pass interface
-  ITargetProviderPass(char& ID);
+  void initializeEmpty(void);
+  void connectToProvider(ITargetProvider& Provider);
 
-  virtual std::vector<ITarget> *getITargets(llvm::Function* F) = 0;
+  // TODO this might be slightly cooler with an iterator
+  std::vector<ITarget>& getITargetsForFunction(llvm::Function* F);
 
-  virtual ~ITargetProviderPass(void) {}
+  void addITarget(const ITarget& Target);
+
+  virtual ~ITargetProvider(void) {}
+
+private:
+  typedef llvm::ValueMap<llvm::Function*, std::vector<ITarget>> MapType;
+  std::shared_ptr<MapType> TargetMap;
 };
 
 } // end namespace meminstrument
