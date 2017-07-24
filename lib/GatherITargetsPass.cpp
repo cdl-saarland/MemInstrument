@@ -22,31 +22,37 @@
 using namespace meminstrument;
 using namespace llvm;
 
-GatherITargetsPass::GatherITargetsPass() : FunctionPass(ID) {}
+GatherITargetsPass::GatherITargetsPass() : ModulePass(ID) {}
 
-bool GatherITargetsPass::runOnFunction(Function &F) {
-  const DataLayout &DL = F.getParent()->getDataLayout();
+bool GatherITargetsPass::doInitialization(llvm::Module &) {
+  this->initializeEmpty();
+  return false;
+}
+
+bool GatherITargetsPass::runOnModule(Module &M) {
+  const DataLayout &DL = M.getDataLayout();
 
   // TODO make configurable
   auto Policy =
       std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(DL));
 
-  std::vector<ITarget> Destination;
-
-  for (auto &BB : F) {
-    DEBUG(dbgs() << "GatherITargetsPass: processing block `"
-                 << F.getName().str() << "::" << BB.getName().str() << "`\n";);
-    for (auto &I : BB) {
-      Policy->classifyTargets(Destination, &I);
+  for (auto &F : M) {
+    std::vector<ITarget>& Destination = this->getITargetsForFunction(&F);
+    for (auto &BB : F) {
+      DEBUG(dbgs() << "GatherITargetsPass: processing block `"
+                   << F.getName().str() << "::" << BB.getName().str() << "`\n";);
+      for (auto &I : BB) {
+        Policy->classifyTargets(Destination, &I);
+      }
     }
-  }
-  DEBUG(dbgs() << "identified instrumentation targets:"
-               << "\n";
-        for (auto &Target
-             : Destination) {
-          dbgs() << "  " << Target << "\n";
+    DEBUG(dbgs() << "identified instrumentation targets:"
+                 << "\n";
+          for (auto &Target
+               : Destination) {
+            dbgs() << "  " << Target << "\n";
 
-        });
+          });
+  }
   return false;
 }
 

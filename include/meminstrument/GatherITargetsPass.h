@@ -16,12 +16,12 @@
 
 #include "meminstrument/ITargetProvider.h"
 
-#include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class GatherITargetsPass : public llvm::FunctionPass, public ITargetProvider {
+class GatherITargetsPass : public llvm::ModulePass, public ITargetProvider {
 public:
   /// \brief Identification
   static char ID;
@@ -32,11 +32,11 @@ public:
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary initialization before any pass is run.
   ///
-  virtual bool doInitialization(llvm::Module &) override { return false; }
+  virtual bool doInitialization(llvm::Module &) override;
 
-  /// \name Function pass interface
+  /// \name Module pass interface
   //@{
-  virtual bool runOnFunction(llvm::Function &F) override;
+  virtual bool runOnModule(llvm::Module &F) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const

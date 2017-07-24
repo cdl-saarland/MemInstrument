@@ -20,9 +20,15 @@
 using namespace meminstrument;
 using namespace llvm;
 
-MemSafetyAnalysisPass::MemSafetyAnalysisPass() : FunctionPass(ID) {}
+MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
 
-bool MemSafetyAnalysisPass::runOnFunction(Function &F) { return false; }
+bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) {
+  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
+  this->connectToProvider(GITPass);
+  return false;
+}
+
+bool MemSafetyAnalysisPass::runOnModule(Module &) { return false; }
 
 void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();

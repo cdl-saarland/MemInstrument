@@ -25,8 +25,8 @@ void ITargetProvider::initializeEmpty(void) {
   TargetMap = std::make_shared<MapType>();
 }
 
-void ITargetProvider::connectToProvider(ITargetProvider& Provider) {
-  TargetMap = Provider.TargetMap;
+void ITargetProvider::connectToProvider(ITargetProvider* Provider) {
+  TargetMap = Provider->TargetMap;
 }
 
 std::vector<ITarget>& ITargetProvider::getITargetsForFunction(llvm::Function* F) {

@@ -28,7 +28,7 @@ public:
   ITargetProvider(void);
 
   void initializeEmpty(void);
-  void connectToProvider(ITargetProvider& Provider);
+  void connectToProvider(ITargetProvider* Provider);
 
   // TODO this might be slightly cooler with an iterator
   std::vector<ITarget>& getITargetsForFunction(llvm::Function* F);

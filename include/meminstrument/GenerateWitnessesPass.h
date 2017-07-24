@@ -14,12 +14,14 @@
 #ifndef MEMINSTRUMENT_GENERATEWITNESSESPASS_H
 #define MEMINSTRUMENT_GENERATEWITNESSESPASS_H
 
-#include "llvm/IR/Function.h"
+#include "meminstrument/ITargetProvider.h"
+
+#include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class GenerateWitnessesPass : public llvm::FunctionPass {
+class GenerateWitnessesPass : public llvm::ModulePass, public ITargetProvider {
 public:
   /// \brief Identification
   static char ID;
@@ -30,11 +32,11 @@ public:
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary initialization before any pass is run.
   ///
-  virtual bool doInitialization(llvm::Module &) override { return false; }
+  virtual bool doInitialization(llvm::Module &M) override;
 
-  /// \name Function pass interface
+  /// \name Module pass interface
   //@{
-  virtual bool runOnFunction(llvm::Function &F) override;
+  virtual bool runOnModule(llvm::Module &M) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const

@@ -20,16 +20,23 @@
 using namespace meminstrument;
 using namespace llvm;
 
-FancyChecksPass::FancyChecksPass() : FunctionPass(ID) {}
+FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 
-bool FancyChecksPass::runOnFunction(Function &F) {
+bool FancyChecksPass::doInitialization(llvm::Module &) {
+  auto *GWPass = cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
+  this->connectToProvider(GWPass);
+  return false;
+}
 
-  if (F.empty())
-    return false;
+bool FancyChecksPass::runOnModule(Module &M) {
 
-  DEBUG(dbgs() << "FancyChecksPass: processing function `" << F.getName().str()
-               << "`\n";);
-  auto &GWPass = getAnalysis<GenerateWitnessesPass>(F);
+  for (auto& F : M) {
+    if (F.empty())
+      return false;
+
+    DEBUG(dbgs() << "FancyChecksPass: processing function `" << F.getName().str()
+                 << "`\n";);
+  }
   return true;
 }
 

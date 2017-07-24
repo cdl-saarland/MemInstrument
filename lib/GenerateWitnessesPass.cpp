@@ -21,18 +21,22 @@
 using namespace meminstrument;
 using namespace llvm;
 
-GenerateWitnessesPass::GenerateWitnessesPass() : FunctionPass(ID) {}
+GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
-bool GenerateWitnessesPass::runOnFunction(Function &F) {
+bool GenerateWitnessesPass::doInitialization(llvm::Module &) {
+  auto *MSAPass = cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
+  this->connectToProvider(MSAPass);
+  return false;
+}
 
-  if (F.empty())
-    return false;
+bool GenerateWitnessesPass::runOnModule(Module &M) {
+  for (auto& F : M) {
+    if (F.empty())
+      return false;
 
-  auto &MISPass = getAnalysis<MemSafetyAnalysisPass>();
-
-  DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
-               << F.getName().str() << "`\n";);
-  auto &MAPass = getAnalysis<MemSafetyAnalysisPass>(F);
+    DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
+                 << F.getName().str() << "`\n";);
+  }
   return true;
 }
 
