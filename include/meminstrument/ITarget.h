@@ -55,6 +55,8 @@ struct ITarget {
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize);
 
+  void joinFlags(ITarget& other);
+
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
 };

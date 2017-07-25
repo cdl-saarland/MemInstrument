@@ -32,6 +32,13 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true) {}
 
+void ITarget::joinFlags(ITarget& other) {
+  AccessSize = std::max(AccessSize, other.AccessSize);
+  CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
+  CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
+  CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
+}
+
 llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
                                              const ITarget &IT) {
   std::string LocName = IT.Location->getName().str();

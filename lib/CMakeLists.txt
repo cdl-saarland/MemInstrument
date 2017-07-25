@@ -19,6 +19,7 @@ add_meminstrument_library(meminstrument
   WitnessStrategy.cpp
   InstrumentationPolicy.cpp
   RegisterPasses.cpp
+  WitnessGraph.cpp
 )
 
 # List external library dependencies that need to be linked to your library

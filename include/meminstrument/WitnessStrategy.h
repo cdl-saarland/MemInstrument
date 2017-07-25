@@ -15,11 +15,21 @@
 #define MEMINSTRUMENT_WITNESSSTRATEGY_H
 
 #include "meminstrument/ITarget.h"
+#include "meminstrument/WitnessGraph.h"
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
 
-namespace meminstrument {} // end namespace meminstrument
+namespace meminstrument {
+
+class WitnessStrategy {
+public:
+  void addImmediatelyRequiredTargets(WitnessGraph& WG, ITarget* Target) const;
+
+  void insertImmediateWitness(WitnessGraphNode* Node) const;
+};
+
+} // end namespace meminstrument
 
 #endif // MEMINSTRUMENT_WITNESSSTRATEGY_H
