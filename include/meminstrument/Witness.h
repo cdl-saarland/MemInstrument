@@ -20,8 +20,8 @@ namespace meminstrument {
 
 /// TODO document
 struct Witness {
-  virtual llvm::Value* getLowerBound(void) const = 0;
-  virtual llvm::Value* getUpperBound(void) const = 0;
+  virtual llvm::Value *getLowerBound(void) const = 0;
+  virtual llvm::Value *getUpperBound(void) const = 0;
 
   virtual ~Witness(void) {}
 };

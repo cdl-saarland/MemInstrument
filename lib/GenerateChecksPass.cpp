@@ -31,7 +31,7 @@ bool GenerateChecksPass::doInitialization(llvm::Module &) {
 
 bool GenerateChecksPass::runOnModule(Module &M) {
 
-  for (auto& F : M) {
+  for (auto &F : M) {
     if (F.empty())
       return false;
 

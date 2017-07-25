@@ -20,8 +20,7 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
     : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
       CheckUpperBoundFlag(CheckUpperBoundFlag),
       CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag),
-      BoundWitness(nullptr){}
+      CheckTemporalFlag(CheckTemporalFlag), BoundWitness(nullptr) {}
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,

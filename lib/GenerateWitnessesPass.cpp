@@ -24,13 +24,14 @@ using namespace llvm;
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) {
-  auto *MSAPass = cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
+  auto *MSAPass =
+      cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
   this->connectToProvider(MSAPass);
   return false;
 }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
-  for (auto& F : M) {
+  for (auto &F : M) {
     if (F.empty())
       return false;
 

@@ -23,19 +23,20 @@ using namespace llvm;
 FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 
 bool FancyChecksPass::doInitialization(llvm::Module &) {
-  auto *GWPass = cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
+  auto *GWPass =
+      cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
   this->connectToProvider(GWPass);
   return false;
 }
 
 bool FancyChecksPass::runOnModule(Module &M) {
 
-  for (auto& F : M) {
+  for (auto &F : M) {
     if (F.empty())
       return false;
 
-    DEBUG(dbgs() << "FancyChecksPass: processing function `" << F.getName().str()
-                 << "`\n";);
+    DEBUG(dbgs() << "FancyChecksPass: processing function `"
+                 << F.getName().str() << "`\n";);
   }
   return true;
 }

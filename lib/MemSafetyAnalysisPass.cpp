@@ -23,7 +23,8 @@ using namespace llvm;
 MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
 
 bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) {
-  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
+  auto *GITPass =
+      cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
   this->connectToProvider(GITPass);
   return false;
 }

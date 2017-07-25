@@ -37,10 +37,11 @@ bool GatherITargetsPass::runOnModule(Module &M) {
       std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(DL));
 
   for (auto &F : M) {
-    std::vector<ITarget>& Destination = this->getITargetsForFunction(&F);
+    std::vector<ITarget> &Destination = this->getITargetsForFunction(&F);
     for (auto &BB : F) {
       DEBUG(dbgs() << "GatherITargetsPass: processing block `"
-                   << F.getName().str() << "::" << BB.getName().str() << "`\n";);
+                   << F.getName().str() << "::" << BB.getName().str()
+                   << "`\n";);
       for (auto &I : BB) {
         Policy->classifyTargets(Destination, &I);
       }
