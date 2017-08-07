@@ -32,7 +32,7 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true) {}
 
-void ITarget::joinFlags(ITarget& other) {
+void ITarget::joinFlags(const ITarget &other) {
   AccessSize = std::max(AccessSize, other.AccessSize);
   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;

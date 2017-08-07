@@ -14,17 +14,32 @@
 using namespace meminstrument;
 using namespace llvm;
 
-WitnessGraphNode* WitnessGraph::getNodeFor(ITarget *Target) {
+WitnessGraphNode *WitnessGraph::getNodeFor(std::shared_ptr<ITarget> Target) {
   // see whether we already have a node for Target
-  auto It = NodeMap.find(std::make_pair(Target->Instrumentee, Target->Location));
-  if (It != NodeMap.end()) { // we found one, so just use this
-    auto* Node = It->getSecond();
-    Node->Target->joinFlags(*Target);
+  if (auto *Node = getNodeForOrNull(Target)) {
     return Node;
   }
   // create a new node for Target
-  auto* NewNode = new WitnessGraphNode(Target);
-  NodeMap.insert(std::make_pair(std::make_pair(Target->Instrumentee, Target->Location), NewNode));
+  return createNewNodeFor(Target);
+}
+
+WitnessGraphNode *
+WitnessGraph::createNewNodeFor(std::shared_ptr<ITarget> Target) {
+  assert(getNodeForOrNull(Target) == nullptr);
+  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto *NewNode = new WitnessGraphNode(Target);
+  NodeMap.insert(std::make_pair(Key, NewNode));
   return NewNode;
 }
 
+WitnessGraphNode *
+WitnessGraph::getNodeForOrNull(std::shared_ptr<ITarget> Target) {
+  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto It = NodeMap.find(Key);
+  if (It != NodeMap.end()) {
+    auto *Node = It->getSecond();
+    Node->Target->joinFlags(*Target);
+    return Node;
+  }
+  return nullptr;
+}

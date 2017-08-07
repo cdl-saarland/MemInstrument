@@ -24,7 +24,7 @@ namespace meminstrument {
 
 class InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<ITarget> &Dest,
+  virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) = 0;
 
   virtual ~InstrumentationPolicy() {}
@@ -32,7 +32,7 @@ public:
 
 class BeforeOutflowPolicy : public InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<ITarget> &Dest,
+  virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) override;
 
   BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}

@@ -41,15 +41,15 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
                  << F.getName().str() << "`\n";);
 
-    std::vector<ITarget> &Destination = this->getITargetsForFunction(&F);
+    std::vector<std::shared_ptr<ITarget>> &Destination =
+        this->getITargetsForFunction(&F);
     WitnessGraph WG;
+    TodoBetterNameStrategy WS;
 
-    // for (auto& Target : Destination) {
-    //   WS->addImmediatelyRequiredTargets(WG, &Target);
-    // }
-    // for (auto& Target : Destination) {
-    //   WS->insertImmediateWitness(WG.getNodeFor(&Target));
-    // }
+    for (auto &Target : Destination) {
+      WS.constructWitnessGraph(WG, Target);
+    }
+    // TODO
   }
   return true;
 }

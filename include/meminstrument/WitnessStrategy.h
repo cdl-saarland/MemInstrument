@@ -25,9 +25,24 @@ namespace meminstrument {
 
 class WitnessStrategy {
 public:
-  void addImmediatelyRequiredTargets(WitnessGraph& WG, ITarget* Target) const;
+  // void addImmediatelyRequiredTargets(WitnessGraph& WG,
+  // std::shared_ptr<ITarget> Target) const;
+  //
+  // void insertImmediateWitness(WitnessGraphNode* Node) const;
 
-  void insertImmediateWitness(WitnessGraphNode* Node) const;
+  virtual WitnessGraphNode *
+  constructWitnessGraph(WitnessGraph &WG,
+                        std::shared_ptr<ITarget> Target) const = 0;
+
+  virtual ~WitnessStrategy(void) {}
+};
+
+// FIXME/TODO rename this!
+class TodoBetterNameStrategy : public WitnessStrategy {
+public:
+  virtual WitnessGraphNode *
+  constructWitnessGraph(WitnessGraph &WG,
+                        std::shared_ptr<ITarget> Target) const override;
 };
 
 } // end namespace meminstrument

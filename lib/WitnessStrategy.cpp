@@ -1,3 +1,102 @@
+//===---------- WitnessStrategy.cpp -- MemSafety Instrumentation ----------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===---------------------------------------------------------------------===///
+/// \file TODO doku
+//===----------------------------------------------------------------------===//
+
+#include "meminstrument/WitnessStrategy.h"
+
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Value.h"
+
+using namespace meminstrument;
+using namespace llvm;
+
+WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
+    WitnessGraph &WG, std::shared_ptr<ITarget> Target) const {
+  auto *Node = WG.getNodeForOrNull(Target);
+
+  if (Node != nullptr) {
+    return Node;
+  }
+
+  Node = WG.createNewNodeFor(Target);
+
+  if (auto *I = dyn_cast<Instruction>(Target->Instrumentee)) {
+    switch (I->getOpcode()) {
+    case Instruction::Alloca:
+    case Instruction::Call:
+    case Instruction::Load:
+    case Instruction::IntToPtr: // FIXME is this what we want?
+      break;
+
+    case Instruction::PHI: {
+      auto *PtrPhi = cast<PHINode>(I);
+      unsigned NumOperands = PtrPhi->getNumIncomingValues();
+      for (unsigned i = 0; i < NumOperands; ++i) {
+        auto *InVal = PtrPhi->getIncomingValue(i);
+        auto *InBB = PtrPhi->getIncomingBlock(i);
+
+        auto NewTarget =
+            std::make_shared<ITarget>(InVal, &InBB->back(), Target->AccessSize);
+        Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
+      }
+      // TODO
+      break;
+    }
+
+    case Instruction::Select: {
+      auto *PtrSelect = cast<SelectInst>(I);
+      auto *TrueVal = PtrSelect->getTrueValue();
+      auto *FalseVal = PtrSelect->getFalseValue();
+
+      auto TrueTarget =
+          std::make_shared<ITarget>(TrueVal, I, Target->AccessSize);
+      Node->Requirements.push_back(constructWitnessGraph(WG, TrueTarget));
+
+      auto FalseTarget =
+          std::make_shared<ITarget>(FalseVal, I, Target->AccessSize);
+      Node->Requirements.push_back(constructWitnessGraph(WG, FalseTarget));
+      break;
+    }
+
+    case Instruction::GetElementPtr: {
+      auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
+      auto NewTarget =
+          std::make_shared<ITarget>(Operand, I, Target->AccessSize);
+      Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
+      break;
+    }
+
+    case Instruction::BitCast: {
+      // bit casts don't change the pointer bounds
+      auto *Operand = cast<BitCastInst>(I)->getOperand(0);
+      auto NewTarget =
+          std::make_shared<ITarget>(Operand, I, Target->AccessSize);
+      Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
+      break;
+    }
+
+    default:
+      llvm_unreachable("Unsupported instruction!");
+    }
+
+  } else if (isa<Argument>(Target->Instrumentee)) {
+    // return;
+  } else if (isa<GlobalValue>(Target->Instrumentee)) {
+    // llvm_unreachable("Global Values are not yet supported!"); // FIXME
+  } else {
+    // TODO constexpr
+    llvm_unreachable("Unsupported value operand!");
+  }
+
+  return Node;
+}
 
 /*
 Value *BeforeOutflowPolicy::createWitness(Value *Instrumentee) {

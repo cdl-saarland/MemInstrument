@@ -31,8 +31,9 @@ size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *V) {
   return Size;
 }
 
-void BeforeOutflowPolicy::classifyTargets(std::vector<ITarget> &Destination,
-                                          llvm::Instruction *Location) {
+void BeforeOutflowPolicy::classifyTargets(
+    std::vector<std::shared_ptr<ITarget>> &Destination,
+    llvm::Instruction *Location) {
   switch (Location->getOpcode()) {
   case Instruction::Ret: {
     llvm::ReturnInst *I = llvm::cast<llvm::ReturnInst>(Location);
@@ -42,7 +43,8 @@ void BeforeOutflowPolicy::classifyTargets(std::vector<ITarget> &Destination,
       return;
     }
 
-    Destination.emplace_back(Operand, Location, getPointerAccessSize(Operand));
+    Destination.push_back(std::make_shared<ITarget>(
+        Operand, Location, getPointerAccessSize(Operand)));
     break;
   }
   case Instruction::Call: {
@@ -60,8 +62,8 @@ void BeforeOutflowPolicy::classifyTargets(std::vector<ITarget> &Destination,
         continue;
       }
 
-      Destination.emplace_back(Operand, Location,
-                               getPointerAccessSize(Operand));
+      Destination.push_back(std::make_shared<ITarget>(
+          Operand, Location, getPointerAccessSize(Operand)));
     }
 
     break;
@@ -69,23 +71,23 @@ void BeforeOutflowPolicy::classifyTargets(std::vector<ITarget> &Destination,
   case Instruction::Load: {
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.emplace_back(PtrOperand, Location,
-                             getPointerAccessSize(PtrOperand));
+    Destination.push_back(std::make_shared<ITarget>(
+        PtrOperand, Location, getPointerAccessSize(PtrOperand)));
     break;
   }
   case Instruction::Store: {
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.emplace_back(PtrOperand, Location,
-                             getPointerAccessSize(PtrOperand));
+    Destination.push_back(std::make_shared<ITarget>(
+        PtrOperand, Location, getPointerAccessSize(PtrOperand)));
 
     auto *StoreOperand = I->getValueOperand();
     if (!StoreOperand->getType()->isPointerTy()) {
       return;
     }
 
-    Destination.emplace_back(StoreOperand, Location,
-                             getPointerAccessSize(StoreOperand));
+    Destination.push_back(std::make_shared<ITarget>(
+        StoreOperand, Location, getPointerAccessSize(StoreOperand)));
 
     break;
   }

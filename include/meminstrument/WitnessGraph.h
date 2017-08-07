@@ -21,28 +21,32 @@
 namespace meminstrument {
 
 struct WitnessGraphNode {
-  ITarget* Target;
-  llvm::SmallVector<ITarget*, 4> Requirements;
+  std::shared_ptr<ITarget> Target;
+  llvm::SmallVector<WitnessGraphNode *, 4> Requirements;
 
-  WitnessGraphNode(ITarget* Target): Target(Target) { }
+  WitnessGraphNode(std::shared_ptr<ITarget> Target) : Target(Target) {}
 };
 
 class WitnessGraph {
 public:
-  WitnessGraphNode* getNodeFor(ITarget *T);
+  WitnessGraphNode *getNodeForOrNull(std::shared_ptr<ITarget> T);
+
+  WitnessGraphNode *getNodeFor(std::shared_ptr<ITarget> T);
+
+  WitnessGraphNode *createNewNodeFor(std::shared_ptr<ITarget> T);
+
+  void propagateITargetFlags(void);
 
   ~WitnessGraph(void) {
-    for (auto& P : NodeMap) {
-      delete(P.second);
+    for (auto &P : NodeMap) {
+      delete (P.second);
     }
   }
 
 private:
-  std::vector<ITarget> AdditionalTargets;
+  typedef std::pair<llvm::Value *, llvm::Instruction *> KeyType;
 
-  typedef std::pair<llvm::Value*, llvm::Instruction*> KeyType;
-
-  llvm::DenseMap<KeyType, WitnessGraphNode*> NodeMap;
+  llvm::DenseMap<KeyType, WitnessGraphNode *> NodeMap;
 };
 
 } // end namespace meminstrument

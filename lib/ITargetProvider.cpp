@@ -29,14 +29,14 @@ void ITargetProvider::connectToProvider(ITargetProvider *Provider) {
   TargetMap = Provider->TargetMap;
 }
 
-std::vector<ITarget> &
+std::vector<std::shared_ptr<ITarget>> &
 ITargetProvider::getITargetsForFunction(llvm::Function *F) {
   TargetMap->lookup(F);
   return (*TargetMap)[F];
 }
 
-void ITargetProvider::addITarget(const ITarget &Target) {
-  auto *F = Target.Location->getParent()->getParent();
-  TargetMap->lookup(F);
-  (*TargetMap)[F].push_back(Target);
-}
+// void ITargetProvider::addITarget(const ITarget &Target) {
+//   auto *F = Target.Location->getParent()->getParent();
+//   TargetMap->lookup(F);
+//   (*TargetMap)[F].push_back(std::make_shared(Target));
+// }
