@@ -1,6 +1,6 @@
 ; RUN: %opt -load %passlib -memsafety-gatheritargets -debug %s > /dev/null 2> %t.log
-; RUN: fgrep "<p, foo::loop::[store], 4 bytes, ul_>" %t.log
-; RUN: fgrep "<a, foo::exit::tmp, 4 bytes, ul_>" %t.log
+; RUN: fgrep "<p, loop::[store], 4B, ul_>" %t.log
+; RUN: fgrep "<a, exit::tmp, 4B, ul_>" %t.log
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
