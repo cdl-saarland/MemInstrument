@@ -46,11 +46,17 @@ WitnessGraph::getNodeForOrNull(std::shared_ptr<ITarget> Target) {
 
 void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "digraph witnessgraph_" << Func.getName() << "\n{\n";
-  stream << "rankdir=BT;\n";
+  stream << "  rankdir=BT;\n";
 
   for (const auto& P : NodeMap) {
     const auto& Node = P.getSecond();
-    stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"];\n";
+    stream << "  n" << Node->id << " [label=\"" << *(Node->Target)<< "\"";
+    if (Node->Required) {
+      stream << ", color=blue";
+    } else if (Node->ToMaterialize) {
+      stream << ", color=red";
+    }
+    stream << "];\n";
   }
 
   stream << "\n";

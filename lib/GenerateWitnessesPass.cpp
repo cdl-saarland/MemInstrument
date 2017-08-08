@@ -48,7 +48,8 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     TodoBetterNameStrategy WS;
 
     for (auto &Target : Destination) {
-      WS.constructWitnessGraph(WG, Target);
+      auto *Node = WS.constructWitnessGraph(WG, Target);
+      Node->Required = true;
     }
 
     WG.printDotGraph(dbgs());

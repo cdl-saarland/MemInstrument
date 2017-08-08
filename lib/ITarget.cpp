@@ -52,8 +52,16 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
       LocName = "[ret]";
       break;
 
+    case llvm::Instruction::Br:
+      LocName = "[br]";
+      break;
+
+    case llvm::Instruction::Switch:
+      LocName = "[switch]";
+      break;
+
     default:
-      LocName = "[unnamed]";
+      LocName = "[unknown]";
     }
   }
 

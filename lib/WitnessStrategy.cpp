@@ -32,8 +32,20 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     case Instruction::Alloca:
     case Instruction::Call:
     case Instruction::Load:
-    case Instruction::IntToPtr: // FIXME is this what we want?
+    case Instruction::IntToPtr: { // FIXME is this what we want?
+      auto NewTarget =
+        std::make_shared<ITarget>(
+            Target->Instrumentee,
+            I->getNextNode(),
+            Target->AccessSize,
+            Target->CheckUpperBoundFlag,
+            Target->CheckLowerBoundFlag,
+            Target->CheckTemporalFlag);
+      auto *NewNode = WG.getNodeFor(NewTarget);
+      NewNode->ToMaterialize = true;
+      Node->Requirements.push_back(NewNode);
       break;
+    }
 
     case Instruction::PHI: {
       auto *PtrPhi = cast<PHINode>(I);
@@ -43,7 +55,13 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
         auto *InBB = PtrPhi->getIncomingBlock(i);
 
         auto NewTarget =
-            std::make_shared<ITarget>(InVal, &InBB->back(), Target->AccessSize);
+            std::make_shared<ITarget>(
+                InVal,
+                &InBB->back(),
+                Target->AccessSize,
+                Target->CheckUpperBoundFlag,
+                Target->CheckLowerBoundFlag,
+                Target->CheckTemporalFlag);
         Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       }
       // TODO
@@ -56,11 +74,17 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
       auto *FalseVal = PtrSelect->getFalseValue();
 
       auto TrueTarget =
-          std::make_shared<ITarget>(TrueVal, I, Target->AccessSize);
+          std::make_shared<ITarget>(TrueVal, I, Target->AccessSize,
+                Target->CheckUpperBoundFlag,
+                Target->CheckLowerBoundFlag,
+                Target->CheckTemporalFlag);
       Node->Requirements.push_back(constructWitnessGraph(WG, TrueTarget));
 
       auto FalseTarget =
-          std::make_shared<ITarget>(FalseVal, I, Target->AccessSize);
+          std::make_shared<ITarget>(FalseVal, I, Target->AccessSize,
+                Target->CheckUpperBoundFlag,
+                Target->CheckLowerBoundFlag,
+                Target->CheckTemporalFlag);
       Node->Requirements.push_back(constructWitnessGraph(WG, FalseTarget));
       break;
     }
@@ -68,7 +92,10 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     case Instruction::GetElementPtr: {
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
       auto NewTarget =
-          std::make_shared<ITarget>(Operand, I, Target->AccessSize);
+          std::make_shared<ITarget>(Operand, I, Target->AccessSize,
+                Target->CheckUpperBoundFlag,
+                Target->CheckLowerBoundFlag,
+                Target->CheckTemporalFlag);
       Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       break;
     }
@@ -77,7 +104,10 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
       // bit casts don't change the pointer bounds
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
       auto NewTarget =
-          std::make_shared<ITarget>(Operand, I, Target->AccessSize);
+          std::make_shared<ITarget>(Operand, I, Target->AccessSize,
+                Target->CheckUpperBoundFlag,
+                Target->CheckLowerBoundFlag,
+                Target->CheckTemporalFlag);
       Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       break;
     }

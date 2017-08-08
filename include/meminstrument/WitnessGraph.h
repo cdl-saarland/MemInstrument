@@ -31,6 +31,10 @@ struct WitnessGraphNode {
     id = RunningId++;
   }
 
+  bool ToMaterialize = false;
+
+  bool Required = false;
+
   friend class WitnessGraph;
 
 private:
