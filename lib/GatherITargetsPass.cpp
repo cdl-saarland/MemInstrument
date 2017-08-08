@@ -25,11 +25,12 @@ using namespace llvm;
 GatherITargetsPass::GatherITargetsPass() : ModulePass(ID) {}
 
 bool GatherITargetsPass::doInitialization(llvm::Module &) {
-  this->initializeEmpty();
   return false;
 }
 
 bool GatherITargetsPass::runOnModule(Module &M) {
+  this->initializeEmpty();
+
   const DataLayout &DL = M.getDataLayout();
 
   // TODO make configurable

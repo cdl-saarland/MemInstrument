@@ -87,9 +87,9 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     }
 
   } else if (isa<Argument>(Target->Instrumentee)) {
-    // return;
+    // return; // FIXME is this what we want?
   } else if (isa<GlobalValue>(Target->Instrumentee)) {
-    // llvm_unreachable("Global Values are not yet supported!"); // FIXME
+    // return; // FIXME is this what we want?
   } else {
     // TODO constexpr
     llvm_unreachable("Unsupported value operand!");

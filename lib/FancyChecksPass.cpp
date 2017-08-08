@@ -23,13 +23,13 @@ using namespace llvm;
 FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 
 bool FancyChecksPass::doInitialization(llvm::Module &) {
-  auto *GWPass =
-      cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
-  this->connectToProvider(GWPass);
   return false;
 }
 
 bool FancyChecksPass::runOnModule(Module &M) {
+  auto *GWPass =
+      cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
+  this->connectToProvider(GWPass);
 
   for (auto &F : M) {
     if (F.empty())

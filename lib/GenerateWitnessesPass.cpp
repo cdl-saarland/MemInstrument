@@ -25,13 +25,14 @@ using namespace llvm;
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) {
-  auto *MSAPass =
-      cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
-  this->connectToProvider(MSAPass);
   return false;
 }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
+  auto *MSAPass =
+      cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
+  this->connectToProvider(MSAPass);
+
   // auto WS = std::unique_ptr<WitnessStrategy>(new WitnessStrategy()); // TODO
 
   for (auto &F : M) {
@@ -43,12 +44,14 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
     std::vector<std::shared_ptr<ITarget>> &Destination =
         this->getITargetsForFunction(&F);
-    WitnessGraph WG;
+    WitnessGraph WG(F);
     TodoBetterNameStrategy WS;
 
     for (auto &Target : Destination) {
       WS.constructWitnessGraph(WG, Target);
     }
+
+    WG.printDotGraph(dbgs());
     // TODO
   }
   return true;
@@ -56,7 +59,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<MemSafetyAnalysisPass>();
-  AU.addRequiredTransitive<MemInstrumentSetupPass>();
+  // AU.addRequiredTransitive<MemInstrumentSetupPass>();
 }
 
 char GenerateWitnessesPass::ID = 0;
