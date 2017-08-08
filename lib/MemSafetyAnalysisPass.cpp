@@ -22,9 +22,7 @@ using namespace llvm;
 
 MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
 
-bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) {
-  return false;
-}
+bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) { return false; }
 
 bool MemSafetyAnalysisPass::runOnModule(Module &) {
   auto *GITPass =

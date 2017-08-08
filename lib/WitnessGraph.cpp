@@ -51,9 +51,9 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "  labelloc=top;\n";
   stream << "  labeljust=left;\n";
 
-  for (const auto& P : NodeMap) {
-    const auto& Node = P.getSecond();
-    stream << "  n" << Node->id << " [label=\"" << *(Node->Target)<< "\"";
+  for (const auto &P : NodeMap) {
+    const auto &Node = P.getSecond();
+    stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
     if (Node->Required) {
       stream << ", color=blue";
     } else if (Node->ToMaterialize) {
@@ -64,9 +64,9 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
 
   stream << "\n";
 
-  for (const auto& P : NodeMap) {
-    const auto& Node = P.getSecond();
-    for (const auto* Other : Node->Requirements) {
+  for (const auto &P : NodeMap) {
+    const auto &Node = P.getSecond();
+    for (const auto *Other : Node->Requirements) {
       stream << "  n" << Node->id << " -> n" << Other->id << ";\n";
     }
   }

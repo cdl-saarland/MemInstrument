@@ -24,9 +24,7 @@ using namespace llvm;
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
-bool GenerateWitnessesPass::doInitialization(llvm::Module &) {
-  return false;
-}
+bool GenerateWitnessesPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
   auto *MSAPass =

@@ -24,9 +24,7 @@ using namespace llvm;
 
 GatherITargetsPass::GatherITargetsPass() : ModulePass(ID) {}
 
-bool GatherITargetsPass::doInitialization(llvm::Module &) {
-  return false;
-}
+bool GatherITargetsPass::doInitialization(llvm::Module &) { return false; }
 
 bool GatherITargetsPass::runOnModule(Module &M) {
   this->initializeEmpty();

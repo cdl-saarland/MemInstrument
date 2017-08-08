@@ -51,7 +51,7 @@ public:
 
   void propagateITargetFlags(void);
 
-  WitnessGraph(const llvm::Function& F) : Func(F) {}
+  WitnessGraph(const llvm::Function &F) : Func(F) {}
 
   ~WitnessGraph(void) {
     for (auto &P : NodeMap) {
@@ -62,7 +62,7 @@ public:
   void printDotGraph(llvm::raw_ostream &stream) const;
 
 private:
-  const llvm::Function& Func;
+  const llvm::Function &Func;
   typedef std::pair<llvm::Value *, llvm::Instruction *> KeyType;
 
   llvm::DenseMap<KeyType, WitnessGraphNode *> NodeMap;

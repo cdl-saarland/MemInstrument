@@ -22,9 +22,7 @@ using namespace llvm;
 
 FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 
-bool FancyChecksPass::doInitialization(llvm::Module &) {
-  return false;
-}
+bool FancyChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool FancyChecksPass::runOnModule(Module &M) {
   auto *GWPass =
