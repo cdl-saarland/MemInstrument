@@ -59,9 +59,8 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
 
   Stream << "<" << IT.Instrumentee->getName() << ", ";
   auto *BB = IT.Location->getParent();
-  Stream << BB->getParent()->getName() << "::" << BB->getName()
-         << "::" << LocName << ", ";
-  Stream << IT.AccessSize << " bytes, ";
+  Stream << BB->getName() << "::" << LocName << ", ";
+  Stream << IT.AccessSize << "B, ";
   if (IT.CheckUpperBoundFlag) {
     Stream << "u";
   } else {
