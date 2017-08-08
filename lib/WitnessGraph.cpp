@@ -47,6 +47,9 @@ WitnessGraph::getNodeForOrNull(std::shared_ptr<ITarget> Target) {
 void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "digraph witnessgraph_" << Func.getName() << "\n{\n";
   stream << "  rankdir=BT;\n";
+  stream << "  label=\"Witness Graph for `" << Func.getName() << "`:\";\n";
+  stream << "  labelloc=top;\n";
+  stream << "  labeljust=left;\n";
 
   for (const auto& P : NodeMap) {
     const auto& Node = P.getSecond();
