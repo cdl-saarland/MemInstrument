@@ -33,6 +33,8 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
   // auto WS = std::unique_ptr<WitnessStrategy>(new WitnessStrategy()); // TODO
 
+  TodoBetterNameStrategy WS;
+  DummyMechanism IM;
   for (auto &F : M) {
     if (F.empty())
       return false;
@@ -43,7 +45,6 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     std::vector<std::shared_ptr<ITarget>> &Destination =
         this->getITargetsForFunction(&F);
     WitnessGraph WG(F);
-    TodoBetterNameStrategy WS;
 
     for (auto &Target : Destination) {
       auto *Node = WS.constructWitnessGraph(WG, Target);
@@ -51,7 +52,10 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     }
 
     WG.printDotGraph(dbgs());
-    // TODO
+
+    for (auto &Target : Destination) {
+      WS.createWitness(IM, WG.getNodeFor(Target));
+    }
   }
   return true;
 }

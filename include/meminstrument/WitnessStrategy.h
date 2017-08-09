@@ -14,6 +14,7 @@
 #ifndef MEMINSTRUMENT_WITNESSSTRATEGY_H
 #define MEMINSTRUMENT_WITNESSSTRATEGY_H
 
+#include "meminstrument/InstrumentationMechanism.h"
 #include "meminstrument/ITarget.h"
 #include "meminstrument/WitnessGraph.h"
 
@@ -30,6 +31,10 @@ public:
                         std::shared_ptr<ITarget> Target) const = 0;
 
   virtual ~WitnessStrategy(void) {}
+
+  void createWitnesses(InstrumentationMechanism &IM, WitnessGraph &WG) const;
+
+  virtual void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const = 0;
 };
 
 // FIXME/TODO rename this!
@@ -38,6 +43,8 @@ public:
   virtual WitnessGraphNode *
   constructWitnessGraph(WitnessGraph &WG,
                         std::shared_ptr<ITarget> Target) const override;
+
+  virtual void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const override;
 };
 
 } // end namespace meminstrument

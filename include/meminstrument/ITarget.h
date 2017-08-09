@@ -62,6 +62,8 @@ struct ITarget {
 
   void joinFlags(const ITarget &other);
 
+  bool hasWitness(void) const;
+
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
 };

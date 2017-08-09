@@ -46,6 +46,8 @@ void ITarget::joinFlags(const ITarget &other) {
   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
 }
 
+bool ITarget::hasWitness(void) const { return BoundWitness.get() == nullptr; }
+
 llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
                                              const ITarget &IT) {
   std::string LocName = IT.Location->getName().str();

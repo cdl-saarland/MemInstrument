@@ -15,15 +15,32 @@
 #define MEMINSTRUMENT_WITNESS_H
 
 #include "llvm/IR/Value.h"
+#include "llvm/Support/Casting.h"
 
 namespace meminstrument {
 
 /// TODO document
 struct Witness {
+public:
+  /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)
+  enum WitnessKind {
+    WK_Dummy,
+    // Insert new WitnessKinds for each new type of witnesses here!
+  };
+
   virtual llvm::Value *getLowerBound(void) const = 0;
   virtual llvm::Value *getUpperBound(void) const = 0;
 
   virtual ~Witness(void) {}
+
+  Witness(WitnessKind Kind) : Kind(Kind) {}
+
+  WitnessKind getKind(void) const {
+    return Kind;
+  }
+
+private:
+  const WitnessKind Kind;
 };
 
 } // end namespace meminstrument
