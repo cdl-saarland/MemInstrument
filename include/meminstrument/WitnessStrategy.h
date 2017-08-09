@@ -25,11 +25,6 @@ namespace meminstrument {
 
 class WitnessStrategy {
 public:
-  // void addImmediatelyRequiredTargets(WitnessGraph& WG,
-  // std::shared_ptr<ITarget> Target) const;
-  //
-  // void insertImmediateWitness(WitnessGraphNode* Node) const;
-
   virtual WitnessGraphNode *
   constructWitnessGraph(WitnessGraph &WG,
                         std::shared_ptr<ITarget> Target) const = 0;

@@ -16,21 +16,28 @@ using namespace meminstrument;
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool CheckTemporalFlag)
+                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
+                 bool RequiresExplicitBounds)
     : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
       CheckUpperBoundFlag(CheckUpperBoundFlag),
       CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag), BoundWitness(nullptr) {}
+      CheckTemporalFlag(CheckTemporalFlag),
+      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {}
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag)
+                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
     : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
-              CheckLowerBoundFlag, false) {}
+              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
+
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 size_t AccessSize, bool RequiresExplicitBounds)
+    : ITarget(Instrumentee, Location, AccessSize, true, true,
+              RequiresExplicitBounds) {}
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
-    : ITarget(Instrumentee, Location, AccessSize, true, true) {}
+    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
 void ITarget::joinFlags(const ITarget &other) {
   AccessSize = std::max(AccessSize, other.AccessSize);

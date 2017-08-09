@@ -23,40 +23,13 @@ namespace meminstrument {
 
 class InstrumentationMechanism {
 public:
-  // virtual llvm::Value *insertGetBoundWitness(llvm::IRBuilder &Builder,
-  //                                            llvm::Value *ToCheck) = 0;
-  //
-  // virtual void insertCheckBoundWitnessLower(llvm::IRBuilder &Builder,
-  //                                           llvm::Value *ToCheck,
-  //                                           llvm::Value *Witness) = 0;
-  // virtual void insertCheckBoundWitnessUpper(llvm::IRBuilder &Builder,
-  //                                           llvm::Value *ToCheck,
-  //                                           size_t AccessSize,
-  //                                           llvm::Value *Witness) = 0;
-  // // TODO temporal checks?
-  //
-  // virtual void insertCheckBoundWitness(llvm::IRBuilder &Builder,
-  //                                      llvm::Value *ToCheck,
-  //                                      size_t AccessSize,
-  //                                      llvm::Value *Witness) {
-  //   insertCheckBoundWitnessLower(Builder, ToCheck, Witness);
-  //   insertCheckBoundWitnessUpper(Builder, ToCheck, AccessSize, Witness);
-  // }
-  //
-  // virtual llvm::Value *insertGetLowerBound(llvm::IRBuilder &Builder,
-  //                                          llvm::Value *Ptr) = 0;
-  // virtual llvm::Value *insertGetUpperBound(llvm::IRBuilder &Builder,
-  //                                          llvm::Value *Ptr) = 0;
-  // virtual void insertGetBounds(llvm::Value *&LowerDest, llvm::Value
-  // *&UpperDest,
-  //                              llvm::IRBuilder &Builder, llvm::Value *Ptr) =
-  //                              0;
-  //
-  // virtual void handleAlloca(llvm::AllocaInst *AI) = 0;
-  //
-  // virtual llvm::Type *getWitnessType(void) = 0;
-  //
-  // virtual ~InstrumentationMechanism(void) {}
+  virtual void insertWitness(ITarget &Target) = 0;
+
+  virtual void insertCheck(ITarget &Target) = 0;
+
+  virtual void materializeBounds(ITarget &Target) = 0;
+
+  virtual ~InstrumentationMechanism(void) {}
 };
 
 } // end namespace meminstrument

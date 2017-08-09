@@ -11,11 +11,25 @@
 
 #include "meminstrument/WitnessStrategy.h"
 
+#include "meminstrument/InstrumentationMechanism.h"
+
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Value.h"
 
 using namespace meminstrument;
 using namespace llvm;
+
+namespace {
+
+std::shared_ptr<ITarget> mkTempTarget(llvm::Value *Instrumentee,
+                                      llvm::Instruction *Location,
+                                      ITarget &Target) {
+  return std::make_shared<ITarget>(
+      Instrumentee, Location, Target.AccessSize, Target.CheckUpperBoundFlag,
+      Target.CheckLowerBoundFlag, Target.CheckTemporalFlag,
+      Target.RequiresExplicitBounds);
+}
+}
 
 WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     WitnessGraph &WG, std::shared_ptr<ITarget> Target) const {
@@ -32,66 +46,52 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     case Instruction::Alloca:
     case Instruction::Call:
     case Instruction::Load:
-    case Instruction::IntToPtr: { // FIXME is this what we want?
-      auto NewTarget = std::make_shared<ITarget>(
-          Target->Instrumentee, I->getNextNode(), Target->AccessSize,
-          Target->CheckUpperBoundFlag, Target->CheckLowerBoundFlag,
-          Target->CheckTemporalFlag);
-      auto *NewNode = WG.getNodeFor(NewTarget);
+    case Instruction::IntToPtr: {
+      // Assume that what we get from these is valid. Mark these to materialize
+      // new witnesses.
+      auto *NewNode = WG.getNodeFor(
+          mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target));
       NewNode->ToMaterialize = true;
       Node->Requirements.push_back(NewNode);
       break;
     }
 
     case Instruction::PHI: {
+      // We might have to introduce a PHI for the corresponding witnesses.
       auto *PtrPhi = cast<PHINode>(I);
       unsigned NumOperands = PtrPhi->getNumIncomingValues();
       for (unsigned i = 0; i < NumOperands; ++i) {
         auto *InVal = PtrPhi->getIncomingValue(i);
         auto *InBB = PtrPhi->getIncomingBlock(i);
 
-        auto NewTarget = std::make_shared<ITarget>(
-            InVal, &InBB->back(), Target->AccessSize,
-            Target->CheckUpperBoundFlag, Target->CheckLowerBoundFlag,
-            Target->CheckTemporalFlag);
+        auto NewTarget = mkTempTarget(InVal, &InBB->back(), *Target);
         Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       }
-      // TODO
       break;
     }
 
     case Instruction::Select: {
+      // We might have to introduce a Select for the corresponding witnesses.
       auto *PtrSelect = cast<SelectInst>(I);
-      auto *TrueVal = PtrSelect->getTrueValue();
-      auto *FalseVal = PtrSelect->getFalseValue();
 
-      auto TrueTarget = std::make_shared<ITarget>(
-          TrueVal, I, Target->AccessSize, Target->CheckUpperBoundFlag,
-          Target->CheckLowerBoundFlag, Target->CheckTemporalFlag);
+      auto TrueTarget = mkTempTarget(PtrSelect->getTrueValue(), I, *Target);
       Node->Requirements.push_back(constructWitnessGraph(WG, TrueTarget));
 
-      auto FalseTarget = std::make_shared<ITarget>(
-          FalseVal, I, Target->AccessSize, Target->CheckUpperBoundFlag,
-          Target->CheckLowerBoundFlag, Target->CheckTemporalFlag);
+      auto FalseTarget = mkTempTarget(PtrSelect->getFalseValue(), I, *Target);
       Node->Requirements.push_back(constructWitnessGraph(WG, FalseTarget));
       break;
     }
 
     case Instruction::GetElementPtr: {
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
-      auto NewTarget = std::make_shared<ITarget>(
-          Operand, I, Target->AccessSize, Target->CheckUpperBoundFlag,
-          Target->CheckLowerBoundFlag, Target->CheckTemporalFlag);
+      auto NewTarget = mkTempTarget(Operand, I, *Target);
       Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       break;
     }
 
     case Instruction::BitCast: {
-      // bit casts don't change the pointer bounds
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
-      auto NewTarget = std::make_shared<ITarget>(
-          Operand, I, Target->AccessSize, Target->CheckUpperBoundFlag,
-          Target->CheckLowerBoundFlag, Target->CheckTemporalFlag);
+      auto NewTarget = mkTempTarget(Operand, I, *Target);
       Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
       break;
     }
@@ -101,10 +101,12 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
     }
 
   } else if (isa<Argument>(Target->Instrumentee)) {
-    // FIXME is this what we want?
+    // Generate witnesses for arguments right when we need them. Other
+    // approaches might also be desirable.
     Node->ToMaterialize = true;
   } else if (isa<GlobalValue>(Target->Instrumentee)) {
-    // FIXME is this what we want?
+    // Generate witnesses for globals right when we need them. Other approaches
+    // might also be desirable.
     Node->ToMaterialize = true;
   } else {
     // TODO constexpr
@@ -112,6 +114,17 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
   }
 
   return Node;
+}
+
+void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) {
+  if (Node->ToMaterialize) {
+    IM.insertWitness(*(Node->Target));
+    return;
+  }
+  for (auto *ReqNode : Node->Requirements) {
+    createWitness(IM, ReqNode);
+    // TODO
+  }
 }
 
 /*

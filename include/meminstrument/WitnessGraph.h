@@ -49,8 +49,6 @@ public:
 
   WitnessGraphNode *createNewNodeFor(std::shared_ptr<ITarget> T);
 
-  void propagateITargetFlags(void);
-
   WitnessGraph(const llvm::Function &F) : Func(F) {}
 
   ~WitnessGraph(void) {

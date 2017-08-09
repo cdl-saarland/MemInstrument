@@ -44,14 +44,19 @@ struct ITarget {
   /// indicator whether temporal safety of instrumentee should be checked
   bool CheckTemporalFlag;
 
+  /// indicator whether explicit bound information is required
+  bool RequiresExplicitBounds;
+
   std::shared_ptr<Witness> BoundWitness;
 
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize, bool CheckUpperBoundFlag, bool CheckLowerBoundFlag,
-          bool CheckTemporalFlag);
+          bool CheckTemporalFlag, bool RequiresExplicitBounds);
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-          size_t AccessSize, bool CheckUpperBoundFlag,
-          bool CheckLowerBoundFlag);
+          size_t AccessSize, bool CheckUpperBoundFlag, bool CheckLowerBoundFlag,
+          bool RequiresExplicitBounds);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          size_t AccessSize, bool RequiresExplicitBounds);
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize);
 
