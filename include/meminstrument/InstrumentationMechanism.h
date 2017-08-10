@@ -23,25 +23,27 @@ namespace meminstrument {
 
 class InstrumentationMechanism {
 public:
-  virtual void insertWitness(ITarget &Target) = 0;
+  virtual void insertWitness(ITarget &Target) const = 0;
 
-  virtual void insertCheck(ITarget &Target) = 0;
+  virtual void insertCheck(ITarget &Target) const = 0;
 
-  virtual void materializeBounds(ITarget &Target) = 0;
+  virtual void materializeBounds(ITarget &Target) const = 0;
 
-  virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) = 0;
+  virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) const = 0;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                        std::shared_ptr<Witness> &Incoming,
-                                       llvm::BasicBlock *InBB) = 0;
+                                       llvm::BasicBlock *InBB) const = 0;
 
   virtual std::shared_ptr<Witness>
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-                      std::shared_ptr<Witness> &FalseWitness) = 0;
+                      std::shared_ptr<Witness> &FalseWitness) const = 0;
 
   virtual bool insertFunctionDefinitions(llvm::Module &M) = 0;
 
   virtual ~InstrumentationMechanism(void) {}
+
+  static InstrumentationMechanism &get(void);
 };
 
 struct DummyWitness : public Witness {
@@ -63,21 +65,22 @@ struct DummyWitness : public Witness {
 
 class DummyMechanism : public InstrumentationMechanism {
 public:
-  virtual void insertWitness(ITarget &Target) override;
+  virtual void insertWitness(ITarget &Target) const override;
 
-  virtual void insertCheck(ITarget &Target) override;
+  virtual void insertCheck(ITarget &Target) const override;
 
-  virtual void materializeBounds(ITarget &Target) override;
+  virtual void materializeBounds(ITarget &Target) const override;
 
-  virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) override;
+  virtual std::shared_ptr<Witness>
+  insertWitnessPhi(ITarget &Target) const override;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                        std::shared_ptr<Witness> &Incoming,
-                                       llvm::BasicBlock *InBB) override;
+                                       llvm::BasicBlock *InBB) const override;
 
   virtual std::shared_ptr<Witness>
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-                      std::shared_ptr<Witness> &FalseWitness) override;
+                      std::shared_ptr<Witness> &FalseWitness) const override;
 
   virtual bool insertFunctionDefinitions(llvm::Module &M) override;
 

@@ -11,6 +11,8 @@
 
 #include "meminstrument/MemInstrumentSetupPass.h"
 
+#include "meminstrument/InstrumentationMechanism.h"
+
 #include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "meminstrument"
@@ -24,7 +26,14 @@ bool MemInstrumentSetupPass::runOnModule(Module &M) {
 
   DEBUG(dbgs() << "MemInstrumentSetupPass: processing module `"
                << M.getName().str() << "`\n";);
-  return true;
+
+  bool Res = false;
+
+  auto &IM = InstrumentationMechanism::get();
+
+  Res = IM.insertFunctionDefinitions(M) || Res;
+
+  return Res;
 }
 
 void MemInstrumentSetupPass::getAnalysisUsage(AnalysisUsage &AU) const {}
