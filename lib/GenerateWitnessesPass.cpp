@@ -62,7 +62,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<MemSafetyAnalysisPass>();
-  // AU.addRequiredTransitive<MemInstrumentSetupPass>();
+  AU.addRequiredTransitive<MemInstrumentSetupPass>();
 }
 
 char GenerateWitnessesPass::ID = 0;

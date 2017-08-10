@@ -22,12 +22,27 @@
 using namespace llvm;
 using namespace meminstrument;
 
+
+llvm::Value *DummyWitness::getLowerBound(void) const {
+  return LowerBound;
+}
+
+llvm::Value *DummyWitness::getUpperBound(void) const {
+  return UpperBound;
+}
+
+DummyWitness::DummyWitness(llvm::Value *WitnessValue) : Witness(WK_Dummy), WitnessValue(WitnessValue) {}
+
+llvm::Type *DummyWitness::getWitnessType(LLVMContext &Ctx) {
+  return Type::getInt8PtrTy(Ctx);
+}
+
 void DummyMechanism::insertWitness(ITarget &Target) {
   IRBuilder<> builder(Target.Location);
 
+  auto Name = Target.Instrumentee->getName() + "_witness";
   auto *WitnessVal = builder.CreateCall(CreateWitnessFunction,
-    ArrayRef<Value*>(Target.Instrumentee),
-    Target.Instrumentee->getName() + "_witness");
+    ArrayRef<Value*>(Target.Instrumentee), Name);
   Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
 }
 
@@ -46,9 +61,9 @@ void DummyMechanism::insertCheck(ITarget &Target) {
 }
 
 void DummyMechanism::materializeBounds(ITarget &Target) {
-  IRBuilder<> builder(Target.Location);
-
   assert(Target.RequiresExplicitBounds);
+
+  IRBuilder<> builder(Target.Location);
 
   auto* Witness = dyn_cast<DummyWitness>(Target.BoundWitness.get());
 
@@ -56,11 +71,13 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
   Args.push_back(Witness->WitnessValue);
 
   if (Target.CheckUpperBoundFlag) {
-    auto *UpperVal = builder.CreateCall(GetUpperBoundFunction, Args, Target.Instrumentee->getName() + "_upper");
+    auto Name = Target.Instrumentee->getName() + "_upper";
+    auto *UpperVal = builder.CreateCall(GetUpperBoundFunction, Args, Name);
     Witness->UpperBound = UpperVal;
   }
   if (Target.CheckLowerBoundFlag) {
-    auto *LowerVal = builder.CreateCall(GetUpperBoundFunction, Args, Target.Instrumentee->getName() + "_lower");
+    auto Name = Target.Instrumentee->getName() + "_lower";
+    auto *LowerVal = builder.CreateCall(GetUpperBoundFunction, Args, Name);
     Witness->LowerBound = LowerVal;
   }
 }
@@ -95,5 +112,46 @@ bool DummyMechanism::insertFunctionDefinitions(llvm::Module &M) {
 
   GetUpperBoundFunction = M.getOrInsertFunction("__memsafe_dummy_get_upper_bound", FunTy/*, TODO*/);
 
+  // TODO mark these functions somehow so that they are not instrumented
+  // TODO mark these functions to be always inlined
   return true;
 }
+
+std::shared_ptr<Witness> DummyMechanism::insertWitnessPhi(ITarget &Target) {
+  auto *Phi = dyn_cast<PHINode>(Target.Instrumentee);
+
+  IRBuilder<> builder(Phi);
+  auto &Ctx = Phi->getContext();
+
+  auto Name = Phi->getName() + "_witness";
+  auto *NewPhi = builder.CreatePHI(DummyWitness::getWitnessType(Ctx), Phi->getNumIncomingValues(), Name);
+
+  return std::make_shared<DummyWitness>(NewPhi);
+}
+
+void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
+                                       std::shared_ptr<Witness> &Incoming,
+                                       llvm::BasicBlock *InBB) {
+  auto* PhiWitness = dyn_cast<DummyWitness>(Phi.get());
+  auto *PhiVal = dyn_cast<PHINode>(PhiWitness->WitnessValue);
+
+  auto* InWitness = dyn_cast<DummyWitness>(Incoming.get());
+  PhiVal->addIncoming(InWitness->WitnessValue, InBB);
+}
+
+std::shared_ptr<Witness>
+  DummyMechanism::insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
+                      std::shared_ptr<Witness> &FalseWitness) {
+  auto *Sel = dyn_cast<SelectInst>(Target.Instrumentee);
+
+  IRBuilder<> builder(Sel);
+
+  auto* TrueVal = dyn_cast<DummyWitness>(TrueWitness.get())->WitnessValue;
+  auto* FalseVal = dyn_cast<DummyWitness>(FalseWitness.get())->WitnessValue;
+
+  auto Name = Sel->getName() + "_witness";
+  auto *NewSel = builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
+
+  return std::make_shared<DummyWitness>(NewSel);
+}
+

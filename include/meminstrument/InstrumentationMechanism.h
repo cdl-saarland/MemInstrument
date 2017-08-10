@@ -16,6 +16,7 @@
 
 #include "meminstrument/ITarget.h"
 
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Function.h"
 
 namespace meminstrument {
@@ -49,15 +50,13 @@ struct DummyWitness : public Witness {
   llvm::Value *UpperBound = nullptr;
   llvm::Value *LowerBound = nullptr;
 
-  virtual llvm::Value *getLowerBound(void) const override {
-    return LowerBound;
-  }
+  virtual llvm::Value *getLowerBound(void) const override;
 
-  virtual llvm::Value *getUpperBound(void) const override {
-    return UpperBound;
-  }
+  virtual llvm::Value *getUpperBound(void) const override;
 
-  DummyWitness(llvm::Value *WitnessValue) : Witness(WK_Dummy), WitnessValue(WitnessValue) {}
+  DummyWitness(llvm::Value *WitnessValue);
+
+  static llvm::Type *getWitnessType(llvm::LLVMContext &Ctx);
 
   static bool classof(const Witness *W) {
     return W->getKind() == WK_Dummy;
