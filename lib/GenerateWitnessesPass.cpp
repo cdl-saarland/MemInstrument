@@ -49,7 +49,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
       Node->Required = true;
     }
 
-    WG.printDotGraph(dbgs());
+    DEBUG(WG.printDotGraph(dbgs()););
 
     for (auto &Target : Destination) {
       WS.createWitness(IM, WG.getNodeFor(Target));
@@ -59,8 +59,8 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 }
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<MemInstrumentSetupPass>();
   AU.addRequiredTransitive<MemSafetyAnalysisPass>();
-  AU.addRequiredTransitive<MemInstrumentSetupPass>();
 }
 
 char GenerateWitnessesPass::ID = 0;
