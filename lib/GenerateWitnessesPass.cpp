@@ -31,9 +31,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
       cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
   this->connectToProvider(MSAPass);
 
-  // auto WS = std::unique_ptr<WitnessStrategy>(new WitnessStrategy()); // TODO
-
-  TodoBetterNameStrategy WS;
+  const auto &WS = WitnessStrategy::get();
   DummyMechanism IM;
   for (auto &F : M) {
     if (F.empty())

@@ -29,9 +29,37 @@ std::shared_ptr<ITarget> mkTempTarget(llvm::Value *Instrumentee,
       Target.CheckLowerBoundFlag, Target.CheckTemporalFlag,
       Target.RequiresExplicitBounds);
 }
+
+enum WitnessStrategyKind {
+  WS_simple,
+};
+
+cl::opt<WitnessStrategyKind> WitnessStrategyOpt("memsafety-wstrategy",
+    cl::desc("Choose WitnessStrategy: (default: simple)"),
+    cl::values(
+      clEnumValN(WS_simple, "simple", "simple strategy for witness placement")
+    ),
+    cl::init(WS_simple) // default
+  );
+
+std::unique_ptr<WitnessStrategy> GlobalWS(nullptr);
+
 }
 
-WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
+const WitnessStrategy &WitnessStrategy::get(void) {
+  auto* Res = GlobalWS.get();
+  if (Res == nullptr) {
+    switch (WitnessStrategyOpt) {
+      case WS_simple:
+        GlobalWS.reset(new SimpleStrategy());
+        break;
+    }
+    Res = GlobalWS.get();
+  }
+  return *Res;
+}
+
+WitnessGraphNode *SimpleStrategy::constructWitnessGraph(
     WitnessGraph &WG, std::shared_ptr<ITarget> Target) const {
   auto *Node = WG.getNodeForOrNull(Target);
 
@@ -116,7 +144,7 @@ WitnessGraphNode *TodoBetterNameStrategy::constructWitnessGraph(
   return Node;
 }
 
-void TodoBetterNameStrategy::createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const {
+void SimpleStrategy::createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const {
   if (Node->Target->hasWitness()) {
     return;
   }

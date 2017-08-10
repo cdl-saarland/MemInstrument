@@ -35,10 +35,12 @@ public:
   void createWitnesses(InstrumentationMechanism &IM, WitnessGraph &WG) const;
 
   virtual void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const = 0;
+
+  static const WitnessStrategy &get(void);
 };
 
-// FIXME/TODO rename this!
-class TodoBetterNameStrategy : public WitnessStrategy {
+// TODO rename this!
+class SimpleStrategy : public WitnessStrategy {
 public:
   virtual WitnessGraphNode *
   constructWitnessGraph(WitnessGraph &WG,
