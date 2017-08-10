@@ -28,6 +28,8 @@ public:
                                llvm::Instruction *Loc) = 0;
 
   virtual ~InstrumentationPolicy() {}
+
+  static InstrumentationPolicy &get(const llvm::DataLayout &DL);
 };
 
 class BeforeOutflowPolicy : public InstrumentationPolicy {

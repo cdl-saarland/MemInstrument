@@ -30,7 +30,7 @@ enum InstrumentationMechanismKind {
 
 cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
     "memsafety-imechanism",
-    cl::desc("Choose Instructionmechanism: (default: dummy)"),
+    cl::desc("Choose InstructionMechanism: (default: dummy)"),
     cl::values(clEnumValN(IM_dummy, "dummy",
                           "only insert dummy calls for instrumentation")),
     cl::init(IM_dummy) // default

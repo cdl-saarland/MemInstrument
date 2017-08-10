@@ -31,9 +31,7 @@ bool GatherITargetsPass::runOnModule(Module &M) {
 
   const DataLayout &DL = M.getDataLayout();
 
-  // TODO make configurable
-  auto Policy =
-      std::unique_ptr<InstrumentationPolicy>(new BeforeOutflowPolicy(DL));
+  auto &IP = InstrumentationPolicy::get(DL);
 
   for (auto &F : M) {
     std::vector<std::shared_ptr<ITarget>> &Destination =
@@ -43,7 +41,7 @@ bool GatherITargetsPass::runOnModule(Module &M) {
                    << F.getName().str() << "::" << BB.getName().str()
                    << "`\n";);
       for (auto &I : BB) {
-        Policy->classifyTargets(Destination, &I);
+        IP.classifyTargets(Destination, &I);
       }
     }
     DEBUG(dbgs() << "identified instrumentation targets:"
