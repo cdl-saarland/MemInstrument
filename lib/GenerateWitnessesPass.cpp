@@ -32,7 +32,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
   this->connectToProvider(MSAPass);
 
   const auto &WS = WitnessStrategy::get();
-  DummyMechanism IM;
+  auto &IM = InstrumentationMechanism::get();
   for (auto &F : M) {
     if (F.empty())
       return false;

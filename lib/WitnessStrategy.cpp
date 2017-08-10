@@ -154,7 +154,7 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
   auto *Instrumentee = Node->Target->Instrumentee;
-  if (auto *Phi = dyn_cast_or_null<PHINode>(Instrumentee)) {
+  if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
     assert(Node->Requirements.size() == Phi->getNumIncomingValues());
 
     auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
@@ -182,5 +182,7 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
   assert(Node->Requirements.size() == 1);
-  Node->Target->BoundWitness = Node->Requirements[0]->Target->BoundWitness;
+  auto * Requirement = Node->Requirements[0];
+  createWitness(IM, Requirement);
+  Node->Target->BoundWitness = Requirement->Target->BoundWitness;
 }

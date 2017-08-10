@@ -46,7 +46,7 @@ void ITarget::joinFlags(const ITarget &other) {
   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
 }
 
-bool ITarget::hasWitness(void) const { return BoundWitness.get() == nullptr; }
+bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }
 
 llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
                                              const ITarget &IT) {

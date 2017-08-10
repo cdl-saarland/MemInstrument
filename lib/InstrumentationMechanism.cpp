@@ -66,19 +66,27 @@ llvm::Type *DummyWitness::getWitnessType(LLVMContext &Ctx) {
 void DummyMechanism::insertWitness(ITarget &Target) const {
   IRBuilder<> builder(Target.Location);
 
+  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
+
+  auto *CastVal = builder.CreateBitCast(Target.Instrumentee, VoidPtrTy, Target.Instrumentee->getName() + "_casted");
+
   auto Name = Target.Instrumentee->getName() + "_witness";
   auto *WitnessVal = builder.CreateCall(
-      CreateWitnessFunction, ArrayRef<Value *>(Target.Instrumentee), Name);
+      CreateWitnessFunction, ArrayRef<Value *>(CastVal), Name);
   Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
 }
 
 void DummyMechanism::insertCheck(ITarget &Target) const {
   IRBuilder<> builder(Target.Location);
 
-  auto *Witness = dyn_cast<DummyWitness>(Target.BoundWitness.get());
+  auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
+
+  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
+
+  auto *CastVal = builder.CreateBitCast(Target.Instrumentee, VoidPtrTy, Target.Instrumentee->getName() + "_casted");
 
   std::vector<Value *> Args;
-  Args.push_back(Target.Instrumentee);
+  Args.push_back(CastVal);
   Args.push_back(Witness->WitnessValue);
   auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
   Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
@@ -91,7 +99,7 @@ void DummyMechanism::materializeBounds(ITarget &Target) const {
 
   IRBuilder<> builder(Target.Location);
 
-  auto *Witness = dyn_cast<DummyWitness>(Target.BoundWitness.get());
+  auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
 
   std::vector<Value *> Args;
   Args.push_back(Witness->WitnessValue);
@@ -148,7 +156,7 @@ bool DummyMechanism::insertFunctionDefinitions(llvm::Module &M) {
 
 std::shared_ptr<Witness>
 DummyMechanism::insertWitnessPhi(ITarget &Target) const {
-  auto *Phi = dyn_cast<PHINode>(Target.Instrumentee);
+  auto *Phi = cast<PHINode>(Target.Instrumentee);
 
   IRBuilder<> builder(Phi);
   auto &Ctx = Phi->getContext();
@@ -157,32 +165,34 @@ DummyMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *NewPhi = builder.CreatePHI(DummyWitness::getWitnessType(Ctx),
                                    Phi->getNumIncomingValues(), Name);
 
-  return std::make_shared<DummyWitness>(NewPhi);
+  Target.BoundWitness = std::make_shared<DummyWitness>(NewPhi);
+  return Target.BoundWitness;
 }
 
 void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                              std::shared_ptr<Witness> &Incoming,
                                              llvm::BasicBlock *InBB) const {
-  auto *PhiWitness = dyn_cast<DummyWitness>(Phi.get());
-  auto *PhiVal = dyn_cast<PHINode>(PhiWitness->WitnessValue);
+  auto *PhiWitness = cast<DummyWitness>(Phi.get());
+  auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
 
-  auto *InWitness = dyn_cast<DummyWitness>(Incoming.get());
+  auto *InWitness = cast<DummyWitness>(Incoming.get());
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
 std::shared_ptr<Witness> DummyMechanism::insertWitnessSelect(
     ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
     std::shared_ptr<Witness> &FalseWitness) const {
-  auto *Sel = dyn_cast<SelectInst>(Target.Instrumentee);
+  auto *Sel = cast<SelectInst>(Target.Instrumentee);
 
   IRBuilder<> builder(Sel);
 
-  auto *TrueVal = dyn_cast<DummyWitness>(TrueWitness.get())->WitnessValue;
-  auto *FalseVal = dyn_cast<DummyWitness>(FalseWitness.get())->WitnessValue;
+  auto *TrueVal = cast<DummyWitness>(TrueWitness.get())->WitnessValue;
+  auto *FalseVal = cast<DummyWitness>(FalseWitness.get())->WitnessValue;
 
   auto Name = Sel->getName() + "_witness";
   auto *NewSel =
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
+  Target.BoundWitness = std::make_shared<DummyWitness>(NewSel);
   return std::make_shared<DummyWitness>(NewSel);
 }
