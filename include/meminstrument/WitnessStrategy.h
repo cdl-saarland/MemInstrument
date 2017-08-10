@@ -14,8 +14,8 @@
 #ifndef MEMINSTRUMENT_WITNESSSTRATEGY_H
 #define MEMINSTRUMENT_WITNESSSTRATEGY_H
 
-#include "meminstrument/InstrumentationMechanism.h"
 #include "meminstrument/ITarget.h"
+#include "meminstrument/InstrumentationMechanism.h"
 #include "meminstrument/WitnessGraph.h"
 
 #include "llvm/IR/DataLayout.h"
@@ -34,7 +34,8 @@ public:
 
   void createWitnesses(InstrumentationMechanism &IM, WitnessGraph &WG) const;
 
-  virtual void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const = 0;
+  virtual void createWitness(InstrumentationMechanism &IM,
+                             WitnessGraphNode *Node) const = 0;
 
   static const WitnessStrategy &get(void);
 };
@@ -46,7 +47,8 @@ public:
   constructWitnessGraph(WitnessGraph &WG,
                         std::shared_ptr<ITarget> Target) const override;
 
-  virtual void createWitness(InstrumentationMechanism &IM, WitnessGraphNode *Node) const override;
+  virtual void createWitness(InstrumentationMechanism &IM,
+                             WitnessGraphNode *Node) const override;
 };
 
 } // end namespace meminstrument

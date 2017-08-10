@@ -35,9 +35,7 @@ public:
 
   Witness(WitnessKind Kind) : Kind(Kind) {}
 
-  WitnessKind getKind(void) const {
-    return Kind;
-  }
+  WitnessKind getKind(void) const { return Kind; }
 
 private:
   const WitnessKind Kind;

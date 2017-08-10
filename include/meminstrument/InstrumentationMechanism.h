@@ -16,8 +16,8 @@
 
 #include "meminstrument/ITarget.h"
 
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/LLVMContext.h"
 
 namespace meminstrument {
 
@@ -58,9 +58,7 @@ struct DummyWitness : public Witness {
 
   static llvm::Type *getWitnessType(llvm::LLVMContext &Ctx);
 
-  static bool classof(const Witness *W) {
-    return W->getKind() == WK_Dummy;
-  }
+  static bool classof(const Witness *W) { return W->getKind() == WK_Dummy; }
 };
 
 class DummyMechanism : public InstrumentationMechanism {
