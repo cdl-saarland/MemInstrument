@@ -50,6 +50,19 @@ void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
   auto *Res = &LeafNodes.back();
   Strategy.addRequired(Res);
 }
+// FIXME
+// void propagateRecursively(WitnessGraphNode *Node) {
+//   for (auto &Req : Node->Requirements) {
+//     Req->Target->joinFlags(*Node->Target);
+//     propagateRecursively(Req);
+//   }
+// }
+//
+// void WitnessGraph::propagateRequirements(void) {
+//   for (auto &Node : LeafNodes) {
+//     propagateRecursively(&Node);
+//   }
+// }
 
 void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
   for (auto &Node : LeafNodes) {

@@ -44,6 +44,8 @@ void ITarget::joinFlags(const ITarget &other) {
   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
+  RequiresExplicitBounds =
+      RequiresExplicitBounds || other.RequiresExplicitBounds;
 }
 
 bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }

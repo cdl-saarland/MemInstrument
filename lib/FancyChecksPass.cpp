@@ -11,7 +11,9 @@
 
 #include "meminstrument/FancyChecksPass.h"
 
+#include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/MemSafetyAnalysisPass.h"
 
 #include "llvm/Support/Debug.h"
 
@@ -41,6 +43,9 @@ bool FancyChecksPass::runOnModule(Module &M) {
 
 void FancyChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<GenerateWitnessesPass>();
+  AU.addPreserved<GatherITargetsPass>();
+  AU.addPreserved<MemSafetyAnalysisPass>();
+  AU.addPreserved<GenerateWitnessesPass>();
 }
 
 char FancyChecksPass::ID = 0;

@@ -11,6 +11,7 @@
 
 #include "meminstrument/GenerateWitnessesPass.h"
 
+#include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 #include "meminstrument/WitnessStrategy.h"
@@ -52,6 +53,12 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     WG.printDotGraph(dbgs());
 
     WG.createWitnesses(IM);
+
+    for (auto &T : Destination) {
+      if (T->RequiresExplicitBounds) {
+        IM.materializeBounds(*T);
+      }
+    }
   }
   return true;
 }
@@ -59,6 +66,8 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<MemInstrumentSetupPass>();
   AU.addRequiredTransitive<MemSafetyAnalysisPass>();
+  AU.addPreserved<GatherITargetsPass>();
+  AU.addPreserved<MemSafetyAnalysisPass>();
 }
 
 char GenerateWitnessesPass::ID = 0;
