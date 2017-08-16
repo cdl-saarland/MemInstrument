@@ -17,11 +17,20 @@
 #include "meminstrument/WitnessStrategy.h"
 
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/FileSystem.h"
 
 #define DEBUG_TYPE "meminstrument"
 
 using namespace meminstrument;
 using namespace llvm;
+
+namespace {
+cl::opt<bool> PrintWitnessGraphOpt(
+    "memsafety-print-witnessgraph",
+    cl::desc("Print the WitnessGraph"),
+    cl::init(false) // default
+    );
+}
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
@@ -49,8 +58,18 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
       WG.insertRequiredTarget(Target);
     }
 
-    // DEBUG(WG.printDotGraph(dbgs()););
-    WG.printDotGraph(dbgs());
+    if (PrintWitnessGraphOpt) {
+      std::error_code EC;
+      auto Name = ("witnessgraph." + F.getName() + ".dot").str();
+      raw_ostream *fout = new raw_fd_ostream(Name, EC, sys::fs::F_None);
+
+      if (EC) {
+        errs() << "Failed to open file for witness graph\n";
+      } else {
+        WG.printDotGraph(*fout);
+      }
+      delete(fout);
+    }
 
     WG.createWitnesses(IM);
 
