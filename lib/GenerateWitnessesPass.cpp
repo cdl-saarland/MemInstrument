@@ -45,14 +45,16 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     WitnessGraph WG(F);
 
     for (auto &Target : Destination) {
-      auto *Node = WS.constructWitnessGraph(WG, Target);
-      Node->Required = true;
+      auto *Node = WG.createNewNodeFor(WitnessSink, Target);
+      WS.insertNode(WG, Node);
     }
 
     DEBUG(WG.printDotGraph(dbgs()););
 
     for (auto &Target : Destination) {
-      WS.createWitness(IM, WG.getNodeFor(Target));
+      auto *Node = WG.getNodeForOrNull(WitnessSink, Target);
+      assert(Node);
+      WS.createWitness(IM, Node);
     }
   }
   return true;

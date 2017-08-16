@@ -14,27 +14,27 @@
 using namespace meminstrument;
 using namespace llvm;
 
-WitnessGraphNode *WitnessGraph::getNodeFor(std::shared_ptr<ITarget> Target) {
+WitnessGraphNode *WitnessGraph::getNodeFor(WGNKind Kind, std::shared_ptr<ITarget> Target) {
   // see whether we already have a node for Target
-  if (auto *Node = getNodeForOrNull(Target)) {
+  if (auto *Node = getNodeForOrNull(Kind, Target)) {
     return Node;
   }
   // create a new node for Target
-  return createNewNodeFor(Target);
+  return createNewNodeFor(Kind, Target);
 }
 
 WitnessGraphNode *
-WitnessGraph::createNewNodeFor(std::shared_ptr<ITarget> Target) {
-  assert(getNodeForOrNull(Target) == nullptr);
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
-  auto *NewNode = new WitnessGraphNode(Target);
+WitnessGraph::createNewNodeFor(WGNKind Kind, std::shared_ptr<ITarget> Target) {
+  assert(getNodeForOrNull(Kind, Target) == nullptr);
+  auto Key = std::make_pair(std::make_pair(Target->Instrumentee, Target->Location), Kind);
+  auto *NewNode = new WitnessGraphNode(Kind, Target);
   NodeMap.insert(std::make_pair(Key, NewNode));
   return NewNode;
 }
 
 WitnessGraphNode *
-WitnessGraph::getNodeForOrNull(std::shared_ptr<ITarget> Target) {
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+WitnessGraph::getNodeForOrNull(WGNKind Kind, std::shared_ptr<ITarget> Target) {
+  auto Key = std::make_pair(std::make_pair(Target->Instrumentee, Target->Location), Kind);
   auto It = NodeMap.find(Key);
   if (It != NodeMap.end()) {
     auto *Node = It->getSecond();
@@ -54,9 +54,9 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   for (const auto &P : NodeMap) {
     const auto &Node = P.getSecond();
     stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
-    if (Node->Required) {
+    if (Node->Kind == WitnessSink) {
       stream << ", color=blue";
-    } else if (Node->ToMaterialize) {
+    } else if (Node->Kind == WitnessSource) {
       stream << ", color=red";
     }
     stream << "];\n";

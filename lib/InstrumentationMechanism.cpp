@@ -70,9 +70,8 @@ void DummyMechanism::insertWitness(ITarget &Target) const {
 
   auto *CastVal = builder.CreateBitCast(Target.Instrumentee, VoidPtrTy, Target.Instrumentee->getName() + "_casted");
 
-  auto Name = Target.Instrumentee->getName() + "_witness";
   auto *WitnessVal = builder.CreateCall(
-      CreateWitnessFunction, ArrayRef<Value *>(CastVal), Name);
+      CreateWitnessFunction, ArrayRef<Value *>(CastVal), Target.Instrumentee->getName() + "_witness");
   Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
 }
 
