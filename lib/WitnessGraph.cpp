@@ -14,34 +14,47 @@
 using namespace meminstrument;
 using namespace llvm;
 
-WitnessGraphNode *WitnessGraph::getNodeFor(WGNKind Kind, std::shared_ptr<ITarget> Target) {
+WitnessGraphNode *
+WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
   // see whether we already have a node for Target
-  if (auto *Node = getNodeForOrNull(Kind, Target)) {
+  if (auto *Node = getInternalNodeOrNull(Target)) {
     return Node;
   }
   // create a new node for Target
-  return createNewNodeFor(Kind, Target);
+  return createNewInternalNode(Target);
 }
 
 WitnessGraphNode *
-WitnessGraph::createNewNodeFor(WGNKind Kind, std::shared_ptr<ITarget> Target) {
-  assert(getNodeForOrNull(Kind, Target) == nullptr);
-  auto Key = std::make_pair(std::make_pair(Target->Instrumentee, Target->Location), Kind);
-  auto *NewNode = new WitnessGraphNode(Kind, Target);
-  NodeMap.insert(std::make_pair(Key, NewNode));
+WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
+  assert(getInternalNodeOrNull(Target) == nullptr);
+  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto *NewNode = new WitnessGraphNode(*this, Target);
+  InternalNodes.insert(std::make_pair(Key, NewNode));
   return NewNode;
 }
 
 WitnessGraphNode *
-WitnessGraph::getNodeForOrNull(WGNKind Kind, std::shared_ptr<ITarget> Target) {
-  auto Key = std::make_pair(std::make_pair(Target->Instrumentee, Target->Location), Kind);
-  auto It = NodeMap.find(Key);
-  if (It != NodeMap.end()) {
+WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
+  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto It = InternalNodes.find(Key);
+  if (It != InternalNodes.end()) {
     auto *Node = It->getSecond();
     Node->Target->joinFlags(*Target);
     return Node;
   }
   return nullptr;
+}
+
+void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
+  LeafNodes.push_back(WitnessGraphNode(*this, T));
+  auto *Res = &LeafNodes.back();
+  Strategy.addRequired(Res);
+}
+
+void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
+  for (auto &Node : LeafNodes) {
+    Strategy.createWitness(IM, &Node);
+  }
 }
 
 void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
@@ -51,12 +64,15 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "  labelloc=top;\n";
   stream << "  labeljust=left;\n";
 
-  for (const auto &P : NodeMap) {
+  for (const auto &Node : LeafNodes) {
+    stream << "  n" << Node.id << " [label=\"" << *(Node.Target) << "\"";
+    stream << ", color=blue];\n";
+  }
+
+  for (const auto &P : InternalNodes) {
     const auto &Node = P.getSecond();
     stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
-    if (Node->Kind == WitnessSink) {
-      stream << ", color=blue";
-    } else if (Node->Kind == WitnessSource) {
+    if (Node->Requirements.size() == 0) {
       stream << ", color=red";
     }
     stream << "];\n";
@@ -64,7 +80,13 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
 
   stream << "\n";
 
-  for (const auto &P : NodeMap) {
+  for (const auto &Node : LeafNodes) {
+    for (const auto *Other : Node.Requirements) {
+      stream << "  n" << Node.id << " -> n" << Other->id << ";\n";
+    }
+  }
+
+  for (const auto &P : InternalNodes) {
     const auto &Node = P.getSecond();
     for (const auto *Other : Node->Requirements) {
       stream << "  n" << Node->id << " -> n" << Other->id << ";\n";

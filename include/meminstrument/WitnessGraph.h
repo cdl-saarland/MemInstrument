@@ -15,52 +15,55 @@
 #define MEMINSTRUMENT_WITNESSGRAPH_H
 
 #include "meminstrument/ITarget.h"
+#include "meminstrument/InstrumentationMechanism.h"
+#include "meminstrument/WitnessStrategy.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/ADT/DenseMapInfo.h"
 
 #include <memory>
 
 namespace meminstrument {
 
-enum WGNKind {
-  WitnessSource,
-  WitnessPropagator,
-  WitnessSink,
-  WGNKEmpty,
-  WGNKTombstone,
-};
+class WitnessGraph;
+class WitnessStrategy;
 
 struct WitnessGraphNode {
-  WGNKind Kind;
+  WitnessGraph &Graph;
   std::shared_ptr<ITarget> Target;
   llvm::SmallVector<WitnessGraphNode *, 4> Requirements;
+  bool HasAllRequirements = false;
 
 private:
-  WitnessGraphNode(WGNKind Kind, std::shared_ptr<ITarget> Target) : Kind(Kind), Target(Target) {
+  WitnessGraphNode(WitnessGraph &WG, std::shared_ptr<ITarget> Target)
+      : Graph(WG), Target(Target) {
     static unsigned long RunningId = 0;
     id = RunningId++;
   }
 
-  friend class WitnessGraph;
-
   unsigned long id;
+
+  friend class WitnessGraph;
 };
 
 class WitnessGraph {
 public:
-  WitnessGraphNode *getNodeForOrNull(WGNKind Kind, std::shared_ptr<ITarget> T);
+  void insertRequiredTarget(std::shared_ptr<ITarget> T);
 
-  WitnessGraphNode *getNodeFor(WGNKind Kind, std::shared_ptr<ITarget> T);
+  WitnessGraphNode *getInternalNodeOrNull(std::shared_ptr<ITarget> T);
 
-  WitnessGraphNode *createNewNodeFor(WGNKind Kind, std::shared_ptr<ITarget> T);
+  WitnessGraphNode *getInternalNode(std::shared_ptr<ITarget> T);
 
-  WitnessGraph(const llvm::Function &F) : Func(F) {}
+  WitnessGraphNode *createNewInternalNode(std::shared_ptr<ITarget> T);
 
   void propagateRequirements(void);
 
+  void createWitnesses(InstrumentationMechanism &IM);
+
+  WitnessGraph(const llvm::Function &F, const WitnessStrategy &WS)
+      : Func(F), Strategy(WS) {}
+
   ~WitnessGraph(void) {
-    for (auto &P : NodeMap) {
+    for (auto &P : InternalNodes) {
       delete (P.second);
     }
   }
@@ -69,24 +72,14 @@ public:
 
 private:
   const llvm::Function &Func;
-  typedef std::pair<std::pair<llvm::Value *, llvm::Instruction *>, WGNKind> KeyType;
+  const WitnessStrategy &Strategy;
+  typedef std::pair<llvm::Value *, llvm::Instruction *> KeyType;
 
-  llvm::DenseMap<KeyType, WitnessGraphNode *> NodeMap;
+  llvm::DenseMap<KeyType, WitnessGraphNode *> InternalNodes;
+
+  std::vector<WitnessGraphNode> LeafNodes;
 };
 
 } // end namespace meminstrument
-
-namespace llvm {
-
-template<> struct DenseMapInfo<meminstrument::WGNKind> {
-  static inline meminstrument::WGNKind getEmptyKey() { return meminstrument::WGNKEmpty; }
-  static inline meminstrument::WGNKind getTombstoneKey() { return meminstrument::WGNKTombstone; }
-  static unsigned getHashValue(const meminstrument::WGNKind& Val) { return unsigned(Val); }
-
-  static bool isEqual(const meminstrument::WGNKind &LHS, const meminstrument::WGNKind &RHS) {
-    return LHS == RHS;
-  }
-};
-}
 
 #endif // MEMINSTRUMENT_WITNESSGRAPH_H

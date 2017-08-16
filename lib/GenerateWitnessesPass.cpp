@@ -35,27 +35,23 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
   auto &IM = InstrumentationMechanism::get();
   for (auto &F : M) {
     if (F.empty())
-      return false;
+      continue;
 
     DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
                  << F.getName().str() << "`\n";);
 
     std::vector<std::shared_ptr<ITarget>> &Destination =
         this->getITargetsForFunction(&F);
-    WitnessGraph WG(F);
+    WitnessGraph WG(F, WS);
 
     for (auto &Target : Destination) {
-      auto *Node = WG.createNewNodeFor(WitnessSink, Target);
-      WS.insertNode(WG, Node);
+      WG.insertRequiredTarget(Target);
     }
 
-    DEBUG(WG.printDotGraph(dbgs()););
+    // DEBUG(WG.printDotGraph(dbgs()););
+    WG.printDotGraph(dbgs());
 
-    for (auto &Target : Destination) {
-      auto *Node = WG.getNodeForOrNull(WitnessSink, Target);
-      assert(Node);
-      WS.createWitness(IM, Node);
-    }
+    WG.createWitnesses(IM);
   }
   return true;
 }

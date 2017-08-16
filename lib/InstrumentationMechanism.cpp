@@ -68,10 +68,13 @@ void DummyMechanism::insertWitness(ITarget &Target) const {
 
   auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
 
-  auto *CastVal = builder.CreateBitCast(Target.Instrumentee, VoidPtrTy, Target.Instrumentee->getName() + "_casted");
+  auto *CastVal =
+      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
+                            Target.Instrumentee->getName() + "_casted");
 
-  auto *WitnessVal = builder.CreateCall(
-      CreateWitnessFunction, ArrayRef<Value *>(CastVal), Target.Instrumentee->getName() + "_witness");
+  auto *WitnessVal =
+      builder.CreateCall(CreateWitnessFunction, ArrayRef<Value *>(CastVal),
+                         Target.Instrumentee->getName() + "_witness");
   Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
 }
 
@@ -82,7 +85,9 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
 
   auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
 
-  auto *CastVal = builder.CreateBitCast(Target.Instrumentee, VoidPtrTy, Target.Instrumentee->getName() + "_casted");
+  auto *CastVal =
+      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
+                            Target.Instrumentee->getName() + "_casted");
 
   std::vector<Value *> Args;
   Args.push_back(CastVal);

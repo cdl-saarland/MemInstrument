@@ -24,17 +24,13 @@
 
 namespace meminstrument {
 
+struct WitnessGraphNode;
+
 class WitnessStrategy {
 public:
-  virtual WitnessGraphNode *
-  constructWitnessGraph(WitnessGraph &WG,
-                        std::shared_ptr<ITarget> Target) const = 0;
-
   virtual ~WitnessStrategy(void) {}
 
-  void createWitnesses(InstrumentationMechanism &IM, WitnessGraph &WG) const;
-
-  virtual void insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const = 0;
+  virtual void addRequired(WitnessGraphNode *Node) const = 0;
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const = 0;
@@ -45,11 +41,7 @@ public:
 // TODO rename this!
 class SimpleStrategy : public WitnessStrategy {
 public:
-  virtual WitnessGraphNode *
-  constructWitnessGraph(WitnessGraph &WG,
-                        std::shared_ptr<ITarget> Target) const override;
-
-  virtual void insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const override;
+  virtual void addRequired(WitnessGraphNode *Node) const override;
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const override;

@@ -58,8 +58,14 @@ const WitnessStrategy &WitnessStrategy::get(void) {
   return *Res;
 }
 
-void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const {
-  assert(Node->Kind != WitnessSource);
+void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
+  if (Node->HasAllRequirements) {
+    return;
+  }
+
+  Node->HasAllRequirements = true;
+
+  auto &WG = Node->Graph;
 
   auto &Target = Node->Target;
   if (auto *I = dyn_cast<Instruction>(Target->Instrumentee)) {
@@ -68,11 +74,12 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
     case Instruction::Call:
     case Instruction::Load:
     case Instruction::IntToPtr: {
-      // Assume that what we get from these is valid. Mark these to materialize
-      // new witnesses.
-      auto NewTarget = mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target);
-      auto *NewNode = WG.getNodeFor(WitnessSource, NewTarget);
-      Node->Requirements.push_back(NewNode);
+      // Assume that what we get from these is valid.
+      auto NewTarget =
+          mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target);
+      auto *NewNode = WG.getInternalNode(NewTarget);
+      if (NewNode != Node) // FIXME
+        Node->Requirements.push_back(NewNode);
       break;
     }
 
@@ -85,8 +92,8 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
         auto *InBB = PtrPhi->getIncomingBlock(i);
 
         auto NewTarget = mkTempTarget(InVal, &InBB->back(), *Target);
-        auto *NewNode = WG.getNodeFor(WitnessPropagator, NewTarget);
-        insertNode(WG, NewNode);
+        auto *NewNode = WG.getInternalNode(NewTarget);
+        addRequired(NewNode);
         Node->Requirements.push_back(NewNode);
       }
       break;
@@ -97,13 +104,13 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
       auto *PtrSelect = cast<SelectInst>(I);
 
       auto TrueTarget = mkTempTarget(PtrSelect->getTrueValue(), I, *Target);
-      auto *TrueNode = WG.getNodeFor(WitnessPropagator, TrueTarget);
-      insertNode(WG, TrueNode);
+      auto *TrueNode = WG.getInternalNode(TrueTarget);
+      addRequired(TrueNode);
       Node->Requirements.push_back(TrueNode);
 
       auto FalseTarget = mkTempTarget(PtrSelect->getFalseValue(), I, *Target);
-      auto *FalseNode = WG.getNodeFor(WitnessPropagator, FalseTarget);
-      insertNode(WG, FalseNode);
+      auto *FalseNode = WG.getInternalNode(FalseTarget);
+      addRequired(FalseNode);
       Node->Requirements.push_back(FalseNode);
       break;
     }
@@ -111,8 +118,8 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
     case Instruction::GetElementPtr: {
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
       auto NewTarget = mkTempTarget(Operand, I, *Target);
-      auto *NewNode = WG.getNodeFor(WitnessPropagator, NewTarget);
-      insertNode(WG, NewNode);
+      auto *NewNode = WG.getInternalNode(NewTarget);
+      addRequired(NewNode);
       Node->Requirements.push_back(NewNode);
       break;
     }
@@ -120,8 +127,8 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
     case Instruction::BitCast: {
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
       auto NewTarget = mkTempTarget(Operand, I, *Target);
-      auto *NewNode = WG.getNodeFor(WitnessPropagator, NewTarget);
-      insertNode(WG, NewNode);
+      auto *NewNode = WG.getInternalNode(NewTarget);
+      addRequired(NewNode);
       Node->Requirements.push_back(NewNode);
       break;
     }
@@ -133,108 +140,23 @@ void SimpleStrategy::insertNode(WitnessGraph &WG, WitnessGraphNode* Node) const 
   } else if (isa<Argument>(Target->Instrumentee)) {
     // Generate witnesses for arguments right when we need them. Other
     // approaches might also be desirable.
-    auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location, *Target);
-    auto *NewNode = WG.getNodeFor(WitnessSource, NewTarget);
-    Node->Requirements.push_back(NewNode);
+    // auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location,
+    // *Target);
+    // auto *NewNode = WG.getInternalNode(NewTarget);
+    // Node->Requirements.push_back(NewNode);
 
   } else if (isa<GlobalValue>(Target->Instrumentee)) {
     // Generate witnesses for globals right when we need them. Other approaches
     // might also be desirable.
-    auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location, *Target);
-    auto *NewNode = WG.getNodeFor(WitnessSource, NewTarget);
-    Node->Requirements.push_back(NewNode);
+    // auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location,
+    // *Target);
+    // auto *NewNode = WG.getInternalNode(NewTarget);
+    // Node->Requirements.push_back(NewNode);
 
   } else {
     // TODO constexpr
     llvm_unreachable("Unsupported value operand!");
   }
-
-}
-
-WitnessGraphNode *
-SimpleStrategy::constructWitnessGraph(WitnessGraph &WG,
-                                      std::shared_ptr<ITarget> Target) const {
-  return nullptr;
-  // auto *Node = WG.getNodeForOrNull(Target);
-  //
-  // if (Node != nullptr) {
-  //   return Node;
-  // }
-  //
-  // Node = WG.createNewNodeFor(WitnessPropagator, Target);
-  //
-  // if (auto *I = dyn_cast<Instruction>(Target->Instrumentee)) {
-  //   switch (I->getOpcode()) {
-  //   case Instruction::Alloca:
-  //   case Instruction::Call:
-  //   case Instruction::Load:
-  //   case Instruction::IntToPtr: {
-  //     // Assume that what we get from these is valid. Mark these to materialize
-  //     // new witnesses.
-  //     auto *NewNode = WG.getNodeFor(WitnessSource,
-  //         mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target));
-  //     Node->Requirements.push_back(NewNode);
-  //     break;
-  //   }
-  //
-  //   case Instruction::PHI: {
-  //     // We might have to introduce a PHI for the corresponding witnesses.
-  //     auto *PtrPhi = cast<PHINode>(I);
-  //     unsigned NumOperands = PtrPhi->getNumIncomingValues();
-  //     for (unsigned i = 0; i < NumOperands; ++i) {
-  //       auto *InVal = PtrPhi->getIncomingValue(i);
-  //       auto *InBB = PtrPhi->getIncomingBlock(i);
-  //
-  //       auto NewTarget = mkTempTarget(InVal, &InBB->back(), *Target);
-  //       Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
-  //     }
-  //     break;
-  //   }
-  //
-  //   case Instruction::Select: {
-  //     // We might have to introduce a Select for the corresponding witnesses.
-  //     auto *PtrSelect = cast<SelectInst>(I);
-  //
-  //     auto TrueTarget = mkTempTarget(PtrSelect->getTrueValue(), I, *Target);
-  //     Node->Requirements.push_back(constructWitnessGraph(WG, TrueTarget));
-  //
-  //     auto FalseTarget = mkTempTarget(PtrSelect->getFalseValue(), I, *Target);
-  //     Node->Requirements.push_back(constructWitnessGraph(WG, FalseTarget));
-  //     break;
-  //   }
-  //
-  //   case Instruction::GetElementPtr: {
-  //     auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
-  //     auto NewTarget = mkTempTarget(Operand, I, *Target);
-  //     Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
-  //     break;
-  //   }
-  //
-  //   case Instruction::BitCast: {
-  //     auto *Operand = cast<BitCastInst>(I)->getOperand(0);
-  //     auto NewTarget = mkTempTarget(Operand, I, *Target);
-  //     Node->Requirements.push_back(constructWitnessGraph(WG, NewTarget));
-  //     break;
-  //   }
-  //
-  //   default:
-  //     llvm_unreachable("Unsupported instruction!");
-  //   }
-  //
-  // } else if (isa<Argument>(Target->Instrumentee)) {
-  //   // Generate witnesses for arguments right when we need them. Other
-  //   // approaches might also be desirable.
-  //   Node->Kind = WitnessSource;
-  // } else if (isa<GlobalValue>(Target->Instrumentee)) {
-  //   // Generate witnesses for globals right when we need them. Other approaches
-  //   // might also be desirable.
-  //   Node->Kind = WitnessSource;
-  // } else {
-  //   // TODO constexpr
-  //   llvm_unreachable("Unsupported value operand!");
-  // }
-  //
-  // return Node;
 }
 
 void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
@@ -243,54 +165,44 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
 
-  switch (Node->Kind) {
-    case WitnessSource:
-      IM.insertWitness(*(Node->Target));
-      return;
-
-    case WitnessPropagator: {
-      auto *Instrumentee = Node->Target->Instrumentee;
-      if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
-        assert(Node->Requirements.size() == Phi->getNumIncomingValues());
-
-        auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
-
-        unsigned int i = 0;
-        for (auto *ReqNode : Node->Requirements) {
-          createWitness(IM, ReqNode);
-          auto *BB = Phi->getIncomingBlock(i);
-          IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->BoundWitness, BB);
-          i++;
-        }
-        return;
-      }
-      if (isa<SelectInst>(Instrumentee)) {
-        assert(Node->Requirements.size() == 2);
-
-        for (auto *ReqNode : Node->Requirements) {
-          createWitness(IM, ReqNode);
-        }
-
-        IM.insertWitnessSelect(*(Node->Target),
-                               Node->Requirements[0]->Target->BoundWitness,
-                               Node->Requirements[1]->Target->BoundWitness);
-
-        return;
-      }
-      assert(Node->Requirements.size() == 1);
-      auto * Requirement = Node->Requirements[0];
-      createWitness(IM, Requirement);
-      Node->Target->BoundWitness = Requirement->Target->BoundWitness;
-
-      break; }
-
-    case WitnessSink:
-      for (auto *ReqNode : Node->Requirements) {
-        createWitness(IM, ReqNode);
-      }
-      break;
-
-    default:
-      llvm_unreachable("Invalid node");
+  if (Node->Requirements.size() == 0) {
+    IM.insertWitness(*(Node->Target));
+    return;
   }
+
+  auto *Instrumentee = Node->Target->Instrumentee;
+  if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
+    assert(Node->Requirements.size() == Phi->getNumIncomingValues());
+
+    auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
+
+    unsigned int i = 0;
+    for (auto *ReqNode : Node->Requirements) {
+      createWitness(IM, ReqNode);
+      auto *BB = Phi->getIncomingBlock(i);
+      IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->BoundWitness, BB);
+      i++;
+    }
+    return;
+  }
+
+  if (isa<SelectInst>(Instrumentee)) {
+    assert(Node->Requirements.size() == 2);
+
+    for (auto *ReqNode : Node->Requirements) {
+      createWitness(IM, ReqNode);
+    }
+
+    IM.insertWitnessSelect(*(Node->Target),
+                           Node->Requirements[0]->Target->BoundWitness,
+                           Node->Requirements[1]->Target->BoundWitness);
+
+    return;
+  }
+
+  assert(Node->Requirements.size() == 1);
+
+  auto *Requirement = Node->Requirements[0];
+  createWitness(IM, Requirement);
+  Node->Target->BoundWitness = Requirement->Target->BoundWitness;
 }
