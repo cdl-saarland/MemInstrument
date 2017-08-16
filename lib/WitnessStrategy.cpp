@@ -74,7 +74,8 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::Call:
     case Instruction::Load:
     case Instruction::IntToPtr: {
-      // Assume that what we get from these is valid.
+      // Introduce a target without requirements for these values. We assume
+      // that these are valid pointers.
       auto NewTarget =
           mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target);
       auto *NewNode = WG.getInternalNode(NewTarget);
@@ -84,7 +85,16 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     }
 
     case Instruction::PHI: {
-      // We might have to introduce a PHI for the corresponding witnesses.
+      // Introduce a target for the phi. This breaks loops.
+      auto PhiTarget = mkTempTarget(I, I->getNextNode(), *Target);
+      auto *PhiNode = WG.getInternalNode(PhiTarget);
+      Node->Requirements.push_back(PhiNode);
+      if (PhiNode->HasAllRequirements) {
+        return;
+      }
+      PhiNode->HasAllRequirements = true;
+
+      // The phi target requires witnesses of its incoming values.
       auto *PtrPhi = cast<PHINode>(I);
       unsigned NumOperands = PtrPhi->getNumIncomingValues();
       for (unsigned i = 0; i < NumOperands; ++i) {
@@ -94,13 +104,13 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
         auto NewTarget = mkTempTarget(InVal, &InBB->back(), *Target);
         auto *NewNode = WG.getInternalNode(NewTarget);
         addRequired(NewNode);
-        Node->Requirements.push_back(NewNode);
+        PhiNode->Requirements.push_back(NewNode);
       }
       break;
     }
 
     case Instruction::Select: {
-      // We might have to introduce a Select for the corresponding witnesses.
+      // A select target needs witnesses of both its arguments.
       auto *PtrSelect = cast<SelectInst>(I);
 
       auto TrueTarget = mkTempTarget(PtrSelect->getTrueValue(), I, *Target);
@@ -116,6 +126,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     }
 
     case Instruction::GetElementPtr: {
+      // A GEP target requires only the witness of its argument.
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
       auto NewTarget = mkTempTarget(Operand, I, *Target);
       auto *NewNode = WG.getInternalNode(NewTarget);
@@ -125,6 +136,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     }
 
     case Instruction::BitCast: {
+      // A bitcast target requires only the witness of its argument.
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
       auto NewTarget = mkTempTarget(Operand, I, *Target);
       auto *NewNode = WG.getInternalNode(NewTarget);
@@ -138,21 +150,11 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     }
 
   } else if (isa<Argument>(Target->Instrumentee)) {
-    // Generate witnesses for arguments right when we need them. Other
-    // approaches might also be desirable.
-    // auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location,
-    // *Target);
-    // auto *NewNode = WG.getInternalNode(NewTarget);
-    // Node->Requirements.push_back(NewNode);
-
+    // Generate witnesses for arguments right when we need them. This might be
+    // inefficient.
   } else if (isa<GlobalValue>(Target->Instrumentee)) {
-    // Generate witnesses for globals right when we need them. Other approaches
-    // might also be desirable.
-    // auto NewTarget = mkTempTarget(Target->Instrumentee, Target->Location,
-    // *Target);
-    // auto *NewNode = WG.getInternalNode(NewTarget);
-    // Node->Requirements.push_back(NewNode);
-
+    // Generate witnesses for globals right when we need them. This might be
+    // inefficient.
   } else {
     // TODO constexpr
     llvm_unreachable("Unsupported value operand!");
@@ -162,20 +164,35 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
 void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
                                    WitnessGraphNode *Node) const {
   if (Node->Target->hasWitness()) {
+    // We already handled this node.
     return;
   }
 
   if (Node->Requirements.size() == 0) {
+    // We assume that this Node corresponds to a valid pointer, so we create a
+    // new witness for it.
     IM.insertWitness(*(Node->Target));
+    return;
+  }
+
+  if (Node->Requirements.size() == 1) {
+    // We just use the witness of the single requirement, nothing to combine.
+    auto *Requirement = Node->Requirements[0];
+    createWitness(IM, Requirement);
+    Node->Target->BoundWitness = Requirement->Target->BoundWitness;
     return;
   }
 
   auto *Instrumentee = Node->Target->Instrumentee;
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
+    // Insert new phis that use the witnesses of the operands of the
+    // instrumentee. This has to happen in two separate steps to break loops.
     assert(Node->Requirements.size() == Phi->getNumIncomingValues());
 
+    // First insert phis with no arguments.
     auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
 
+    // Now, add the corresponding incoming values for the operands.
     unsigned int i = 0;
     for (auto *ReqNode : Node->Requirements) {
       createWitness(IM, ReqNode);
@@ -187,6 +204,8 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
   }
 
   if (isa<SelectInst>(Instrumentee)) {
+    // Insert new selects that use the witnesses of the operands of the
+    // instrumentee.
     assert(Node->Requirements.size() == 2);
 
     for (auto *ReqNode : Node->Requirements) {
@@ -200,9 +219,6 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
 
-  assert(Node->Requirements.size() == 1);
-
-  auto *Requirement = Node->Requirements[0];
-  createWitness(IM, Requirement);
-  Node->Target->BoundWitness = Requirement->Target->BoundWitness;
+  // There should be no way to end up here.
+  llvm_unreachable("Invalid Node");
 }
