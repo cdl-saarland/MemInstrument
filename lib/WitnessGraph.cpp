@@ -42,7 +42,6 @@ WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
   auto It = InternalNodes.find(Key);
   if (It != InternalNodes.end()) {
     auto *Node = It->getSecond();
-    Node->Target->joinFlags(*Target);
     return Node;
   }
   return nullptr;

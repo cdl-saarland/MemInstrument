@@ -38,9 +38,9 @@ public:
 
 protected:
   void requireRecursively(WitnessGraphNode *Node, llvm::Value *Req,
-                          llvm::Instruction *Loc, ITarget &Target) const;
+                          llvm::Instruction *Loc) const;
   void requireSource(WitnessGraphNode *Node, llvm::Value *Req,
-                     llvm::Instruction *Loc, ITarget &Target) const;
+                     llvm::Instruction *Loc) const;
 };
 
 // TODO rename this!

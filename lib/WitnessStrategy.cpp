@@ -33,13 +33,12 @@ cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
 
 std::unique_ptr<WitnessStrategy> GlobalWS(nullptr);
 
-std::shared_ptr<ITarget> mkTempTarget(llvm::Value *Instrumentee,
-                                      llvm::Instruction *Location,
-                                      ITarget &Target) {
-  return std::make_shared<ITarget>(
-      Instrumentee, Location, Target.AccessSize, Target.CheckUpperBoundFlag,
-      Target.CheckLowerBoundFlag, Target.CheckTemporalFlag,
-      Target.RequiresExplicitBounds);
+WitnessGraphNode *getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
+                                  llvm::Instruction *Location) {
+  // Flags do not matter here as they are propagated later in propagateFlags()
+  auto NewTarget = std::make_shared<ITarget>(Instrumentee, Location, 0, false,
+                                             false, false, false);
+  return WG.getInternalNode(NewTarget);
 }
 }
 
@@ -57,21 +56,18 @@ const WitnessStrategy &WitnessStrategy::get(void) {
 }
 
 void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,
-                                         Instruction *Loc,
-                                         ITarget &Target) const {
+                                         Instruction *Loc) const {
   auto &WG = Node->Graph;
 
-  auto NewTarget = mkTempTarget(Req, Loc, Target);
-  auto *NewNode = WG.getInternalNode(NewTarget);
+  auto *NewNode = getInternalNode(WG, Req, Loc);
   addRequired(NewNode);
   Node->Requirements.push_back(NewNode);
 }
 
 void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
-                                    Instruction *Loc, ITarget &Target) const {
+                                    Instruction *Loc) const {
   auto &WG = Node->Graph;
-  auto NewTarget = mkTempTarget(Req, Loc, Target);
-  auto *NewNode = WG.getInternalNode(NewTarget);
+  auto *NewNode = getInternalNode(WG, Req, Loc);
   NewNode->HasAllRequirements = true;
   if (NewNode != Node) // FIXME?
     Node->Requirements.push_back(NewNode);
@@ -95,14 +91,13 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
-      requireSource(Node, I, I->getNextNode(), *Target);
+      requireSource(Node, I, I->getNextNode());
       break;
     }
 
     case Instruction::PHI: {
       // Introduce a target for the phi. This breaks loops consistently.
-      auto PhiTarget = mkTempTarget(I, I->getNextNode(), *Target);
-      auto *PhiNode = WG.getInternalNode(PhiTarget);
+      auto *PhiNode = getInternalNode(WG, I, I->getNextNode());
       Node->Requirements.push_back(PhiNode);
       if (PhiNode->HasAllRequirements) {
         return;
@@ -115,7 +110,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       for (unsigned i = 0; i < NumOperands; ++i) {
         auto *InVal = PtrPhi->getIncomingValue(i);
         auto *InBB = PtrPhi->getIncomingBlock(i);
-        requireRecursively(PhiNode, InVal, &InBB->back(), *Target);
+        requireRecursively(PhiNode, InVal, &InBB->back());
       }
       break;
     }
@@ -123,22 +118,22 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::Select: {
       // A select target needs witnesses of both its arguments.
       auto *PtrSelect = cast<SelectInst>(I);
-      requireRecursively(Node, PtrSelect->getTrueValue(), I, *Target);
-      requireRecursively(Node, PtrSelect->getFalseValue(), I, *Target);
+      requireRecursively(Node, PtrSelect->getTrueValue(), I);
+      requireRecursively(Node, PtrSelect->getFalseValue(), I);
       break;
     }
 
     case Instruction::GetElementPtr: {
       // A GEP target requires only the witness of its argument.
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
-      requireRecursively(Node, Operand, I, *Target);
+      requireRecursively(Node, Operand, I);
       break;
     }
 
     case Instruction::BitCast: {
       // A bitcast target requires only the witness of its argument.
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
-      requireRecursively(Node, Operand, I, *Target);
+      requireRecursively(Node, Operand, I);
       break;
     }
 
