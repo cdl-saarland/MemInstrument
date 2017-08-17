@@ -11,10 +11,8 @@
 
 #include "meminstrument/WitnessStrategy.h"
 
-#include "meminstrument/InstrumentationMechanism.h"
-
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Value.h"
 
 using namespace meminstrument;
 using namespace llvm;
