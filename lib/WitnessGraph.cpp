@@ -11,6 +11,8 @@
 
 #include "meminstrument/WitnessGraph.h"
 
+#include <queue>
+
 using namespace meminstrument;
 using namespace llvm;
 
@@ -26,7 +28,8 @@ WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
 
 WitnessGraphNode *
 WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
-  assert(getInternalNodeOrNull(Target) == nullptr);
+  assert(getInternalNodeOrNull(Target) == nullptr &&
+         "Internal node already exists!");
   auto Key = std::make_pair(Target->Instrumentee, Target->Location);
   auto *NewNode = new WitnessGraphNode(*this, Target);
   InternalNodes.insert(std::make_pair(Key, NewNode));
@@ -49,22 +52,31 @@ void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
   LeafNodes.push_back(WitnessGraphNode(*this, T));
   auto *Res = &LeafNodes.back();
   Strategy.addRequired(Res);
+  AlreadyPropagated = false;
 }
-// FIXME
-// void propagateRecursively(WitnessGraphNode *Node) {
-//   for (auto &Req : Node->Requirements) {
-//     Req->Target->joinFlags(*Node->Target);
-//     propagateRecursively(Req);
-//   }
-// }
-//
-// void WitnessGraph::propagateRequirements(void) {
-//   for (auto &Node : LeafNodes) {
-//     propagateRecursively(&Node);
-//   }
-// }
+
+void WitnessGraph::propagateFlags(void) {
+  std::queue<WitnessGraphNode *> Worklist;
+  for (auto &Node : LeafNodes) {
+    Worklist.push(&Node);
+  }
+
+  while (!Worklist.empty()) {
+    auto *Node = Worklist.front();
+    Worklist.pop();
+    for (auto &Succ : Node->Requirements) {
+      if (Succ->Target->joinFlags(*Node->Target)) {
+        Worklist.push(Succ);
+      }
+    }
+  }
+
+  AlreadyPropagated = true;
+}
 
 void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
+  assert(AlreadyPropagated &&
+         "Call `propagateRequirements()` before creating witnesses!");
   for (auto &Node : LeafNodes) {
     Strategy.createWitness(IM, &Node);
   }

@@ -57,6 +57,8 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
       WG.insertRequiredTarget(Target);
     }
 
+    WG.propagateFlags();
+
     if (PrintWitnessGraphOpt) {
       std::error_code EC;
       auto Name = ("witnessgraph." + F.getName() + ".dot").str();

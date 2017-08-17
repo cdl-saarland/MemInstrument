@@ -39,13 +39,20 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
-void ITarget::joinFlags(const ITarget &other) {
+bool ITarget::joinFlags(const ITarget &other) {
+  bool Changed = AccessSize < other.AccessSize ||
+                 CheckUpperBoundFlag < other.CheckUpperBoundFlag ||
+                 CheckLowerBoundFlag < other.CheckLowerBoundFlag ||
+                 CheckTemporalFlag < other.CheckTemporalFlag ||
+                 RequiresExplicitBounds < other.RequiresExplicitBounds;
+
   AccessSize = std::max(AccessSize, other.AccessSize);
   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
   RequiresExplicitBounds =
       RequiresExplicitBounds || other.RequiresExplicitBounds;
+  return Changed;
 }
 
 bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }

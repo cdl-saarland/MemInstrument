@@ -55,7 +55,7 @@ public:
 
   WitnessGraphNode *createNewInternalNode(std::shared_ptr<ITarget> T);
 
-  void propagateRequirements(void);
+  void propagateFlags(void);
 
   void createWitnesses(InstrumentationMechanism &IM);
 
@@ -78,6 +78,8 @@ private:
   llvm::DenseMap<KeyType, WitnessGraphNode *> InternalNodes;
 
   std::vector<WitnessGraphNode> LeafNodes;
+
+  bool AlreadyPropagated = false;
 };
 
 } // end namespace meminstrument
