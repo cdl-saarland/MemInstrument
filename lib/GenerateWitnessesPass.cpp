@@ -25,11 +25,10 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-cl::opt<bool> PrintWitnessGraphOpt(
-    "memsafety-print-witnessgraph",
-    cl::desc("Print the WitnessGraph"),
-    cl::init(false) // default
-    );
+cl::opt<bool> PrintWitnessGraphOpt("memsafety-print-witnessgraph",
+                                   cl::desc("Print the WitnessGraph"),
+                                   cl::init(false) // default
+                                   );
 }
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
@@ -68,7 +67,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
       } else {
         WG.printDotGraph(*fout);
       }
-      delete(fout);
+      delete (fout);
     }
 
     WG.createWitnesses(IM);

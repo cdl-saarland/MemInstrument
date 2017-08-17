@@ -21,15 +21,6 @@ using namespace llvm;
 
 namespace {
 
-std::shared_ptr<ITarget> mkTempTarget(llvm::Value *Instrumentee,
-                                      llvm::Instruction *Location,
-                                      ITarget &Target) {
-  return std::make_shared<ITarget>(
-      Instrumentee, Location, Target.AccessSize, Target.CheckUpperBoundFlag,
-      Target.CheckLowerBoundFlag, Target.CheckTemporalFlag,
-      Target.RequiresExplicitBounds);
-}
-
 enum WitnessStrategyKind {
   WS_simple,
 };
@@ -43,6 +34,15 @@ cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
     );
 
 std::unique_ptr<WitnessStrategy> GlobalWS(nullptr);
+
+std::shared_ptr<ITarget> mkTempTarget(llvm::Value *Instrumentee,
+                                      llvm::Instruction *Location,
+                                      ITarget &Target) {
+  return std::make_shared<ITarget>(
+      Instrumentee, Location, Target.AccessSize, Target.CheckUpperBoundFlag,
+      Target.CheckLowerBoundFlag, Target.CheckTemporalFlag,
+      Target.RequiresExplicitBounds);
+}
 }
 
 const WitnessStrategy &WitnessStrategy::get(void) {
@@ -56,6 +56,27 @@ const WitnessStrategy &WitnessStrategy::get(void) {
     Res = GlobalWS.get();
   }
   return *Res;
+}
+
+void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,
+                                         Instruction *Loc,
+                                         ITarget &Target) const {
+  auto &WG = Node->Graph;
+
+  auto NewTarget = mkTempTarget(Req, Loc, Target);
+  auto *NewNode = WG.getInternalNode(NewTarget);
+  addRequired(NewNode);
+  Node->Requirements.push_back(NewNode);
+}
+
+void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
+                                    Instruction *Loc, ITarget &Target) const {
+  auto &WG = Node->Graph;
+  auto NewTarget = mkTempTarget(Req, Loc, Target);
+  auto *NewNode = WG.getInternalNode(NewTarget);
+  NewNode->HasAllRequirements = true;
+  if (NewNode != Node) // FIXME?
+    Node->Requirements.push_back(NewNode);
 }
 
 void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
@@ -76,16 +97,12 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
-      auto NewTarget =
-          mkTempTarget(Target->Instrumentee, I->getNextNode(), *Target);
-      auto *NewNode = WG.getInternalNode(NewTarget);
-      if (NewNode != Node) // FIXME
-        Node->Requirements.push_back(NewNode);
+      requireSource(Node, I, I->getNextNode(), *Target);
       break;
     }
 
     case Instruction::PHI: {
-      // Introduce a target for the phi. This breaks loops.
+      // Introduce a target for the phi. This breaks loops consistently.
       auto PhiTarget = mkTempTarget(I, I->getNextNode(), *Target);
       auto *PhiNode = WG.getInternalNode(PhiTarget);
       Node->Requirements.push_back(PhiNode);
@@ -100,11 +117,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       for (unsigned i = 0; i < NumOperands; ++i) {
         auto *InVal = PtrPhi->getIncomingValue(i);
         auto *InBB = PtrPhi->getIncomingBlock(i);
-
-        auto NewTarget = mkTempTarget(InVal, &InBB->back(), *Target);
-        auto *NewNode = WG.getInternalNode(NewTarget);
-        addRequired(NewNode);
-        PhiNode->Requirements.push_back(NewNode);
+        requireRecursively(PhiNode, InVal, &InBB->back(), *Target);
       }
       break;
     }
@@ -112,36 +125,22 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::Select: {
       // A select target needs witnesses of both its arguments.
       auto *PtrSelect = cast<SelectInst>(I);
-
-      auto TrueTarget = mkTempTarget(PtrSelect->getTrueValue(), I, *Target);
-      auto *TrueNode = WG.getInternalNode(TrueTarget);
-      addRequired(TrueNode);
-      Node->Requirements.push_back(TrueNode);
-
-      auto FalseTarget = mkTempTarget(PtrSelect->getFalseValue(), I, *Target);
-      auto *FalseNode = WG.getInternalNode(FalseTarget);
-      addRequired(FalseNode);
-      Node->Requirements.push_back(FalseNode);
+      requireRecursively(Node, PtrSelect->getTrueValue(), I, *Target);
+      requireRecursively(Node, PtrSelect->getFalseValue(), I, *Target);
       break;
     }
 
     case Instruction::GetElementPtr: {
       // A GEP target requires only the witness of its argument.
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
-      auto NewTarget = mkTempTarget(Operand, I, *Target);
-      auto *NewNode = WG.getInternalNode(NewTarget);
-      addRequired(NewNode);
-      Node->Requirements.push_back(NewNode);
+      requireRecursively(Node, Operand, I, *Target);
       break;
     }
 
     case Instruction::BitCast: {
       // A bitcast target requires only the witness of its argument.
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
-      auto NewTarget = mkTempTarget(Operand, I, *Target);
-      auto *NewNode = WG.getInternalNode(NewTarget);
-      addRequired(NewNode);
-      Node->Requirements.push_back(NewNode);
+      requireRecursively(Node, Operand, I, *Target);
       break;
     }
 

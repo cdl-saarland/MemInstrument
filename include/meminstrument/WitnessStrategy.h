@@ -36,6 +36,12 @@ public:
                              WitnessGraphNode *Node) const = 0;
 
   static const WitnessStrategy &get(void);
+
+protected:
+  void requireRecursively(WitnessGraphNode *Node, llvm::Value *Req,
+                          llvm::Instruction *Loc, ITarget &Target) const;
+  void requireSource(WitnessGraphNode *Node, llvm::Value *Req,
+                     llvm::Instruction *Loc, ITarget &Target) const;
 };
 
 // TODO rename this!
