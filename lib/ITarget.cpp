@@ -78,6 +78,10 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
       LocName = "[switch]";
       break;
 
+    case llvm::Instruction::Call:
+      LocName = "[anon call]";
+      break;
+
     default:
       LocName = "[unknown]";
     }
