@@ -16,9 +16,8 @@
 #include "meminstrument/InstrumentationMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
 
 using namespace meminstrument;
 using namespace llvm;

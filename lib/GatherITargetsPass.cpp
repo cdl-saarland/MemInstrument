@@ -15,9 +15,8 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -44,8 +43,8 @@ bool GatherITargetsPass::runOnModule(Module &M) {
         IP.classifyTargets(Destination, &I);
       }
     }
-    DEBUG(dbgs() << "identified instrumentation targets:"
-                 << "\n";
+    DEBUG_ALSO_WITH_TYPE("meminstrument-gatheritargets",
+        dbgs() << "identified instrumentation targets:" << "\n";
           for (auto &Target
                : Destination) {
             dbgs() << "  " << *Target << "\n";

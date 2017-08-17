@@ -16,10 +16,9 @@
 #include "meminstrument/MemSafetyAnalysisPass.h"
 #include "meminstrument/WitnessStrategy.h"
 
-#include "llvm/Support/Debug.h"
 #include "llvm/Support/FileSystem.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
 
 using namespace meminstrument;
 using namespace llvm;

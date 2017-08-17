@@ -1,4 +1,4 @@
-; RUN: %opt -load %passlib -memsafety-gatheritargets -debug %s > /dev/null 2> %t.log
+; RUN: %opt -load %passlib -memsafety-gatheritargets -debug-only=meminstrument-gatheritargets %s > /dev/null 2> %t.log
 ; RUN: fgrep "<p, loop::[store], 4B, ul_>" %t.log
 ; RUN: fgrep "<a, exit::tmp, 4B, ul_>" %t.log
 
