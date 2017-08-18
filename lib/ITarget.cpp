@@ -57,11 +57,11 @@ bool ITarget::joinFlags(const ITarget &other) {
 
 bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }
 
-llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
-                                             const ITarget &IT) {
-  std::string LocName = IT.Location->getName().str();
+
+void ITarget::printLocation(llvm::raw_ostream &Stream) const {
+  std::string LocName = this->Location->getName().str();
   if (LocName.empty()) {
-    switch (IT.Location->getOpcode()) {
+    switch (this->Location->getOpcode()) {
     case llvm::Instruction::Store:
       LocName = "[store]";
       break;
@@ -86,10 +86,15 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
       LocName = "[unknown]";
     }
   }
+  auto *BB = this->Location->getParent();
+  Stream << BB->getName() << "::" << LocName;
+}
 
+llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
+                                             const ITarget &IT) {
   Stream << "<" << IT.Instrumentee->getName() << ", ";
-  auto *BB = IT.Location->getParent();
-  Stream << BB->getName() << "::" << LocName << ", ";
+  IT.printLocation(Stream);
+  Stream << ", ";
   Stream << IT.AccessSize << "B, ";
   if (IT.CheckUpperBoundFlag) {
     Stream << "u";

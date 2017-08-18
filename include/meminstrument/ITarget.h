@@ -64,6 +64,8 @@ struct ITarget {
 
   bool hasWitness(void) const;
 
+  void printLocation(llvm::raw_ostream &Stream) const;
+
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
 };

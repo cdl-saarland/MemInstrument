@@ -70,6 +70,8 @@ public:
 
   void printDotGraph(llvm::raw_ostream &stream) const;
 
+  void printWitnessClasses(llvm::raw_ostream &stream) const;
+
 private:
   const llvm::Function &Func;
   const WitnessStrategy &Strategy;

@@ -12,6 +12,7 @@
 #include "meminstrument/WitnessGraph.h"
 
 #include <queue>
+#include <set>
 
 using namespace meminstrument;
 using namespace llvm;
@@ -118,4 +119,30 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   }
 
   stream << "}\n";
+}
+
+void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
+  llvm::DenseMap<Witness*, std::set<ITarget*>> PrintMap;
+
+  for (auto &Node : LeafNodes) {
+    auto &Target = Node.Target;
+    assert(Target->hasWitness());
+    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+  }
+
+  for (auto &Pair : InternalNodes) {
+    auto *Node = Pair.getSecond();
+    auto &Target = Node->Target;
+    assert(Target->hasWitness());
+    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+  }
+
+  for (auto &Pair : PrintMap) {
+    for (auto *Target : Pair.getSecond()) {
+      Stream << "(" << Target->Instrumentee->getName() << ", ";
+      Target->printLocation(Stream);
+      Stream << ")" << "; ";
+    }
+    Stream << "\n";
+  }
 }
