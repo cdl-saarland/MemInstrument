@@ -33,6 +33,11 @@ bool GatherITargetsPass::runOnModule(Module &M) {
   auto &IP = InstrumentationPolicy::get(DL);
 
   for (auto &F : M) {
+    if (F.empty()) {
+      continue;
+    }
+    DEBUG(dbgs() << "GatherITargetsPass: processing function `"
+                 << F.getName().str() << "`\n";);
     std::vector<std::shared_ptr<ITarget>> &Destination =
         this->getITargetsForFunction(&F);
     for (auto &BB : F) {

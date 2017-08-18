@@ -92,7 +92,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
       requireSource(Node, I, I->getNextNode());
-      break;
+      return;
     }
 
     case Instruction::PHI: {
@@ -112,7 +112,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
         auto *InBB = PtrPhi->getIncomingBlock(i);
         requireRecursively(PhiNode, InVal, &InBB->back());
       }
-      break;
+      return;
     }
 
     case Instruction::Select: {
@@ -120,37 +120,58 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       auto *PtrSelect = cast<SelectInst>(I);
       requireRecursively(Node, PtrSelect->getTrueValue(), I);
       requireRecursively(Node, PtrSelect->getFalseValue(), I);
-      break;
+      return;
     }
 
     case Instruction::GetElementPtr: {
       // A GEP target requires only the witness of its argument.
       auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
       requireRecursively(Node, Operand, I);
-      break;
+      return;
     }
 
     case Instruction::BitCast: {
       // A bitcast target requires only the witness of its argument.
       auto *Operand = cast<BitCastInst>(I)->getOperand(0);
       requireRecursively(Node, Operand, I);
-      break;
+      return;
     }
 
     default:
       llvm_unreachable("Unsupported instruction!");
     }
+  }
 
-  } else if (isa<Argument>(Target->Instrumentee)) {
+  if (isa<Argument>(Target->Instrumentee)) {
     // Generate witnesses for arguments right when we need them. This might be
     // inefficient.
-  } else if (isa<GlobalValue>(Target->Instrumentee)) {
+    return;
+  }
+
+  if (isa<GlobalValue>(Target->Instrumentee)) {
     // Generate witnesses for globals right when we need them. This might be
     // inefficient.
-  } else {
-    // TODO constexpr
-    llvm_unreachable("Unsupported value operand!");
+    return;
   }
+
+  if (auto *E = dyn_cast<ConstantExpr>(Target->Instrumentee)) {
+    auto *I = E->getAsInstruction();
+    switch (E->getOpcode()) {
+      case Instruction::GetElementPtr: {
+          // GEP ConstantExpr's can only refer to global values, therefore we
+          // can materialize bounds for them just like for global values
+          // (and do not need to follow their operands, which is more ugly).
+          // TODO verify this guess!
+        break;
+      }
+      default: // TODO constant select, etc.?
+        llvm_unreachable("Unsupported constant expression operand!");
+    }
+    delete (I);
+    return;
+  }
+
+  llvm_unreachable("Unsupported value operand!");
 }
 
 void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
