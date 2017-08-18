@@ -4,7 +4,7 @@
 
 ### 0. Requirements
 
-  * a modern Linux operating system with a modern C++ compiler (e.g. `g++`)
+  * a modern Linux operating system with a modern C++ compiler (e.g. `g++`, other operating systems might also work but are not officially supported)
   * `git`
   * `cmake` (version >= ??)
   * a supported build system, e.g. `ninja` or GNU make
@@ -43,6 +43,6 @@ When the build files are generated, use your build system to build the project (
   * `check-meminstrument` to run the `meminstrument` test suite
   * `meminstrument-update-format` to run `clangformat` on all `meminstrument` source files
 
-### 5. Using the Instrumentation passes
+### 5. Using the Instrumentation Passes
 
 TODO
