@@ -13,6 +13,7 @@
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Constant.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -39,6 +40,40 @@ WitnessGraphNode *getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
   auto NewTarget = std::make_shared<ITarget>(Instrumentee, Location, 0, false,
                                              false, false, false);
   return WG.getInternalNode(NewTarget);
+}
+
+void getPointerOperands(std::vector<Value*> &Results, llvm::Constant* C) {
+  if (! C->getType()->isPointerTy()) {
+    llvm_unreachable("getPointerOperands() called for non-pointer constant!");
+  }
+
+  if (auto* GV = dyn_cast<GlobalValue>(C)) {
+    Results.push_back(GV);
+    return;
+  }
+
+  if (auto* CD = dyn_cast<ConstantData>(C)) {
+    Results.push_back(CD);
+    return;
+  }
+
+  if (auto* CE = dyn_cast<ConstantExpr>(C)) {
+    switch (CE->getOpcode()) {
+      case Instruction::GetElementPtr:
+        getPointerOperands(Results, CE->getOperand(0)); // pointer argument
+        break;
+      case Instruction::Select:
+        getPointerOperands(Results, CE->getOperand(1)); // true operand
+        getPointerOperands(Results, CE->getOperand(2)); // false operand
+        break;
+      default:
+        llvm_unreachable("Unsupported constant expression!");
+    }
+
+    return;
+  }
+
+  llvm_unreachable("Unsupported constant value!");
 }
 }
 
@@ -148,26 +183,16 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
-  if (isa<GlobalValue>(Target->Instrumentee)) {
-    // Generate witnesses for globals right when we need them. This might be
-    // inefficient.
-    return;
-  }
-
-  if (auto *E = dyn_cast<ConstantExpr>(Target->Instrumentee)) {
-    auto *I = E->getAsInstruction();
-    switch (E->getOpcode()) {
-      case Instruction::GetElementPtr: {
-          // GEP ConstantExpr's can only refer to global values, therefore we
-          // can materialize bounds for them just like for global values
-          // (and do not need to follow their operands, which is more ugly).
-          // TODO verify this guess!
-        break;
-      }
-      default: // TODO constant select, etc.?
-        llvm_unreachable("Unsupported constant expression operand!");
+  if (auto *C = dyn_cast<Constant>(Target->Instrumentee)) {
+    std::vector<Value*> Pointers;
+    getPointerOperands(Pointers, C);
+    for (auto *V : Pointers) {
+      // Generate witnesses for globals and constants right when we need them.
+      // This might be inefficient.
+      requireSource(Node, V, Target->Location);
+      // TODO this location might be sub-optimal
+      // TODO do we really want to have witnesses for constant null pointers?
     }
-    delete (I);
     return;
   }
 
