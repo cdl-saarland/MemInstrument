@@ -132,7 +132,9 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
 
     case Instruction::PHI: {
       // Introduce a target for the phi. This breaks loops consistently.
-      auto *PhiNode = getInternalNode(WG, I, I->getNextNode());
+      // Setting the location to I (and not after I) makes sure that this
+      // particular internal Node is only "gotten" when handling Phis here.
+      auto *PhiNode = getInternalNode(WG, I, I);
       Node->Requirements.push_back(PhiNode);
       if (PhiNode->HasAllRequirements) {
         return;

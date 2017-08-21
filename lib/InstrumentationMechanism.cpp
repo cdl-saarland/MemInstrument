@@ -162,7 +162,7 @@ std::shared_ptr<Witness>
 DummyMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *Phi = cast<PHINode>(Target.Instrumentee);
 
-  IRBuilder<> builder(Phi->getNextNode());
+  IRBuilder<> builder(Phi);
   auto &Ctx = Phi->getContext();
 
   auto Name = Phi->getName() + "_witness";
