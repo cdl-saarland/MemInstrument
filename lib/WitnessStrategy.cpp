@@ -11,9 +11,9 @@
 
 #include "meminstrument/WitnessStrategy.h"
 
+#include "llvm/IR/Constant.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Constant.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -42,32 +42,32 @@ WitnessGraphNode *getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
   return WG.getInternalNode(NewTarget);
 }
 
-void getPointerOperands(std::vector<Value*> &Results, llvm::Constant* C) {
-  if (! C->getType()->isPointerTy()) {
+void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
+  if (!C->getType()->isPointerTy()) {
     llvm_unreachable("getPointerOperands() called for non-pointer constant!");
   }
 
-  if (auto* GV = dyn_cast<GlobalValue>(C)) {
+  if (auto *GV = dyn_cast<GlobalValue>(C)) {
     Results.push_back(GV);
     return;
   }
 
-  if (auto* CD = dyn_cast<ConstantData>(C)) {
+  if (auto *CD = dyn_cast<ConstantData>(C)) {
     Results.push_back(CD);
     return;
   }
 
-  if (auto* CE = dyn_cast<ConstantExpr>(C)) {
+  if (auto *CE = dyn_cast<ConstantExpr>(C)) {
     switch (CE->getOpcode()) {
-      case Instruction::GetElementPtr:
-        getPointerOperands(Results, CE->getOperand(0)); // pointer argument
-        break;
-      case Instruction::Select:
-        getPointerOperands(Results, CE->getOperand(1)); // true operand
-        getPointerOperands(Results, CE->getOperand(2)); // false operand
-        break;
-      default:
-        llvm_unreachable("Unsupported constant expression!");
+    case Instruction::GetElementPtr:
+      getPointerOperands(Results, CE->getOperand(0)); // pointer argument
+      break;
+    case Instruction::Select:
+      getPointerOperands(Results, CE->getOperand(1)); // true operand
+      getPointerOperands(Results, CE->getOperand(2)); // false operand
+      break;
+    default:
+      llvm_unreachable("Unsupported constant expression!");
     }
 
     return;
@@ -186,7 +186,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
   }
 
   if (auto *C = dyn_cast<Constant>(Target->Instrumentee)) {
-    std::vector<Value*> Pointers;
+    std::vector<Value *> Pointers;
     getPointerOperands(Pointers, C);
     for (auto *V : Pointers) {
       // Generate witnesses for globals and constants right when we need them.

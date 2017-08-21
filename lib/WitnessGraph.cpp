@@ -122,7 +122,7 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
 }
 
 void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
-  llvm::DenseMap<Witness*, std::set<ITarget*>> PrintMap;
+  llvm::DenseMap<Witness *, std::set<ITarget *>> PrintMap;
 
   for (auto &Node : LeafNodes) {
     auto &Target = Node.Target;
@@ -141,7 +141,8 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
     for (auto *Target : Pair.getSecond()) {
       Stream << "(" << Target->Instrumentee->getName() << ", ";
       Target->printLocation(Stream);
-      Stream << ")" << "; ";
+      Stream << ")"
+             << "; ";
     }
     Stream << "\n";
   }

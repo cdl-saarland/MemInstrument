@@ -49,12 +49,13 @@ bool GatherITargetsPass::runOnModule(Module &M) {
       }
     }
     DEBUG_ALSO_WITH_TYPE("meminstrument-gatheritargets",
-        dbgs() << "identified instrumentation targets:" << "\n";
-          for (auto &Target
-               : Destination) {
-            dbgs() << "  " << *Target << "\n";
+                         dbgs() << "identified instrumentation targets:"
+                                << "\n";
+                         for (auto &Target
+                              : Destination) {
+                           dbgs() << "  " << *Target << "\n";
 
-          });
+                         });
   }
   return false;
 }

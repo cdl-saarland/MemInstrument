@@ -57,7 +57,6 @@ bool ITarget::joinFlags(const ITarget &other) {
 
 bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }
 
-
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
   std::string LocName = this->Location->getName().str();
   if (LocName.empty()) {

@@ -57,10 +57,10 @@ size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *V) {
   auto *PointeeType = Ty->getPointerElementType();
 
   if (PointeeType->isFunctionTy()) {
-      // FIXME
-      DEBUG(dbgs() << "treating function pointer with access size 0: `"
-                   << V->getName() << "`\n";);
-      return 0;
+    // FIXME
+    DEBUG(dbgs() << "treating function pointer with access size 0: `"
+                 << V->getName() << "`\n";);
+    return 0;
   }
 
   size_t Size = DL.getTypeStoreSize(PointeeType);
