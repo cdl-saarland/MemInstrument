@@ -65,6 +65,7 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
     case Instruction::Select:
       getPointerOperands(Results, CE->getOperand(1)); // true operand
       getPointerOperands(Results, CE->getOperand(2)); // false operand
+      llvm_unreachable("Select constant expression!");
       break;
     default:
       llvm_unreachable("Unsupported constant expression!");

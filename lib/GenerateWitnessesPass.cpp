@@ -73,6 +73,11 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
     WG.createWitnesses(IM);
 
+    DEBUG_ALSO_WITH_TYPE("meminstrument-genwitnesses",
+                         dbgs() << "targets with the same witnesses:"
+                                << "\n";
+                         WG.printWitnessClasses(dbgs()););
+
     for (auto &T : Destination) {
       if (T->RequiresExplicitBounds) {
         IM.materializeBounds(*T);
