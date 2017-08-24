@@ -58,7 +58,7 @@ public:
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
                       std::shared_ptr<Witness> &FalseWitness) const override;
 
-  virtual bool insertFunctionDefinitions(llvm::Module &M) override;
+  virtual bool insertGlobalDefinitions(llvm::Module &M) override;
 
 private:
   llvm::Constant *CheckAccessFunction = nullptr;

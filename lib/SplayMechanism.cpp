@@ -87,7 +87,7 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   }
 }
 
-bool SplayMechanism::insertFunctionDefinitions(llvm::Module &M) {
+bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
   auto *WitnessType = Type::getInt8PtrTy(Ctx);
@@ -109,6 +109,32 @@ bool SplayMechanism::insertFunctionDefinitions(llvm::Module &M) {
   GetLowerBoundFunction = M.getOrInsertFunction("__splay_get_lower", FunTy);
 
   GetUpperBoundFunction = M.getOrInsertFunction("__splay_get_upper", FunTy);
+
+  // code for setting up a global constructor for initializing the splay tree
+  // with entries for all global variables
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
+  Type *ComponentTypes[3];
+  ComponentTypes[0] = Type::getInt32Ty(Ctx);
+  ComponentTypes[1] = FunTy;
+  ComponentTypes[2] = Type::getInt8PtrTy(Ctx);
+  auto *ElemType = StructType::get(Ctx, ComponentTypes, false);
+  auto *ArrType = ArrayType::get(ElemType, 1);
+  auto *GlobalVal = M.getOrInsertGlobal("llvm.global_ctors", ArrType);
+  // TODO give internal/static linkage
+  auto *GlobalVar = cast<GlobalVariable>(GlobalVal);
+
+  auto *CtorFun = M.getOrInsertFunction("__splay_globals_setup", FunTy);
+
+  // TODO fill CtorFun with calls for every global variable
+  // auto *Fun = cast<Function>(CtorFun);
+
+  Constant *ComponentConsts[3];
+  ComponentConsts[0] =
+      Constant::getIntegerValue(ComponentTypes[0], APInt(32, 1));
+  ComponentConsts[1] = CtorFun;
+  ComponentConsts[2] = Constant::getNullValue(ComponentTypes[2]);
+  auto *InitVal = ConstantStruct::get(ElemType, ComponentConsts);
+  GlobalVar->setInitializer(ConstantArray::get(ArrType, InitVal));
 
   return true;
 }

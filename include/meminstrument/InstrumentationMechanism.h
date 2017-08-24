@@ -39,7 +39,7 @@ public:
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
                       std::shared_ptr<Witness> &FalseWitness) const = 0;
 
-  virtual bool insertFunctionDefinitions(llvm::Module &M) = 0;
+  virtual bool insertGlobalDefinitions(llvm::Module &M) = 0;
 
   virtual ~InstrumentationMechanism(void) {}
 
@@ -82,7 +82,7 @@ public:
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
                       std::shared_ptr<Witness> &FalseWitness) const override;
 
-  virtual bool insertFunctionDefinitions(llvm::Module &M) override;
+  virtual bool insertGlobalDefinitions(llvm::Module &M) override;
 
 private:
   llvm::Constant *CreateWitnessFunction = nullptr;

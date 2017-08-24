@@ -31,7 +31,7 @@ bool MemInstrumentSetupPass::runOnModule(Module &M) {
 
   auto &IM = InstrumentationMechanism::get();
 
-  Res = IM.insertFunctionDefinitions(M) || Res;
+  Res = IM.insertGlobalDefinitions(M) || Res;
 
   return Res;
 }

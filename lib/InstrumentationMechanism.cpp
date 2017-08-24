@@ -129,7 +129,7 @@ void DummyMechanism::materializeBounds(ITarget &Target) const {
   }
 }
 
-bool DummyMechanism::insertFunctionDefinitions(llvm::Module &M) {
+bool DummyMechanism::insertGlobalDefinitions(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
   auto *WitnessType = Type::getInt8PtrTy(Ctx);
