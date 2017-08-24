@@ -87,15 +87,24 @@ void BeforeOutflowPolicy::classifyTargets(
   case Instruction::Call: {
     llvm::CallInst *I = llvm::cast<llvm::CallInst>(Location);
 
-    if (!I->getCalledFunction()) { // call via function pointer
+    auto *Fun = I->getCalledFunction();
+    if (!Fun) { // call via function pointer
       // TODO implement
       DEBUG(dbgs() << "skipping indirect function call " << Location->getName()
                    << "\n";);
+    }
+    if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
+      // skip debug information pseudo-calls
+      break;
     }
 
     for (unsigned i = 0; i < I->getNumArgOperands(); ++i) {
       auto *Operand = I->getArgOperand(i);
       if (!Operand->getType()->isPointerTy()) {
+        continue;
+      }
+      if (Operand->getType()->isMetadataTy()) {
+        // skip metadata arguments
         continue;
       }
 
