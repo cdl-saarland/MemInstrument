@@ -14,8 +14,8 @@
 #ifndef MEMINSTRUMENT_SPLAYMECHANISM_H
 #define MEMINSTRUMENT_SPLAYMECHANISM_H
 
-#include "meminstrument/InstrumentationMechanism.h"
 #include "meminstrument/ITarget.h"
+#include "meminstrument/InstrumentationMechanism.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LLVMContext.h"

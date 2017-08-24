@@ -17,13 +17,17 @@
 #define DEBUG_TYPE "meminstrument"
 
 #ifndef NDEBUG
-#define DEBUG_ALSO_WITH_TYPE(TYPE, X)\
-  do { if (::llvm::DebugFlag && (::llvm::isCurrentDebugType(DEBUG_TYPE) \
-                              || ::llvm::isCurrentDebugType(TYPE))) { X; } \
+#define DEBUG_ALSO_WITH_TYPE(TYPE, X)                                          \
+  do {                                                                         \
+    if (::llvm::DebugFlag && (::llvm::isCurrentDebugType(DEBUG_TYPE) ||        \
+                              ::llvm::isCurrentDebugType(TYPE))) {             \
+      X;                                                                       \
+    }                                                                          \
   } while (false)
 #else
-#define DEBUG_ALSO_WITH_TYPE(TYPE, X)\
-  do { } while (false)
+#define DEBUG_ALSO_WITH_TYPE(TYPE, X)                                          \
+  do {                                                                         \
+  } while (false)
 #endif
 
 #endif // MEMINSTRUMENT_UTIL_H

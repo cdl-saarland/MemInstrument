@@ -99,19 +99,16 @@ bool SplayMechanism::insertFunctionDefinitions(llvm::Module &M) {
   Args.push_back(Type::getInt64Ty(Ctx));
 
   auto *FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckAccessFunction =
-      M.getOrInsertFunction("__splay_check_access", FunTy);
+  CheckAccessFunction = M.getOrInsertFunction("__splay_check_access", FunTy);
 
   Args.clear();
 
   Args.push_back(WitnessType);
 
   FunTy = FunctionType::get(InstrumenteeType, Args, false);
-  GetLowerBoundFunction = M.getOrInsertFunction(
-      "__splay_get_lower", FunTy);
+  GetLowerBoundFunction = M.getOrInsertFunction("__splay_get_lower", FunTy);
 
-  GetUpperBoundFunction = M.getOrInsertFunction(
-      "__splay_get_upper", FunTy);
+  GetUpperBoundFunction = M.getOrInsertFunction("__splay_get_upper", FunTy);
 
   return true;
 }
@@ -158,4 +155,3 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   Target.BoundWitness = std::make_shared<SplayWitness>(NewSel);
   return std::make_shared<SplayWitness>(NewSel);
 }
-
