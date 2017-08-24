@@ -37,7 +37,7 @@ bool GenerateChecksPass::runOnModule(Module &M) {
 
   for (auto &F : M) {
     if (F.empty())
-      return false;
+      continue;
 
     DEBUG(dbgs() << "GenerateChecksPass: processing function `"
                  << F.getName().str() << "`\n";);

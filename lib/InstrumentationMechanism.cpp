@@ -11,6 +11,8 @@
 
 #include "meminstrument/InstrumentationMechanism.h"
 
+#include "meminstrument/SplayMechanism.h"
+
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
@@ -26,6 +28,7 @@ namespace {
 
 enum InstrumentationMechanismKind {
   IM_dummy,
+  IM_splay,
 };
 
 cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
@@ -33,6 +36,8 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
     cl::desc("Choose InstructionMechanism: (default: dummy)"),
     cl::values(clEnumValN(IM_dummy, "dummy",
                           "only insert dummy calls for instrumentation")),
+    cl::values(clEnumValN(IM_splay, "splay",
+                          "use splay tree for instrumentation")),
     cl::init(IM_dummy) // default
     );
 
@@ -45,6 +50,10 @@ InstrumentationMechanism &InstrumentationMechanism::get(void) {
     switch (InstrumentationMechanismOpt) {
     case IM_dummy:
       GlobalIM.reset(new DummyMechanism());
+      break;
+
+    case IM_splay:
+      GlobalIM.reset(new SplayMechanism());
       break;
     }
     Res = GlobalIM.get();

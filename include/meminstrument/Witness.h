@@ -25,6 +25,7 @@ public:
   /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)
   enum WitnessKind {
     WK_Dummy,
+    WK_Splay,
     // Insert new WitnessKinds for each new type of witnesses here!
   };
 

@@ -31,7 +31,7 @@ bool FancyChecksPass::runOnModule(Module &M) {
 
   for (auto &F : M) {
     if (F.empty())
-      return false;
+      continue;
 
     DEBUG(dbgs() << "FancyChecksPass: processing function `"
                  << F.getName().str() << "`\n";);

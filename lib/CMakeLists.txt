@@ -19,6 +19,7 @@ add_meminstrument_library(meminstrument
   WitnessStrategy.cpp
   InstrumentationPolicy.cpp
   RegisterPasses.cpp
+  SplayMechanism.cpp
   WitnessGraph.cpp
 )
 
