@@ -158,9 +158,9 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
 
   auto *InitVal = ConstantStruct::get(ElemType, ComponentConsts);
 
-  new GlobalVariable(M, ArrType, /*isConstant*/true,
-      GlobalValue::AppendingLinkage, ConstantArray::get(ArrType, InitVal),
-      "llvm.global_ctors");
+  new GlobalVariable(M, ArrType, /*isConstant*/ true,
+                     GlobalValue::AppendingLinkage,
+                     ConstantArray::get(ArrType, InitVal), "llvm.global_ctors");
 
   return true;
 }
