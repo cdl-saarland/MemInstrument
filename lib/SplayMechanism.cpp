@@ -91,12 +91,13 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
   auto *WitnessType = Type::getInt8PtrTy(Ctx);
+  auto *SizeType = Type::getInt64Ty(Ctx);
 
   std::vector<Type *> Args;
 
   Args.push_back(WitnessType);
   Args.push_back(InstrumenteeType);
-  Args.push_back(Type::getInt64Ty(Ctx));
+  Args.push_back(SizeType);
 
   auto *FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   CheckAccessFunction = M.getOrInsertFunction("__splay_check_access", FunTy);
@@ -110,31 +111,56 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
 
   GetUpperBoundFunction = M.getOrInsertFunction("__splay_get_upper", FunTy);
 
+  Args.clear();
+  Args.push_back(InstrumenteeType);
+  Args.push_back(SizeType);
+
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+  AllocFunction = M.getOrInsertFunction("__splay_alloc", FunTy);
+
   // code for setting up a global constructor for initializing the splay tree
   // with entries for all global variables
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
   Type *ComponentTypes[3];
   ComponentTypes[0] = Type::getInt32Ty(Ctx);
-  ComponentTypes[1] = FunTy;
+  ComponentTypes[1] = PointerType::get(FunTy, 0);
   ComponentTypes[2] = Type::getInt8PtrTy(Ctx);
   auto *ElemType = StructType::get(Ctx, ComponentTypes, false);
   auto *ArrType = ArrayType::get(ElemType, 1);
-  auto *GlobalVal = M.getOrInsertGlobal("llvm.global_ctors", ArrType);
-  // TODO give internal/static linkage
-  auto *GlobalVar = cast<GlobalVariable>(GlobalVal);
 
-  auto *CtorFun = M.getOrInsertFunction("__splay_globals_setup", FunTy);
+  auto *Fun = Function::Create(FunTy, GlobalValue::InternalLinkage,
+                               "__splay_globals_setup", &M);
+  auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
+  IRBuilder<> Builder(BB);
+  std::vector<Value *> ArgVals;
 
-  // TODO fill CtorFun with calls for every global variable
-  // auto *Fun = cast<Function>(CtorFun);
+  for (auto &GV : M.globals()) {
+    auto *PtrArg =
+        Builder.CreateBitCast(&GV, InstrumenteeType, GV.getName() + "_casted");
+    ArgVals.push_back(PtrArg); // Pointer
+
+    auto *PtrType = cast<PointerType>(GV.getType());
+    auto *PointeeType = PtrType->getElementType();
+    uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
+    ArgVals.push_back(
+        Constant::getIntegerValue(SizeType, APInt(64, sz))); // Size
+
+    Builder.CreateCall(AllocFunction, ArgVals);
+    ArgVals.clear();
+  }
+  Builder.CreateRetVoid();
 
   Constant *ComponentConsts[3];
   ComponentConsts[0] =
-      Constant::getIntegerValue(ComponentTypes[0], APInt(32, 1));
-  ComponentConsts[1] = CtorFun;
+      Constant::getIntegerValue(ComponentTypes[0], APInt(32, 0));
+  ComponentConsts[1] = Fun;
   ComponentConsts[2] = Constant::getNullValue(ComponentTypes[2]);
+
   auto *InitVal = ConstantStruct::get(ElemType, ComponentConsts);
-  GlobalVar->setInitializer(ConstantArray::get(ArrType, InitVal));
+
+  new GlobalVariable(M, ArrType, /*isConstant*/true,
+      GlobalValue::AppendingLinkage, ConstantArray::get(ArrType, InitVal),
+      "llvm.global_ctors");
 
   return true;
 }

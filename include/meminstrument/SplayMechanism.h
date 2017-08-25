@@ -61,6 +61,7 @@ public:
   virtual bool insertGlobalDefinitions(llvm::Module &M) override;
 
 private:
+  llvm::Constant *AllocFunction = nullptr;
   llvm::Constant *CheckAccessFunction = nullptr;
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
