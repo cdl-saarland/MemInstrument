@@ -21,6 +21,9 @@
 using namespace llvm;
 using namespace meminstrument;
 
+// FIXME currently, all out-of-bounds pointers are marked invalid here,
+// including legal one-after-allocation ones.
+
 llvm::Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
 
 llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
@@ -86,7 +89,7 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   }
 }
 
-bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
+bool SplayMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
   auto *WitnessType = Type::getInt8PtrTy(Ctx);
@@ -117,21 +120,11 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_global", FunTy);
 
-  // code for setting up a global constructor for initializing the splay tree
-  // with entries for all global variables
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
-  Type *ComponentTypes[3];
-  ComponentTypes[0] = Type::getInt32Ty(Ctx);
-  ComponentTypes[1] = PointerType::get(FunTy, 0);
-  ComponentTypes[2] = Type::getInt8PtrTy(Ctx);
-  auto *ElemType = StructType::get(Ctx, ComponentTypes, false);
-  auto *ArrType = ArrayType::get(ElemType, 1);
+  // register a static constructor that inserts all globals into the splay tree
+  auto Fun = registerCtors(
+      M, std::make_pair<StringRef, int>("__splay_globals_setup", 0));
 
-  auto *Fun = Function::Create(FunTy, GlobalValue::InternalLinkage,
-                               "__splay_globals_setup", &M);
-  setNoInstrument(Fun);
-
-  auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
+  auto *BB = BasicBlock::Create(Ctx, "bb", (*Fun)[0], 0);
   IRBuilder<> Builder(BB);
   std::vector<Value *> ArgVals;
 
@@ -155,18 +148,6 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
     ArgVals.clear();
   }
   Builder.CreateRetVoid();
-
-  Constant *ComponentConsts[3];
-  ComponentConsts[0] =
-      Constant::getIntegerValue(ComponentTypes[0], APInt(32, 0));
-  ComponentConsts[1] = Fun;
-  ComponentConsts[2] = Constant::getNullValue(ComponentTypes[2]);
-
-  auto *InitVal = ConstantStruct::get(ElemType, ComponentConsts);
-
-  new GlobalVariable(M, ArrType, /*isConstant*/ true,
-                     GlobalValue::AppendingLinkage,
-                     ConstantArray::get(ArrType, InitVal), "llvm.global_ctors");
 
   return true;
 }

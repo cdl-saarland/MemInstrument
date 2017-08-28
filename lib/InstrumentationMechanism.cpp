@@ -60,3 +60,41 @@ InstrumentationMechanism &InstrumentationMechanism::get(void) {
   }
   return *Res;
 }
+
+std::unique_ptr<std::vector<Function *>>
+InstrumentationMechanism::registerCtors(
+    Module &M, ArrayRef<std::pair<StringRef, int>> List) {
+  auto &Ctx = M.getContext();
+  auto FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
+  size_t NumElements = List.size();
+
+  Type *ComponentTypes[3];
+  ComponentTypes[0] = Type::getInt32Ty(Ctx);
+  ComponentTypes[1] = PointerType::get(FunTy, 0);
+  ComponentTypes[2] = Type::getInt8PtrTy(Ctx);
+  auto *ElemType = StructType::get(Ctx, ComponentTypes, false);
+  auto *ArrType = ArrayType::get(ElemType, NumElements);
+  std::vector<Constant *> ArrInits;
+  std::unique_ptr<std::vector<Function *>> Functions(
+      new std::vector<Function *>());
+
+  for (auto &P : List) {
+    auto *Fun =
+        Function::Create(FunTy, GlobalValue::InternalLinkage, P.first, &M);
+    setNoInstrument(Fun);
+
+    Constant *ComponentConsts[3];
+    ComponentConsts[0] =
+        Constant::getIntegerValue(ComponentTypes[0], APInt(32, P.second));
+    ComponentConsts[1] = Fun;
+    ComponentConsts[2] = Constant::getNullValue(ComponentTypes[2]);
+
+    ArrInits.push_back(ConstantStruct::get(ElemType, ComponentConsts));
+    Functions->push_back(Fun);
+  }
+
+  new GlobalVariable(
+      M, ArrType, /*isConstant*/ true, GlobalValue::AppendingLinkage,
+      ConstantArray::get(ArrType, ArrInits), "llvm.global_ctors");
+  return Functions;
+}

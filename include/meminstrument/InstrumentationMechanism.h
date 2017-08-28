@@ -46,6 +46,9 @@ public:
   static InstrumentationMechanism &get(void);
 
 protected:
+  static std::unique_ptr<std::vector<llvm::Function *>>
+  registerCtors(llvm::Module &M,
+                llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
 };
 
 } // end namespace meminstrument
