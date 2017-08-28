@@ -17,9 +17,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
 
 using namespace llvm;
 using namespace meminstrument;
@@ -59,6 +58,12 @@ InstrumentationMechanism &InstrumentationMechanism::get(void) {
     Res = GlobalIM.get();
   }
   return *Res;
+}
+
+void InstrumentationMechanism::setMetadata(GlobalObject *O, StringRef Text) {
+  auto &Ctx = O->getContext();
+  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, Text));
+  O->setMetadata(MEMINSTRUMENT_MD, N);
 }
 
 llvm::Value *DummyWitness::getLowerBound(void) const { return LowerBound; }

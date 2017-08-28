@@ -15,9 +15,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
 
 using namespace llvm;
 using namespace meminstrument;
@@ -130,11 +129,16 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
 
   auto *Fun = Function::Create(FunTy, GlobalValue::InternalLinkage,
                                "__splay_globals_setup", &M);
+  setMetadata(Fun, "no_instrument");
+
   auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
   IRBuilder<> Builder(BB);
   std::vector<Value *> ArgVals;
 
   for (auto &GV : M.globals()) {
+    if (GV.isDeclaration()) { // only insert globals that are defined here
+      continue;               // TODO right?
+    }
     auto *PtrArg =
         Builder.CreateBitCast(&GV, InstrumenteeType, GV.getName() + "_casted");
     ArgVals.push_back(PtrArg); // Pointer

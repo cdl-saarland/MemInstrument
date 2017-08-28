@@ -33,7 +33,7 @@ bool GatherITargetsPass::runOnModule(Module &M) {
   auto &IP = InstrumentationPolicy::get(DL);
 
   for (auto &F : M) {
-    if (F.empty()) {
+    if (F.empty() || F.getMetadata(MEMINSTRUMENT_MD)) {
       continue;
     }
     DEBUG(dbgs() << "GatherITargetsPass: processing function `"

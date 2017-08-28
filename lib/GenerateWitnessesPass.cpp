@@ -42,7 +42,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();
   for (auto &F : M) {
-    if (F.empty())
+    if (F.empty() || F.getMetadata(MEMINSTRUMENT_MD))
       continue;
 
     DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"

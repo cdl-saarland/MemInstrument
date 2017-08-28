@@ -12,6 +12,8 @@
 #ifndef MEMINSTRUMENT_UTIL_H
 #define MEMINSTRUMENT_UTIL_H
 
+#include "llvm/IR/GlobalObject.h"
+
 #include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "meminstrument"
@@ -29,5 +31,7 @@
   do {                                                                         \
   } while (false)
 #endif
+
+#define MEMINSTRUMENT_MD "meminstrument"
 
 #endif // MEMINSTRUMENT_UTIL_H
