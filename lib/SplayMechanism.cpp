@@ -115,7 +115,7 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
   Args.push_back(SizeType);
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  AllocFunction = M.getOrInsertFunction("__splay_alloc", FunTy);
+  GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_global", FunTy);
 
   // code for setting up a global constructor for initializing the splay tree
   // with entries for all global variables
@@ -139,6 +139,8 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
     if (GV.isDeclaration()) { // only insert globals that are defined here
       continue;               // TODO right?
     }
+    DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
+                 << "`\n");
     auto *PtrArg =
         Builder.CreateBitCast(&GV, InstrumenteeType, GV.getName() + "_casted");
     ArgVals.push_back(PtrArg); // Pointer
@@ -149,7 +151,7 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
     ArgVals.push_back(
         Constant::getIntegerValue(SizeType, APInt(64, sz))); // Size
 
-    Builder.CreateCall(AllocFunction, ArgVals);
+    Builder.CreateCall(GlobalAllocFunction, ArgVals);
     ArgVals.clear();
   }
   Builder.CreateRetVoid();
