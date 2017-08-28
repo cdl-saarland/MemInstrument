@@ -45,6 +45,9 @@ bool GatherITargetsPass::runOnModule(Module &M) {
                    << F.getName().str() << "::" << BB.getName().str()
                    << "`\n";);
       for (auto &I : BB) {
+        if (hasNoInstrument(&I)) {
+          continue;
+        }
         IP.classifyTargets(Destination, &I);
       }
     }

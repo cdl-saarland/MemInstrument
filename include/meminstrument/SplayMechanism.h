@@ -18,6 +18,7 @@
 #include "meminstrument/InstrumentationMechanism.h"
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace meminstrument {
@@ -62,9 +63,14 @@ public:
 
 private:
   llvm::Constant *GlobalAllocFunction = nullptr;
+  llvm::Constant *AllocFunction = nullptr;
   llvm::Constant *CheckAccessFunction = nullptr;
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
+
+  void insertFunctionDeclarations(llvm::Module &M);
+  void setupGlobals(llvm::Module &M);
+  void instrumentAlloca(llvm::Module &M, llvm::AllocaInst *AI);
 };
 
 } // end namespace meminstrument

@@ -38,7 +38,11 @@ void setNoInstrument(llvm::GlobalObject *O);
 
 void setNoInstrument(llvm::Constant *C);
 
+void setNoInstrument(llvm::Instruction *I);
+
 bool hasNoInstrument(llvm::GlobalObject *O);
+
+bool hasNoInstrument(llvm::Instruction *I);
 }
 
 #endif // MEMINSTRUMENT_UTIL_H

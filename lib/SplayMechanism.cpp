@@ -89,7 +89,7 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   }
 }
 
-bool SplayMechanism::initialize(llvm::Module &M) {
+void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
   auto *WitnessType = Type::getInt8PtrTy(Ctx);
@@ -119,6 +119,13 @@ bool SplayMechanism::initialize(llvm::Module &M) {
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_global", FunTy);
+  AllocFunction = M.getOrInsertFunction("__splay_alloc", FunTy);
+}
+
+void SplayMechanism::setupGlobals(llvm::Module &M) {
+  auto &Ctx = M.getContext();
+  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
+  auto *SizeType = Type::getInt64Ty(Ctx);
 
   // register a static constructor that inserts all globals into the splay tree
   auto Fun = registerCtors(
@@ -148,6 +155,44 @@ bool SplayMechanism::initialize(llvm::Module &M) {
     ArgVals.clear();
   }
   Builder.CreateRetVoid();
+}
+
+void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
+  auto &Ctx = AI->getContext();
+  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
+  auto *SizeType = Type::getInt64Ty(Ctx);
+  IRBuilder<> Builder(AI->getNextNode());
+  std::vector<Value *> ArgVals;
+
+  auto *PtrArg =
+      Builder.CreateBitCast(AI, InstrumenteeType, AI->getName() + "_casted");
+  ArgVals.push_back(PtrArg);
+
+  auto *PtrType = cast<PointerType>(AI->getType());
+  auto *PointeeType = PtrType->getElementType();
+  uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
+  ArgVals.push_back(Constant::getIntegerValue(SizeType, APInt(64, sz)));
+
+  auto *Call = Builder.CreateCall(AllocFunction, ArgVals);
+  setNoInstrument(Call);
+}
+
+bool SplayMechanism::initialize(llvm::Module &M) {
+  insertFunctionDeclarations(M);
+
+  setupGlobals(M);
+
+  for (auto &F : M) {
+    if (F.empty() || hasNoInstrument(&F))
+      continue;
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (auto *AI = dyn_cast<AllocaInst>(&I)) {
+          instrumentAlloca(M, AI);
+        }
+      }
+    }
+  }
 
   return true;
 }
