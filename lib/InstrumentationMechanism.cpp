@@ -93,8 +93,9 @@ InstrumentationMechanism::registerCtors(
     Functions->push_back(Fun);
   }
 
-  new GlobalVariable(
+  auto *GV = new GlobalVariable(
       M, ArrType, /*isConstant*/ true, GlobalValue::AppendingLinkage,
       ConstantArray::get(ArrType, ArrInits), "llvm.global_ctors");
+  setNoInstrument(GV);
   return Functions;
 }
