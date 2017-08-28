@@ -46,7 +46,6 @@ public:
   static InstrumentationMechanism &get(void);
 
 protected:
-  static void setMetadata(llvm::GlobalObject *O, llvm::StringRef Text);
 };
 
 struct DummyWitness : public Witness {

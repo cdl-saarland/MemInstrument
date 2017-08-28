@@ -60,12 +60,6 @@ InstrumentationMechanism &InstrumentationMechanism::get(void) {
   return *Res;
 }
 
-void InstrumentationMechanism::setMetadata(GlobalObject *O, StringRef Text) {
-  auto &Ctx = O->getContext();
-  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, Text));
-  O->setMetadata(MEMINSTRUMENT_MD, N);
-}
-
 llvm::Value *DummyWitness::getLowerBound(void) const { return LowerBound; }
 
 llvm::Value *DummyWitness::getUpperBound(void) const { return UpperBound; }
@@ -144,7 +138,7 @@ bool DummyMechanism::insertGlobalDefinitions(llvm::Module &M) {
   Args.push_back(InstrumenteeType);
   auto *FunTy = FunctionType::get(WitnessType, Args, false);
   CreateWitnessFunction =
-      M.getOrInsertFunction("__memsafe_dummy_create_witness", FunTy /*, TODO*/);
+      M.getOrInsertFunction("__memsafe_dummy_create_witness", FunTy);
 
   Args.clear();
 
@@ -154,21 +148,24 @@ bool DummyMechanism::insertGlobalDefinitions(llvm::Module &M) {
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   CheckAccessFunction =
-      M.getOrInsertFunction("__memsafe_dummy_check_access", FunTy /*, TODO*/);
+      M.getOrInsertFunction("__memsafe_dummy_check_access", FunTy);
 
   Args.clear();
 
   Args.push_back(WitnessType);
 
   FunTy = FunctionType::get(InstrumenteeType, Args, false);
-  GetLowerBoundFunction = M.getOrInsertFunction(
-      "__memsafe_dummy_get_lower_bound", FunTy /*, TODO*/);
+  GetLowerBoundFunction =
+      M.getOrInsertFunction("__memsafe_dummy_get_lower_bound", FunTy);
 
-  GetUpperBoundFunction = M.getOrInsertFunction(
-      "__memsafe_dummy_get_upper_bound", FunTy /*, TODO*/);
+  GetUpperBoundFunction =
+      M.getOrInsertFunction("__memsafe_dummy_get_upper_bound", FunTy);
 
-  // TODO mark these functions somehow so that they are not instrumented
-  // TODO mark these functions to be always inlined
+  setNoInstrument(CreateWitnessFunction);
+  setNoInstrument(CheckAccessFunction);
+  setNoInstrument(GetUpperBoundFunction);
+  setNoInstrument(GetLowerBoundFunction);
+
   return true;
 }
 

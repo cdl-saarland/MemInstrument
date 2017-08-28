@@ -30,7 +30,7 @@ bool FancyChecksPass::runOnModule(Module &M) {
   this->connectToProvider(GWPass);
 
   for (auto &F : M) {
-    if (F.empty() || F.getMetadata(MEMINSTRUMENT_MD))
+    if (F.empty() || hasNoInstrument(&F))
       continue;
 
     DEBUG(dbgs() << "FancyChecksPass: processing function `"

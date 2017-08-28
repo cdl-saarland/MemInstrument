@@ -36,7 +36,7 @@ bool GenerateChecksPass::runOnModule(Module &M) {
   auto &IM = InstrumentationMechanism::get();
 
   for (auto &F : M) {
-    if (F.empty() || F.getMetadata(MEMINSTRUMENT_MD))
+    if (F.empty() || hasNoInstrument(&F))
       continue;
 
     DEBUG(dbgs() << "GenerateChecksPass: processing function `"

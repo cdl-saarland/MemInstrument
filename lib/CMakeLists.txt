@@ -21,6 +21,7 @@ add_meminstrument_library(meminstrument
   RegisterPasses.cpp
   SplayMechanism.cpp
   WitnessGraph.cpp
+  Util.cpp
 )
 
 # List external library dependencies that need to be linked to your library

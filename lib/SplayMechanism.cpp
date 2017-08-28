@@ -129,7 +129,7 @@ bool SplayMechanism::insertGlobalDefinitions(llvm::Module &M) {
 
   auto *Fun = Function::Create(FunTy, GlobalValue::InternalLinkage,
                                "__splay_globals_setup", &M);
-  setMetadata(Fun, "no_instrument");
+  setNoInstrument(Fun);
 
   auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
   IRBuilder<> Builder(BB);

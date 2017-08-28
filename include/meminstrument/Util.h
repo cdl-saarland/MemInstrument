@@ -32,6 +32,13 @@
   } while (false)
 #endif
 
-#define MEMINSTRUMENT_MD "meminstrument"
+namespace meminstrument {
+
+void setNoInstrument(llvm::GlobalObject *O);
+
+void setNoInstrument(llvm::Constant *C);
+
+bool hasNoInstrument(llvm::GlobalObject *O);
+}
 
 #endif // MEMINSTRUMENT_UTIL_H
