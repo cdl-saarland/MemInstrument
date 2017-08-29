@@ -136,8 +136,9 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
   std::vector<Value *> ArgVals;
 
   for (auto &GV : M.globals()) {
-    if (GV.isDeclaration() || hasNoInstrument(&GV)) { // only insert globals that are defined here
-      continue;               // TODO right?
+    if (GV.isDeclaration() ||
+        hasNoInstrument(&GV)) { // only insert globals that are defined here
+      continue;                 // TODO right?
     }
     DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
                  << "`\n");
@@ -172,7 +173,9 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
 
   Value *Size = Constant::getIntegerValue(SizeType, APInt(64, sz));
   if (AI->isArrayAllocation()) {
-    Size = Builder.CreateMul(AI->getArraySize(), Size, AI->getName() + "_bytes_size", /*hasNUW*/ true, /*hasNSW*/ false);
+    Size = Builder.CreateMul(AI->getArraySize(), Size,
+                             AI->getName() + "_bytes_size", /*hasNUW*/ true,
+                             /*hasNSW*/ false);
   }
   ArgVals.push_back(Size);
 
