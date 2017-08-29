@@ -119,7 +119,7 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_global", FunTy);
-  AllocFunction = M.getOrInsertFunction("__splay_alloc", FunTy);
+  AllocFunction = M.getOrInsertFunction("__splay_alloc_or_replace", FunTy);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
@@ -168,10 +168,13 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
       Builder.CreateBitCast(AI, InstrumenteeType, AI->getName() + "_casted");
   ArgVals.push_back(PtrArg);
 
-  auto *PtrType = cast<PointerType>(AI->getType());
-  auto *PointeeType = PtrType->getElementType();
-  uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
-  ArgVals.push_back(Constant::getIntegerValue(SizeType, APInt(64, sz)));
+  uint64_t sz = M.getDataLayout().getTypeAllocSize(AI->getAllocatedType());
+
+  Value *Size = Constant::getIntegerValue(SizeType, APInt(64, sz));
+  if (AI->isArrayAllocation()) {
+    Size = Builder.CreateMul(AI->getArraySize(), Size, AI->getName() + "_bytes_size", /*hasNUW*/ true, /*hasNSW*/ false);
+  }
+  ArgVals.push_back(Size);
 
   auto *Call = Builder.CreateCall(AllocFunction, ArgVals);
   setNoInstrument(Call);
