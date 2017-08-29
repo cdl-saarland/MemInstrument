@@ -1,5 +1,9 @@
 # reference file: llvm/test/CMakeLists.txt
 
+find_path(MEMINSTRUMENT_RT_LIB_PATH libsplay.a)
+if(NOT ${MEMINSTRUMENT_RT_LIB_PATH_FOUND})
+  message(STATUS "Cannot find meminstrument runtime libs.")
+endif()
 
 # Tell lit to auto-generate lit.site.cfg from the hand-written lit.site.cfg.in
 # This makes user specific paths which are already known to cmake also

@@ -11,5 +11,7 @@ config.llvm_lib_dir = "@LLVM_LIBRARY_DIR@"
 config.meminstrument_src_root = "@LLVM_SOURCE_DIR@/projects/meminstrument"
 config.meminstrument_test_root = "@LLVM_SOURCE_DIR@/projects/meminstrument/test"
 
+config.substitutions.append(('%clink', config.llvm_obj_root + '/bin/clang -L@MEMINSTRUMENT_RT_LIB_PATH@'))
+
 # Let the main config do the real work.
 lit_config.load_config(config, "@LLVM_SOURCE_DIR@/projects/meminstrument/test/lit.cfg")
