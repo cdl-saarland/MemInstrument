@@ -15,8 +15,17 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
+#include "llvm/ADT/Statistic.h"
 
 #include "meminstrument/Util.h"
+
+STATISTIC(SplayNumChecks, "The # of checks inserted");
+STATISTIC(SplayNumBounds, "The # of bound(pairs) materialized");
+STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
+STATISTIC(SplayNumWitnessSelects, "The # of witness selects inserted");
+STATISTIC(SplayNumWitnessLookups, "The # of witness lookups inserted");
+STATISTIC(SplayNumGlobals, "The # of globals registered");
+STATISTIC(SplayNumAllocas, "The # of allocas registered");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -45,6 +54,7 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
                             Target.Instrumentee->getName() + "_witness");
 
   Target.BoundWitness = std::make_shared<SplayWitness>(CastVal);
+  ++SplayNumWitnessLookups;
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
@@ -65,6 +75,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
 
   builder.CreateCall(CheckAccessFunction, Args);
+  ++SplayNumChecks;
 }
 
 void SplayMechanism::materializeBounds(ITarget &Target) const {
@@ -87,6 +98,7 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
     auto *LowerVal = builder.CreateCall(GetUpperBoundFunction, Args, Name);
     Witness->LowerBound = LowerVal;
   }
+  ++SplayNumBounds;
 }
 
 void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
@@ -153,6 +165,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
         Constant::getIntegerValue(SizeType, APInt(64, sz))); // Size
 
     Builder.CreateCall(GlobalAllocFunction, ArgVals);
+    ++SplayNumGlobals;
     ArgVals.clear();
   }
   Builder.CreateRetVoid();
@@ -181,6 +194,7 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
 
   auto *Call = Builder.CreateCall(AllocFunction, ArgVals);
   setNoInstrument(Call);
+  ++SplayNumAllocas;
 }
 
 bool SplayMechanism::initialize(llvm::Module &M) {
@@ -215,6 +229,7 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
                                    Phi->getNumIncomingValues(), Name);
 
   Target.BoundWitness = std::make_shared<SplayWitness>(NewPhi);
+  ++SplayNumWitnessPhis;
   return Target.BoundWitness;
 }
 
@@ -243,5 +258,6 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
   Target.BoundWitness = std::make_shared<SplayWitness>(NewSel);
+  ++SplayNumWitnessSelects;
   return std::make_shared<SplayWitness>(NewSel);
 }

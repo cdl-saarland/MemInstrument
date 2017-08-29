@@ -13,9 +13,11 @@
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Support/Debug.h"
+#include "llvm/ADT/Statistic.h"
 
-#define DEBUG_TYPE "meminstrument"
+#include "meminstrument/Util.h"
+
+STATISTIC(NumITargetsGathered, "The # of instrumentation targets initially gathered");
 
 using namespace meminstrument;
 using namespace llvm;
@@ -82,6 +84,7 @@ void BeforeOutflowPolicy::classifyTargets(
 
     Destination.push_back(std::make_shared<ITarget>(
         Operand, Location, getPointerAccessSize(Operand)));
+    ++NumITargetsGathered;
     break;
   }
   case Instruction::Call: {
@@ -110,6 +113,7 @@ void BeforeOutflowPolicy::classifyTargets(
 
       Destination.push_back(std::make_shared<ITarget>(
           Operand, Location, getPointerAccessSize(Operand)));
+      ++NumITargetsGathered;
     }
 
     break;
@@ -119,6 +123,7 @@ void BeforeOutflowPolicy::classifyTargets(
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
         PtrOperand, Location, getPointerAccessSize(PtrOperand)));
+    ++NumITargetsGathered;
     break;
   }
   case Instruction::Store: {
@@ -126,6 +131,7 @@ void BeforeOutflowPolicy::classifyTargets(
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
         PtrOperand, Location, getPointerAccessSize(PtrOperand)));
+    ++NumITargetsGathered;
 
     auto *StoreOperand = I->getValueOperand();
     if (!StoreOperand->getType()->isPointerTy()) {
@@ -134,6 +140,7 @@ void BeforeOutflowPolicy::classifyTargets(
 
     Destination.push_back(std::make_shared<ITarget>(
         StoreOperand, Location, getPointerAccessSize(StoreOperand)));
+    ++NumITargetsGathered;
 
     break;
   }
