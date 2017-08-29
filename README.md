@@ -29,6 +29,7 @@ cmake -G <build tool> <additional flags> -DLLVM_TOOL_COMPILER_RT_BUILD=1 ../llvm
 where `<build tool>` is your preferred build tool (e.g. `Ninja`).
 Interesting additional flags for development are:
 
+  * `-DCMAKE_INCLUDE_PATH=</path/to/instrumentation-mechanisms/lib>` to allow finding runtime libraries for the implemented instrumentation mechanisms from a separate repository. (Omitting can make tests fail.)
   * `-DLLVM_ENABLE_ASSERTIONS=1` to enforce assertions in the code
   * `-DCMAKE_BUILD_TYPE=Debug` to enable a debug build for better error messages and debugging capabilities
   * `-DLLVM_PARALLEL_LINK_JOBS=<n>` to limit the number of concurrent link jobs to `<n>`. This should be rather low for systems with less than 8GB of RAM as linking `clang` can require considerable amounts of memory (especially when building a debug build)
