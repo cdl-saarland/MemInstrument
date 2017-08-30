@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python
 
 # This script checks whether there is a line in stdin that contains ALL command
 # line arguments. Returns 0 if there is one, 1 otherwise
