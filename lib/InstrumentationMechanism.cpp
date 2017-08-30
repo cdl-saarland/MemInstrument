@@ -99,3 +99,25 @@ InstrumentationMechanism::registerCtors(
   setNoInstrument(GV);
   return Functions;
 }
+
+GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M, StringRef Str) {
+  auto &Ctx = M.getContext();
+  auto CharType = Type::getInt8Ty(Ctx);
+  size_t NumElements = Str.size() + 1;
+
+  auto *ArrType = ArrayType::get(CharType, NumElements);
+  std::vector<Constant *> ArrInits;
+
+  for (size_t i = 0; i < NumElements - 1; ++i) {
+    auto *Val = Constant::getIntegerValue(CharType, APInt(8, Str[i]));
+
+    ArrInits.push_back(Val);
+  }
+  ArrInits.push_back(Constant::getIntegerValue(CharType, APInt(8, 0)));
+
+  auto *GV = new GlobalVariable(
+      M, ArrType, /*isConstant*/ true, GlobalValue::InternalLinkage,
+      ConstantArray::get(ArrType, ArrInits), "stringliteral." + Str);
+  setNoInstrument(GV);
+  return GV;
+}

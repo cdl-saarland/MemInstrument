@@ -17,6 +17,7 @@
 #include "meminstrument/ITarget.h"
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace meminstrument {
@@ -49,6 +50,7 @@ protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
                 llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
+  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M, llvm::StringRef Str);
 };
 
 } // end namespace meminstrument

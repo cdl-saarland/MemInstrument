@@ -19,6 +19,8 @@
 
 #include "meminstrument/Util.h"
 
+#define PACK_ITARGETS 1
+
 STATISTIC(SplayNumChecks, "The # of checks inserted");
 STATISTIC(SplayNumBounds, "The # of bound(pairs) materialized");
 STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
@@ -62,7 +64,8 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
   auto *Witness = cast<SplayWitness>(Target.BoundWitness.get());
 
-  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
+  auto &Ctx = Target.Instrumentee->getContext();
+  auto *VoidPtrTy = Type::getInt8PtrTy(Ctx);
 
   auto *CastVal =
       builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
@@ -74,7 +77,16 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
   Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
 
+#if PACK_ITARGETS
+  Module *M = Target.Location->getModule();
+  auto *Val = insertStringLiteral(*M, (Target.Location->getFunction()->getName() + "::" + Target.Instrumentee->getName()).str());
+  auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
+  Args.push_back(CastedVal);
   builder.CreateCall(CheckAccessFunction, Args);
+#else
+  builder.CreateCall(CheckAccessFunction, Args);
+#endif
+
   ++SplayNumChecks;
 }
 
@@ -108,13 +120,21 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto *SizeType = Type::getInt64Ty(Ctx);
 
   std::vector<Type *> Args;
+  FunctionType *FunTy = nullptr;
 
   Args.push_back(WitnessType);
   Args.push_back(InstrumenteeType);
   Args.push_back(SizeType);
 
-  auto *FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+#if PACK_ITARGETS
+  Args.push_back(Type::getInt8PtrTy(Ctx));
+
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+  CheckAccessFunction = M.getOrInsertFunction("__splay_check_access_named", FunTy);
+#else
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   CheckAccessFunction = M.getOrInsertFunction("__splay_check_access", FunTy);
+#endif
 
   Args.clear();
 
