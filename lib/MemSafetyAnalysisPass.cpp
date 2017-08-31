@@ -13,7 +13,15 @@
 
 #include "meminstrument/GatherITargetsPass.h"
 
+#include "llvm/ADT/Statistic.h"
+#include "llvm/IR/Instructions.h"
+
+#include <algorithm>
+
 #include "meminstrument/Util.h"
+
+STATISTIC(NumITargetsNoSanitize, "The # of instrumentation targets discarded "
+                                 "because of nosanitize annotations");
 
 using namespace meminstrument;
 using namespace llvm;
@@ -22,10 +30,29 @@ MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
 
 bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) { return false; }
 
-bool MemSafetyAnalysisPass::runOnModule(Module &) {
+bool MemSafetyAnalysisPass::runOnModule(Module &M) {
   auto *GITPass =
       cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
   this->connectToProvider(GITPass);
+
+  for (auto &F : M) {
+    auto &Vec = this->getITargetsForFunction(&F);
+
+    Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
+                             [](std::shared_ptr<ITarget> &IT) {
+                               auto *L = IT->Location;
+                               auto *V = IT->Instrumentee;
+                               bool res =
+                                   L->getMetadata("nosanitize") &&
+                                   (isa<LoadInst>(L) || isa<StoreInst>(L)) &&
+                                   (V == L->getOperand(0));
+                               if (res) {
+                                 ++NumITargetsNoSanitize;
+                               }
+                               return res;
+                             }),
+              Vec.end());
+  }
   return false;
 }
 

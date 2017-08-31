@@ -34,9 +34,3 @@ ITargetProvider::getITargetsForFunction(llvm::Function *F) {
   TargetMap->lookup(F);
   return (*TargetMap)[F];
 }
-
-// void ITargetProvider::addITarget(const ITarget &Target) {
-//   auto *F = Target.Location->getParent()->getParent();
-//   TargetMap->lookup(F);
-//   (*TargetMap)[F].push_back(std::make_shared(Target));
-// }

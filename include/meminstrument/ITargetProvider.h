@@ -26,17 +26,14 @@ namespace meminstrument {
 class ITargetProvider {
 public:
   ITargetProvider(void);
+  virtual ~ITargetProvider(void) {}
 
+protected:
   void initializeEmpty(void);
   void connectToProvider(ITargetProvider *Provider);
 
-  // TODO this might be slightly cooler with an iterator
   std::vector<std::shared_ptr<ITarget>> &
   getITargetsForFunction(llvm::Function *F);
-
-  // void addITarget(const ITarget &Target);
-
-  virtual ~ITargetProvider(void) {}
 
 private:
   typedef llvm::ValueMap<llvm::Function *,
