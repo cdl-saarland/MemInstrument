@@ -11,9 +11,14 @@
 
 #include "meminstrument/FancyChecksPass.h"
 
+#include "meminstrument/Definitions.h."
 #include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
+
+#if MEMINSTRUMENT_USE_PMDA
+#include "PMDA/PMDA.h"
+#endif
 
 #include "meminstrument/Util.h"
 
@@ -44,6 +49,9 @@ void FancyChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addPreserved<GatherITargetsPass>();
   AU.addPreserved<MemSafetyAnalysisPass>();
   AU.addPreserved<GenerateWitnessesPass>();
+#if MEMINSTRUMENT_USE_PMDA
+  AU.addPreserved<pmda::PMDA>();
+#endif
 }
 
 char FancyChecksPass::ID = 0;

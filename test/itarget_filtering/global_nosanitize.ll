@@ -1,5 +1,5 @@
-; RUN: %opt -load %passlib -memsafety-gatheritargets -debug-only meminstrument-gatheritargets %s -S > /dev/null 2> %t1.log
-; RUN: %opt -load %passlib -memsafety-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
+; RUN: %opt %loadlibs -memsafety-gatheritargets -debug-only meminstrument-gatheritargets %s -S > /dev/null 2> %t1.log
+; RUN: %opt %loadlibs -memsafety-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "if.then::foo" %t1.log
 ; RUN: %not fgrep "if.then::foo" %t2.log
 

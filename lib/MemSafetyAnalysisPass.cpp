@@ -11,10 +11,15 @@
 
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
+#include "meminstrument/Definitions.h."
 #include "meminstrument/GatherITargetsPass.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Instructions.h"
+
+#if MEMINSTRUMENT_USE_PMDA
+#include "PMDA/PMDA.h"
+#endif
 
 #include <algorithm>
 
@@ -67,6 +72,9 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
 }
 
 void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
+#if MEMINSTRUMENT_USE_PMDA
+  AU.addRequiredTransitive<pmda::PMDA>();
+#endif
   AU.addRequiredTransitive<GatherITargetsPass>();
   AU.setPreservesAll();
 }

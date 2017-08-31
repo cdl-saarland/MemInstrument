@@ -1,6 +1,8 @@
 # Check if this is a in tree build.
 
-message(STATUS "LLVM lib dir: ${LLVM_LIBRARY_DIR}")
+message(STATUS "Configuring meminstrument...")
+
+option(MEMINSTRUMENT_USE_PMDA "Use PMDA to elimintate checks" 0)
 
 if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   project(meminstrument)
@@ -90,8 +92,52 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
+if(MEMINSTRUMENT_USE_PMDA)
+  message(STATUS "Looking for PMDA...")
+
+  find_path(PMDA_BASE "include/PMDA/PMDA.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/PMDA")
+  if(PMDA_BASE)
+    message(STATUS "Found PMDA in ${PMDA_BASE}")
+  else()
+    message(FATAL_ERROR "PMDA not found ${PMDA_BASE}")
+  endif()
+
+  # Search for the ISL headers
+  find_path(ISL_INCLUDE_PATH "isl/ctx.h")
+  find_path(ISL_BUILD_INCLUDE_PATH "isl/stdint.h")
+
+  if(NOT ${ISL_INCLUDE_PATH_FOUND})
+    message(FATAL_ERROR "Cannot find isl include directory.")
+  endif()
+
+  # find_library(PMDA_LIB "LLVMPMDA")
+  # if (NOT PMDA_LIB)
+  #   message(FATAL_ERROR "Cannot find PMDA library.")
+  # endif()
+
+
+  if(NOT EXISTS ${ISL_INCLUDE_PATH}/isl/ctx.h)
+    message(FATAL_ERROR "Cannot find ctx.h in ${ISL_INCLUDE_PATH}/isl.")
+  endif()
+
+# This header is built by isl, check if the build worked properly
+  if(NOT EXISTS ${ISL_BUILD_INCLUDE_PATH}/isl/stdint.h)
+    message(FATAL_ERROR "Cannot find stdint.h in ${ISL_BUILD_INCLUDE_PATH}/isl.")
+  endif()
+
+  include_directories(
+    BEFORE
+    ${PMDA_BASE}/include
+    ${ISL_INCLUDE_PATH}
+    ${ISL_BUILD_INCLUDE_PATH}
+    )
+
+endif(MEMINSTRUMENT_USE_PMDA)
+
 set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+include_directories(${MEMINSTRUMENT_BINARY_DIR}/include/)
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH

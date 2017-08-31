@@ -1,4 +1,4 @@
-; RUN: %opt -load %passlib -memsafety-genchecks %s -memsafety-imechanism=splay -S > %t1.ll
+; RUN: %opt %loadlibs -memsafety-genchecks %s -memsafety-imechanism=splay -S > %t1.ll
 ; RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 ; RUN: %t2
 

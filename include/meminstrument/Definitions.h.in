@@ -1,0 +1,17 @@
+//===- meminstrument/Definitions.h.in -- MemSafety Instrumentation Utils --===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===---------------------------------------------------------------------===///
+/// \file TODO doku
+//===----------------------------------------------------------------------===//
+
+#ifndef MEMINSTRUMENT_DEFINITIONS_H
+#define MEMINSTRUMENT_DEFINITIONS_H
+
+#define MEMINSTRUMENT_USE_PMDA @MEMINSTRUMENT_USE_PMDA_BOOL@
+
+#endif // MEMINSTRUMENT_DEFINITIONS_H

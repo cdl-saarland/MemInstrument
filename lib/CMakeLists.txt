@@ -5,6 +5,8 @@ if (MSVC_IDE OR XCODE)
   file(GLOB_RECURSE MEMINSTRUMENT_HEADER_FILES "${MEMINSTRUMENT_SOURCE_DIR}/include/meminstrument/*.h")
 endif ()
 
+configure_file("../include/meminstrument/Definitions.h.in" "../include/meminstrument/Definitions.h" )
+
 # add all source files of the project that should be linked together
 add_meminstrument_library(meminstrument
   GatherITargetsPass.cpp
@@ -42,6 +44,11 @@ if (BUILD_SHARED_LIBS)
     ${LLVM_LIBRARY_DIR}
   )
 endif()
+
+target_link_libraries(meminstrument PMDA)
+link_directories(
+  ${LLVM_LIBRARY_DIR}
+)
 
 # Build a monolithic meminstrument.a and a thin module LLVMMEMINSTRUMENT.moduleext that links to
 # that static library.

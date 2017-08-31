@@ -11,6 +11,7 @@
 
 #include "meminstrument/GenerateWitnessesPass.h"
 
+#include "meminstrument/Definitions.h."
 #include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
@@ -18,7 +19,12 @@
 
 #include "llvm/Support/FileSystem.h"
 
+#if MEMINSTRUMENT_USE_PMDA
+#include "PMDA/PMDA.h"
+#endif
+
 #include "meminstrument/Util.h"
+
 
 using namespace meminstrument;
 using namespace llvm;
@@ -92,6 +98,9 @@ void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<MemSafetyAnalysisPass>();
   AU.addPreserved<GatherITargetsPass>();
   AU.addPreserved<MemSafetyAnalysisPass>();
+#if MEMINSTRUMENT_USE_PMDA
+  AU.addPreserved<pmda::PMDA>();
+#endif
 }
 
 char GenerateWitnessesPass::ID = 0;
