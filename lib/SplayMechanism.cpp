@@ -11,11 +11,11 @@
 
 #include "meminstrument/SplayMechanism.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "llvm/ADT/Statistic.h"
 
 #include "meminstrument/Util.h"
 
@@ -79,7 +79,10 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
 #if PACK_ITARGETS
   Module *M = Target.Location->getModule();
-  auto *Val = insertStringLiteral(*M, (Target.Location->getFunction()->getName() + "::" + Target.Instrumentee->getName()).str());
+  auto *Val = insertStringLiteral(*M,
+                                  (Target.Location->getFunction()->getName() +
+                                   "::" + Target.Instrumentee->getName())
+                                      .str());
   auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
   Args.push_back(CastedVal);
   builder.CreateCall(CheckAccessFunction, Args);
@@ -130,7 +133,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   Args.push_back(Type::getInt8PtrTy(Ctx));
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckAccessFunction = M.getOrInsertFunction("__splay_check_access_named", FunTy);
+  CheckAccessFunction =
+      M.getOrInsertFunction("__splay_check_access_named", FunTy);
 #else
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   CheckAccessFunction = M.getOrInsertFunction("__splay_check_access", FunTy);

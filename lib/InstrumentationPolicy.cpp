@@ -11,13 +11,14 @@
 
 #include "meminstrument/InstrumentationPolicy.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/ADT/Statistic.h"
 
 #include "meminstrument/Util.h"
 
-STATISTIC(NumITargetsGathered, "The # of instrumentation targets initially gathered");
+STATISTIC(NumITargetsGathered,
+          "The # of instrumentation targets initially gathered");
 
 using namespace meminstrument;
 using namespace llvm;

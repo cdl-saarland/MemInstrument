@@ -100,7 +100,8 @@ InstrumentationMechanism::registerCtors(
   return Functions;
 }
 
-GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M, StringRef Str) {
+GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
+                                                              StringRef Str) {
   auto &Ctx = M.getContext();
   auto CharType = Type::getInt8Ty(Ctx);
   size_t NumElements = Str.size() + 1;
