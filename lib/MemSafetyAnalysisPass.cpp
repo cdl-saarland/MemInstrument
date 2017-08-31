@@ -36,6 +36,9 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
   this->connectToProvider(GITPass);
 
   for (auto &F : M) {
+    if (F.empty()) {
+      continue;
+    }
     auto &Vec = this->getITargetsForFunction(&F);
 
     Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
@@ -44,14 +47,21 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
                                auto *V = IT->Instrumentee;
                                bool res =
                                    L->getMetadata("nosanitize") &&
-                                   (isa<LoadInst>(L) || isa<StoreInst>(L)) &&
-                                   (V == L->getOperand(0));
+                                   ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
+                                    (isa<StoreInst>(L) && (V == L->getOperand(1))));
                                if (res) {
                                  ++NumITargetsNoSanitize;
                                }
                                return res;
                              }),
               Vec.end());
+
+    DEBUG_ALSO_WITH_TYPE(
+        "meminstrument-memsafetyanalysis",
+        dbgs() << "remaining instrumentation targets after filter:"
+               << "\n";
+        for (auto &Target
+             : Vec) { dbgs() << "  " << *Target << "\n"; });
   }
   return false;
 }
