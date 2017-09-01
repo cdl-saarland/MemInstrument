@@ -19,9 +19,10 @@
 
 #include "meminstrument/Util.h"
 
-#define PACK_ITARGETS 1
+#define PACK_ITARGETS 0
 
-STATISTIC(SplayNumChecks, "The # of checks inserted");
+STATISTIC(SplayNumInboundsChecks, "The # of inbounds checks inserted");
+STATISTIC(SplayNumDereferenceChecks, "The # of dereference checks inserted");
 STATISTIC(SplayNumBounds, "The # of bound(pairs) materialized");
 STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
 STATISTIC(SplayNumWitnessSelects, "The # of witness selects inserted");
@@ -74,8 +75,11 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   std::vector<Value *> Args;
   Args.push_back(Witness->WitnessValue);
   Args.push_back(CastVal);
-  auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
-  Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
+
+  if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
+    auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
+    Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
+  }
 
 #if PACK_ITARGETS
   Module *M = Target.Location->getModule();
@@ -85,12 +89,15 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
                                       .str());
   auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
   Args.push_back(CastedVal);
-  builder.CreateCall(CheckAccessFunction, Args);
-#else
-  builder.CreateCall(CheckAccessFunction, Args);
 #endif
 
-  ++SplayNumChecks;
+  if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
+    builder.CreateCall(CheckDereferenceFunction, Args);
+    ++SplayNumDereferenceChecks;
+  } else {
+    builder.CreateCall(CheckInboundsFunction, Args);
+    ++SplayNumInboundsChecks;
+  }
 }
 
 void SplayMechanism::materializeBounds(ITarget &Target) const {
@@ -127,17 +134,35 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
 
   Args.push_back(WitnessType);
   Args.push_back(InstrumenteeType);
+
+#if PACK_ITARGETS
+  Args.push_back(Type::getInt8PtrTy(Ctx));
+
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+  CheckInboundsFunction =
+      M.getOrInsertFunction("__splay_check_inbounds_named", FunTy);
+#else
+  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+  CheckInboundsFunction =
+      M.getOrInsertFunction("__splay_check_inbounds", FunTy);
+#endif
+
+  Args.clear();
+
+  Args.push_back(WitnessType);
+  Args.push_back(InstrumenteeType);
   Args.push_back(SizeType);
 
 #if PACK_ITARGETS
   Args.push_back(Type::getInt8PtrTy(Ctx));
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckAccessFunction =
-      M.getOrInsertFunction("__splay_check_access_named", FunTy);
+  CheckDereferenceFunction =
+      M.getOrInsertFunction("__splay_check_dereference_named", FunTy);
 #else
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckAccessFunction = M.getOrInsertFunction("__splay_check_access", FunTy);
+  CheckDereferenceFunction =
+      M.getOrInsertFunction("__splay_check_dereference", FunTy);
 #endif
 
   Args.clear();
@@ -154,7 +179,7 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   Args.push_back(SizeType);
 
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_global", FunTy);
+  GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_or_merge", FunTy);
   AllocFunction = M.getOrInsertFunction("__splay_alloc_or_replace", FunTy);
 }
 

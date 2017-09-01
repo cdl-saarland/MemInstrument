@@ -84,7 +84,8 @@ void BeforeOutflowPolicy::classifyTargets(
     }
 
     Destination.push_back(std::make_shared<ITarget>(
-        Operand, Location, getPointerAccessSize(Operand)));
+        Operand, Location, getPointerAccessSize(Operand), /*CheckUpper*/ false,
+        /*CheckLower*/ false, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
     break;
   }
@@ -113,7 +114,9 @@ void BeforeOutflowPolicy::classifyTargets(
       }
 
       Destination.push_back(std::make_shared<ITarget>(
-          Operand, Location, getPointerAccessSize(Operand)));
+          Operand, Location, getPointerAccessSize(Operand),
+          /*CheckUpper*/ false, /*CheckLower*/ false,
+          /*ExplicitBounds*/ false));
       ++NumITargetsGathered;
     }
 
@@ -123,7 +126,8 @@ void BeforeOutflowPolicy::classifyTargets(
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(PtrOperand)));
+        PtrOperand, Location, getPointerAccessSize(PtrOperand),
+        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
     break;
   }
@@ -131,7 +135,8 @@ void BeforeOutflowPolicy::classifyTargets(
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(PtrOperand)));
+        PtrOperand, Location, getPointerAccessSize(PtrOperand),
+        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
 
     auto *StoreOperand = I->getValueOperand();
@@ -140,7 +145,8 @@ void BeforeOutflowPolicy::classifyTargets(
     }
 
     Destination.push_back(std::make_shared<ITarget>(
-        StoreOperand, Location, getPointerAccessSize(StoreOperand)));
+        StoreOperand, Location, getPointerAccessSize(StoreOperand),
+        /*CheckUpper*/ false, /*CheckLower*/ false, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
 
     break;

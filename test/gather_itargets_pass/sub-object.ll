@@ -1,11 +1,11 @@
 ; RUN: %opt %loadlibs -memsafety-gatheritargets -debug-only=meminstrument-gatheritargets %s > /dev/null 2> %t.log
 ; RUN: fgrep "<add.ptr, entry::tmp, 4B, ul_>" %t.log
 ; RUN: fgrep "<arrayidx, for.body::[store], 4B, ul_>" %t.log
-; RUN: fgrep "<tmp, for.end::call1, 4B, ul_>" %t.log
+; RUN: fgrep "<tmp, for.end::call1, 4B, ___>" %t.log
 ; RUN: fgrep "<i, entry::[store], 4B, ul_>" %t.log
 ; RUN: fgrep "<x, entry::[store], 8B, ul_>" %t.log
-; RUN: fgrep "<i1, entry::[store], 4B, ul_>" %t.log
-; RUN: fgrep "<i2, entry::call, 4B, ul_>" %t.log
+; RUN: fgrep "<i1, entry::[store], 4B, ___>" %t.log
+; RUN: fgrep "<i2, entry::call, 4B, ___>" %t.log
 ; ModuleID = 'test_subobj.o0.ll'
 source_filename = "test_subobj.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"

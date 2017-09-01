@@ -64,7 +64,8 @@ public:
 private:
   llvm::Constant *GlobalAllocFunction = nullptr;
   llvm::Constant *AllocFunction = nullptr;
-  llvm::Constant *CheckAccessFunction = nullptr;
+  llvm::Constant *CheckInboundsFunction = nullptr;
+  llvm::Constant *CheckDereferenceFunction = nullptr;
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
 

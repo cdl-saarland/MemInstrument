@@ -1,5 +1,5 @@
 ; RUN: %opt %loadlibs -memsafety-genchecks %s -memsafety-imechanism=splay -S > %t1.ll
-; RUN: grep -e "call void @__splay_alloc_global(.*, i64 13)" %t1.ll
+; RUN: grep -e "call void @__splay_alloc_or_merge(.*, i64 13)" %t1.ll
 ; RUN: %not fgrep "call void @__splay_check" %t1.ll
 
 ; ModuleID = 'hello_world.c'
