@@ -25,7 +25,6 @@
 
 #include "meminstrument/Util.h"
 
-
 using namespace meminstrument;
 using namespace llvm;
 

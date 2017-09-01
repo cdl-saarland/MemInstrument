@@ -46,19 +46,19 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     }
     auto &Vec = this->getITargetsForFunction(&F);
 
-    Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
-                             [](std::shared_ptr<ITarget> &IT) {
-                               auto *L = IT->Location;
-                               auto *V = IT->Instrumentee;
-                               bool res =
-                                   L->getMetadata("nosanitize") &&
-                                   ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
-                                    (isa<StoreInst>(L) && (V == L->getOperand(1))));
-                               if (res) {
-                                 ++NumITargetsNoSanitize;
-                               }
-                               return res;
-                             }),
+    Vec.erase(std::remove_if(
+                  Vec.begin(), Vec.end(),
+                  [](std::shared_ptr<ITarget> &IT) {
+                    auto *L = IT->Location;
+                    auto *V = IT->Instrumentee;
+                    bool res = L->getMetadata("nosanitize") &&
+                               ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
+                                (isa<StoreInst>(L) && (V == L->getOperand(1))));
+                    if (res) {
+                      ++NumITargetsNoSanitize;
+                    }
+                    return res;
+                  }),
               Vec.end());
 
     DEBUG_ALSO_WITH_TYPE(
