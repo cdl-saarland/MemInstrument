@@ -44,7 +44,9 @@ if (BUILD_SHARED_LIBS)
   )
 endif()
 
+if (MEMINSTRUMENT_USE_PMDA)
 target_link_libraries(meminstrument PMDA)
+endif()
 
 link_directories(
   ${LLVM_LIBRARY_DIR}
