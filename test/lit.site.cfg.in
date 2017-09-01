@@ -15,11 +15,12 @@ config.substitutions.append(('%clink', config.llvm_obj_root + '/bin/clang -L@MEM
 
 if '@MEMINSTRUMENT_USE_PMDA@' in ['1', 'ON']:
     config.substitutions.append(('%pmdalib', config.llvm_lib_dir + '/LLVMPMDA.so'))
-    config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMPMDA.so -load ' + config.llvm_lib_dir + '/LLVMMEMINSTRUMENT.so'))
     config.available_features.add("pmda")
 else:
     config.available_features.add("no_pmda")
-    config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMMEMINSTRUMENT.so'))
+
+# PMDA is linked into meminstrument if it is available, so no -load for PMDA required.
+config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMMEMINSTRUMENT.so'))
 
 # Let the main config do the real work.
 lit_config.load_config(config, "@LLVM_SOURCE_DIR@/projects/meminstrument/test/lit.cfg")

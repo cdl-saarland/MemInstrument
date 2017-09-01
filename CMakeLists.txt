@@ -102,10 +102,6 @@ if(MEMINSTRUMENT_USE_PMDA)
     message(FATAL_ERROR "PMDA not found ${PMDA_BASE}")
   endif()
 
-  # Search for the ISL headers
-  find_path(ISL_INCLUDE_PATH "isl/ctx.h")
-  find_path(ISL_BUILD_INCLUDE_PATH "isl/stdint.h")
-
   if(NOT ${ISL_INCLUDE_PATH_FOUND})
     message(FATAL_ERROR "Cannot find isl include directory.")
   endif()
@@ -114,7 +110,7 @@ if(MEMINSTRUMENT_USE_PMDA)
     message(FATAL_ERROR "Cannot find ctx.h in ${ISL_INCLUDE_PATH}/isl.")
   endif()
 
-# This header is built by isl, check if the build worked properly
+  # This header is built by isl, check if the build worked properly
   if(NOT EXISTS ${ISL_BUILD_INCLUDE_PATH}/isl/stdint.h)
     message(FATAL_ERROR "Cannot find stdint.h in ${ISL_BUILD_INCLUDE_PATH}/isl.")
   endif()
