@@ -110,12 +110,6 @@ if(MEMINSTRUMENT_USE_PMDA)
     message(FATAL_ERROR "Cannot find isl include directory.")
   endif()
 
-  # find_library(PMDA_LIB "LLVMPMDA")
-  # if (NOT PMDA_LIB)
-  #   message(FATAL_ERROR "Cannot find PMDA library.")
-  # endif()
-
-
   if(NOT EXISTS ${ISL_INCLUDE_PATH}/isl/ctx.h)
     message(FATAL_ERROR "Cannot find ctx.h in ${ISL_INCLUDE_PATH}/isl.")
   endif()
@@ -136,8 +130,6 @@ endif(MEMINSTRUMENT_USE_PMDA)
 
 set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-include_directories(${MEMINSTRUMENT_BINARY_DIR}/include/)
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH
@@ -163,10 +155,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${MEMINSTRUMENT_SOURCE_DIR}/cmake")
 
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+message (STATUS "Current bin dir: ${CMAKE_CURRENT_BINARY_DIR}")
 include_directories(
   BEFORE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_BINARY_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  ${CMAKE_CURRENT_BINARY_DIR}/include/
   )
 
 install(DIRECTORY include/

@@ -29,7 +29,6 @@ add_meminstrument_library(meminstrument
 
 # List external library dependencies that need to be linked to your library
 # (see project/myproject level CMakelists to enforce that these libraries are found)
-# target_link_libraries(PMDA ${ISL_LIBRARY})
 
 if (BUILD_SHARED_LIBS)
   target_link_libraries(meminstrument
@@ -46,6 +45,7 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 target_link_libraries(meminstrument PMDA)
+
 link_directories(
   ${LLVM_LIBRARY_DIR}
 )

@@ -11,7 +11,7 @@
 
 #include "meminstrument/FancyChecksPass.h"
 
-#include "meminstrument/Definitions.h."
+#include "meminstrument/Definitions.h"
 #include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"

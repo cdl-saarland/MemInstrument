@@ -11,7 +11,7 @@
 
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
-#include "meminstrument/Definitions.h."
+#include "meminstrument/Definitions.h"
 #include "meminstrument/GatherITargetsPass.h"
 
 #include "llvm/ADT/Statistic.h"
