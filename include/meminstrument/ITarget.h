@@ -60,6 +60,8 @@ struct ITarget {
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize);
 
+  bool subsumes(const ITarget &other) const;
+
   bool joinFlags(const ITarget &other);
 
   bool hasWitness(void) const;

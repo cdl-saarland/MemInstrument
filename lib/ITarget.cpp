@@ -14,6 +14,17 @@
 using namespace llvm;
 using namespace meminstrument;
 
+namespace {
+bool flagSubsumes(const ITarget& i1, const ITarget& i2) {
+  return (i1.AccessSize >= i2.AccessSize) &&
+    (i1.CheckUpperBoundFlag >= i2.CheckUpperBoundFlag) &&
+    (i1.CheckLowerBoundFlag >= i2.CheckLowerBoundFlag) &&
+    (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
+    (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
+}
+
+}
+
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,
                  bool CheckLowerBoundFlag, bool CheckTemporalFlag,
@@ -39,12 +50,12 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
+bool ITarget::subsumes(const ITarget &other) const {
+  return (Instrumentee == other.Instrumentee) && flagSubsumes(*this, other);
+}
+
 bool ITarget::joinFlags(const ITarget &other) {
-  bool Changed = AccessSize < other.AccessSize ||
-                 CheckUpperBoundFlag < other.CheckUpperBoundFlag ||
-                 CheckLowerBoundFlag < other.CheckLowerBoundFlag ||
-                 CheckTemporalFlag < other.CheckTemporalFlag ||
-                 RequiresExplicitBounds < other.RequiresExplicitBounds;
+  bool Changed = !flagSubsumes(*this, other);
 
   AccessSize = std::max(AccessSize, other.AccessSize);
   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
