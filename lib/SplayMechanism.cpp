@@ -28,6 +28,7 @@ STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
 STATISTIC(SplayNumWitnessSelects, "The # of witness selects inserted");
 STATISTIC(SplayNumWitnessLookups, "The # of witness lookups inserted");
 STATISTIC(SplayNumGlobals, "The # of globals registered");
+STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
 
 using namespace llvm;
@@ -76,7 +77,9 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   Args.push_back(Witness->WitnessValue);
   Args.push_back(CastVal);
 
-  if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
+  bool doDerefCheck = Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag;
+
+  if (doDerefCheck) {
     auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
     Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
   }
@@ -91,7 +94,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   Args.push_back(CastedVal);
 #endif
 
-  if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
+  if (doDerefCheck) {
     builder.CreateCall(CheckDereferenceFunction, Args);
     ++SplayNumDereferenceChecks;
   } else {
@@ -181,6 +184,13 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
   GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_or_merge", FunTy);
   AllocFunction = M.getOrInsertFunction("__splay_alloc_or_replace", FunTy);
+
+  setNoInstrument(GlobalAllocFunction);
+  setNoInstrument(AllocFunction);
+  setNoInstrument(CheckInboundsFunction);
+  setNoInstrument(CheckDereferenceFunction);
+  setNoInstrument(GetUpperBoundFunction);
+  setNoInstrument(GetLowerBoundFunction);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
@@ -214,6 +224,23 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 
     Builder.CreateCall(GlobalAllocFunction, ArgVals);
     ++SplayNumGlobals;
+    ArgVals.clear();
+  }
+
+  for (auto &F : M.functions()) {
+    // insert functions as having size 1
+    if (hasNoInstrument(&F) || F.isIntrinsic()) {
+      continue;
+    }
+    DEBUG(dbgs() << "Creating splay init code for Function `" << F << "`\n");
+    auto *PtrArg =
+        Builder.CreateBitCast(&F, InstrumenteeType, F.getName() + "_casted");
+    ArgVals.push_back(PtrArg); // Pointer
+
+    ArgVals.push_back(Constant::getIntegerValue(SizeType, APInt(64, 1)));
+
+    Builder.CreateCall(GlobalAllocFunction, ArgVals);
+    ++SplayNumFunctions;
     ArgVals.clear();
   }
   Builder.CreateRetVoid();

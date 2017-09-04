@@ -60,9 +60,6 @@ size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *V) {
   auto *PointeeType = Ty->getPointerElementType();
 
   if (PointeeType->isFunctionTy()) {
-    // FIXME
-    DEBUG(dbgs() << "treating function pointer with access size 0: `"
-                 << V->getName() << "`\n";);
     return 0;
   }
 
@@ -94,9 +91,10 @@ void BeforeOutflowPolicy::classifyTargets(
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
-      // TODO implement
-      DEBUG(dbgs() << "skipping indirect function call " << Location->getName()
-                   << "\n";);
+      Destination.push_back(std::make_shared<ITarget>(
+          I->getCalledValue(), Location, 1, /*CheckUpper*/ true,
+          /*CheckLower*/ true, /*ExplicitBounds*/ false));
+      ++NumITargetsGathered;
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
       // skip debug information pseudo-calls
