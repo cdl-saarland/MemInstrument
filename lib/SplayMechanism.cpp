@@ -197,9 +197,8 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
   std::vector<Value *> ArgVals;
 
   for (auto &GV : M.globals()) {
-    if (GV.isDeclaration() ||
-        hasNoInstrument(&GV)) { // only insert globals that are defined here
-      continue;                 // TODO right?
+    if (hasNoInstrument(&GV)) {
+      continue;
     }
     DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
                  << "`\n");
