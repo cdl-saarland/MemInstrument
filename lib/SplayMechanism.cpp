@@ -19,8 +19,6 @@
 
 #include "meminstrument/Util.h"
 
-#define PACK_ITARGETS 0
-
 STATISTIC(SplayNumInboundsChecks, "The # of inbounds checks inserted");
 STATISTIC(SplayNumDereferenceChecks, "The # of dereference checks inserted");
 STATISTIC(SplayNumBounds, "The # of bound(pairs) materialized");
@@ -33,6 +31,12 @@ STATISTIC(SplayNumAllocas, "The # of allocas registered");
 
 using namespace llvm;
 using namespace meminstrument;
+
+namespace {
+cl::opt<bool> SplayVerbose("memsafety-splay-verbose",
+                           cl::desc("Use verbose splay check functions"),
+                           cl::init(false));
+}
 
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
@@ -84,15 +88,15 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
   }
 
-#if PACK_ITARGETS
-  Module *M = Target.Location->getModule();
-  auto *Val = insertStringLiteral(*M,
-                                  (Target.Location->getFunction()->getName() +
-                                   "::" + Target.Instrumentee->getName())
-                                      .str());
-  auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
-  Args.push_back(CastedVal);
-#endif
+  if (SplayVerbose) {
+    Module *M = Target.Location->getModule();
+    auto *Val = insertStringLiteral(*M,
+                                    (Target.Location->getFunction()->getName() +
+                                     "::" + Target.Instrumentee->getName())
+                                        .str());
+    auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
+    Args.push_back(CastedVal);
+  }
 
   if (doDerefCheck) {
     builder.CreateCall(CheckDereferenceFunction, Args);
@@ -138,17 +142,16 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   Args.push_back(WitnessType);
   Args.push_back(InstrumenteeType);
 
-#if PACK_ITARGETS
-  Args.push_back(Type::getInt8PtrTy(Ctx));
-
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckInboundsFunction =
-      M.getOrInsertFunction("__splay_check_inbounds_named", FunTy);
-#else
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckInboundsFunction =
-      M.getOrInsertFunction("__splay_check_inbounds", FunTy);
-#endif
+  if (SplayVerbose) {
+    Args.push_back(Type::getInt8PtrTy(Ctx));
+    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+    CheckInboundsFunction =
+        M.getOrInsertFunction("__splay_check_inbounds_named", FunTy);
+  } else {
+    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+    CheckInboundsFunction =
+        M.getOrInsertFunction("__splay_check_inbounds", FunTy);
+  }
 
   Args.clear();
 
@@ -156,17 +159,17 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   Args.push_back(InstrumenteeType);
   Args.push_back(SizeType);
 
-#if PACK_ITARGETS
-  Args.push_back(Type::getInt8PtrTy(Ctx));
+  if (SplayVerbose) {
+    Args.push_back(Type::getInt8PtrTy(Ctx));
 
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckDereferenceFunction =
-      M.getOrInsertFunction("__splay_check_dereference_named", FunTy);
-#else
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckDereferenceFunction =
-      M.getOrInsertFunction("__splay_check_dereference", FunTy);
-#endif
+    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+    CheckDereferenceFunction =
+        M.getOrInsertFunction("__splay_check_dereference_named", FunTy);
+  } else {
+    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
+    CheckDereferenceFunction =
+        M.getOrInsertFunction("__splay_check_dereference", FunTy);
+  }
 
   Args.clear();
 

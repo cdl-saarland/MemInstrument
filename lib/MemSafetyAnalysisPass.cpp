@@ -30,13 +30,14 @@ STATISTIC(NumITargetsNoSanitize, "The # of instrumentation targets discarded "
                                  "because of nosanitize annotations");
 
 STATISTIC(NumITargetsSubsumed, "The # of instrumentation targets discarded "
-                                 "because of dominating subsumption");
+                               "because of dominating subsumption");
 
 using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-cl::opt<bool> NoOptimizations ("memsafety-noopt",
+cl::opt<bool> NoOptimizations(
+    "memsafety-noopt",
     cl::desc("Disable all memsafety instrumentation optimizations"),
     cl::init(false));
 }
@@ -45,11 +46,12 @@ MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
 
 bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) { return false; }
 
-void filterByDominance(const DominatorTree& DomTree, std::vector<std::shared_ptr<ITarget>>& Vec) {
+void filterByDominance(const DominatorTree &DomTree,
+                       std::vector<std::shared_ptr<ITarget>> &Vec) {
   std::set<std::shared_ptr<ITarget>> toDelete;
 
-  for (auto& i1 : Vec) {
-    for (auto& i2 : Vec) {
+  for (auto &i1 : Vec) {
+    for (auto &i2 : Vec) {
       if (i1 == i2)
         continue;
 
@@ -59,15 +61,14 @@ void filterByDominance(const DominatorTree& DomTree, std::vector<std::shared_ptr
     }
   }
 
-  Vec.erase(std::remove_if(
-                Vec.begin(), Vec.end(),
-                [&toDelete](std::shared_ptr<ITarget> &IT) {
-                  bool res = toDelete.find(IT) != toDelete.end();
-                  if (res) {
-                    ++NumITargetsSubsumed;
-                  }
-                  return res;
-                }),
+  Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
+                           [&toDelete](std::shared_ptr<ITarget> &IT) {
+                             bool res = toDelete.find(IT) != toDelete.end();
+                             if (res) {
+                               ++NumITargetsSubsumed;
+                             }
+                             return res;
+                           }),
             Vec.end());
 }
 
@@ -108,7 +109,7 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
         for (auto &Target
              : Vec) { dbgs() << "  " << *Target << "\n"; });
 
-    const auto& DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+    const auto &DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
     filterByDominance(DomTree, Vec);
   }
 
