@@ -26,10 +26,6 @@
 
 #include "meminstrument/Util.h"
 
-STATISTIC(NumByValParams,
-          "The # of function parameters with the byval attribute");
-// These might break things as they entail implicit copying of memory regions
-
 using namespace meminstrument;
 using namespace llvm;
 
@@ -54,12 +50,6 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))
       continue;
-
-    for (auto &P : F.args()) {
-      if (P.hasByValAttr()) {
-        ++NumByValParams;
-      }
-    }
 
     DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
                  << F.getName().str() << "`\n";);

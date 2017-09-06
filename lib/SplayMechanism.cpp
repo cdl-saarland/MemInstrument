@@ -28,6 +28,7 @@ STATISTIC(SplayNumWitnessLookups, "The # of witness lookups inserted");
 STATISTIC(SplayNumGlobals, "The # of globals registered");
 STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
+STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -165,7 +166,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     auto *PtrType = cast<PointerType>(GV.getType());
     auto *PointeeType = PtrType->getElementType();
     uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
-    auto *Size = Constant::getIntegerValue(SizeType, APInt(64, sz));
+    auto *Size = ConstantInt::get(SizeType, sz);
 
     insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
     ++SplayNumGlobals;
@@ -179,7 +180,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     DEBUG(dbgs() << "Creating splay init code for Function `" << F << "'\n");
     auto *PtrArg = insertCast(PtrArgType, &F, Builder);
 
-    auto *Size = Constant::getIntegerValue(SizeType, APInt(64, 1));
+    auto *Size = ConstantInt::get(SizeType, 1);
 
     insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
     ++SplayNumFunctions;
@@ -192,7 +193,7 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   auto *PtrArg = insertCast(PtrArgType, AI, Builder);
 
   uint64_t sz = M.getDataLayout().getTypeAllocSize(AI->getAllocatedType());
-  Value *Size = Constant::getIntegerValue(SizeType, APInt(64, sz));
+  Value *Size = ConstantInt::get(SizeType, sz);
 
   if (AI->isArrayAllocation()) {
     Size = Builder.CreateMul(AI->getArraySize(), Size,
@@ -220,6 +221,23 @@ bool SplayMechanism::initialize(llvm::Module &M) {
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))
       continue;
+    IRBuilder<> Builder(&F.front().front());
+    for (auto &Arg : F.args()) {
+      if (Arg.hasByValAttr()) {
+        // byval parameters are implicitly copied
+        DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
+                     << "'\n");
+        auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
+
+        auto *PtrType = cast<PointerType>(Arg.getType());
+        auto *PointeeType = PtrType->getElementType();
+        uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
+        auto *Size = ConstantInt::get(SizeType, sz);
+
+        insertCall(Builder, AllocFunction, PtrArg, Size);
+        ++SplayNumByValArgs;
+      }
+    }
     for (auto &BB : F) {
       for (auto &I : BB) {
         if (auto *AI = dyn_cast<AllocaInst>(&I)) {

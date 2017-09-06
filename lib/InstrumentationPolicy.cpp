@@ -101,21 +101,39 @@ void BeforeOutflowPolicy::classifyTargets(
       break;
     }
 
-    for (unsigned i = 0; i < I->getNumArgOperands(); ++i) {
-      auto *Operand = I->getArgOperand(i);
+    bool FunIsNoVarArg = Fun && !Fun->isVarArg();
+    // FIXME If we know the function, we can insert actual dereference checks
+    // for byval arguments. Otherwise, we have to hope for the best.
+    Function::arg_iterator ArgIt;
+    if (FunIsNoVarArg) {
+      ArgIt = Fun->arg_begin();
+    }
+    for (auto &Operand : I->arg_operands()) {
       if (!Operand->getType()->isPointerTy()) {
+        if (FunIsNoVarArg) {
+          ++ArgIt;
+        }
         continue;
       }
       if (Operand->getType()->isMetadataTy()) {
         // skip metadata arguments
+        if (FunIsNoVarArg) {
+          ++ArgIt;
+        }
         continue;
       }
 
+      bool isByVal = FunIsNoVarArg && ArgIt->hasByValAttr();
+
       Destination.push_back(std::make_shared<ITarget>(
           Operand, Location, getPointerAccessSize(Operand),
-          /*CheckUpper*/ false, /*CheckLower*/ false,
+          /*CheckUpper*/ isByVal, /*CheckLower*/ isByVal,
           /*ExplicitBounds*/ false));
       ++NumITargetsGathered;
+
+      if (FunIsNoVarArg) {
+        ++ArgIt;
+      }
     }
 
     break;

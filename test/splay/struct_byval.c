@@ -3,8 +3,6 @@
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2 2> %t3.err
 // RUN: %not fgrep "non-existing" < %t3.err
-// XFAIL: *
-// This fails because of the byval parameter attribute that makes implicit copies
 
 #include <stdint.h>
 
