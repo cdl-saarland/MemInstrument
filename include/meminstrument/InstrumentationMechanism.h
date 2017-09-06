@@ -112,6 +112,20 @@ protected:
     llvm::Twine Name = "";
     return insertCall(B, Fun, Name, args...);
   }
+
+  static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                                 llvm::IRBuilder<> &Builder,
+                                 llvm::StringRef Suffix);
+
+  static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                                 llvm::IRBuilder<> &Builder);
+
+  static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                                 llvm::Instruction *Location);
+
+  static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                                 llvm::Instruction *Location,
+                                 llvm::StringRef Suffix);
 };
 
 } // end namespace meminstrument

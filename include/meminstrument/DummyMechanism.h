@@ -34,8 +34,6 @@ struct DummyWitness : public Witness {
 
   DummyWitness(llvm::Value *WitnessValue);
 
-  static llvm::Type *getWitnessType(llvm::LLVMContext &Ctx);
-
   static bool classof(const Witness *W) { return W->getKind() == WK_Dummy; }
 };
 
@@ -65,6 +63,12 @@ private:
   llvm::Constant *CheckAccessFunction = nullptr;
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
+
+  llvm::Type *WitnessType = nullptr;
+  llvm::Type *PtrArgType = nullptr;
+  llvm::Type *SizeType = nullptr;
+
+  void initTypes(llvm::LLVMContext &Ctx);
 };
 
 } // end namespace meminstrument

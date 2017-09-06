@@ -41,28 +41,6 @@ cl::opt<bool> SplayVerbose("memsafety-splay-verbose",
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
 
-llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
-                        llvm::IRBuilder<> &Builder, llvm::StringRef Suffix) {
-  return Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
-}
-
-llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
-                        llvm::IRBuilder<> &Builder) {
-  return insertCast(DestType, FromVal, Builder, "_casted");
-}
-
-llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
-                        llvm::Instruction *Location) {
-  IRBuilder<> Builder(Location);
-  return insertCast(DestType, FromVal, Builder);
-}
-
-llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
-                        llvm::Instruction *Location, llvm::StringRef Suffix) {
-  IRBuilder<> Builder(Location);
-  return insertCast(DestType, FromVal, Builder, Suffix);
-}
-
 llvm::Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
 
 llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }

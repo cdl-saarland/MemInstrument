@@ -139,3 +139,31 @@ llvm::Value *InstrumentationMechanism::insertCall_impl(
   setNoInstrument(Res);
   return Res;
 }
+
+llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
+                                                  llvm::Value *FromVal,
+                                                  llvm::IRBuilder<> &Builder,
+                                                  llvm::StringRef Suffix) {
+  return Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
+}
+
+llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
+                                                  llvm::Value *FromVal,
+                                                  llvm::IRBuilder<> &Builder) {
+  return insertCast(DestType, FromVal, Builder, "_casted");
+}
+
+llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
+                                                  llvm::Value *FromVal,
+                                                  llvm::Instruction *Location) {
+  IRBuilder<> Builder(Location);
+  return insertCast(DestType, FromVal, Builder);
+}
+
+llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
+                                                  llvm::Value *FromVal,
+                                                  llvm::Instruction *Location,
+                                                  llvm::StringRef Suffix) {
+  IRBuilder<> Builder(Location);
+  return insertCast(DestType, FromVal, Builder, Suffix);
+}

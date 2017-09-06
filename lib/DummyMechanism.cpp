@@ -28,104 +28,67 @@ llvm::Value *DummyWitness::getUpperBound(void) const { return UpperBound; }
 DummyWitness::DummyWitness(llvm::Value *WitnessValue)
     : Witness(WK_Dummy), WitnessValue(WitnessValue) {}
 
-llvm::Type *DummyWitness::getWitnessType(LLVMContext &Ctx) {
-  return Type::getInt8PtrTy(Ctx);
+void DummyMechanism::initTypes(llvm::LLVMContext &Ctx) {
+  WitnessType = Type::getInt8PtrTy(Ctx);
+  PtrArgType = Type::getInt8PtrTy(Ctx);
+  SizeType = Type::getInt64Ty(Ctx);
 }
 
 void DummyMechanism::insertWitness(ITarget &Target) const {
-  IRBuilder<> builder(Target.Location);
+  IRBuilder<> Builder(Target.Location);
 
-  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
+  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
 
-  auto *CastVal =
-      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
-                            Target.Instrumentee->getName() + "_casted");
-
-  auto *WitnessVal =
-      builder.CreateCall(CreateWitnessFunction, ArrayRef<Value *>(CastVal),
-                         Target.Instrumentee->getName() + "_witness");
+  auto Name = Target.Instrumentee->getName() + "_witness";
+  auto *WitnessVal = insertCall(Builder, CreateWitnessFunction, Name, CastVal);
   Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
 }
 
 void DummyMechanism::insertCheck(ITarget &Target) const {
-  IRBuilder<> builder(Target.Location);
+  IRBuilder<> Builder(Target.Location);
 
   auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
+  auto *WitnessVal = Witness->WitnessValue;
+  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
+  auto *Size = ConstantInt::get(SizeType, Target.AccessSize);
 
-  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
-
-  auto *CastVal =
-      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
-                            Target.Instrumentee->getName() + "_casted");
-
-  std::vector<Value *> Args;
-  Args.push_back(CastVal);
-  Args.push_back(Witness->WitnessValue);
-  auto *I64Type = Type::getInt64Ty(Target.Location->getContext());
-  Args.push_back(ConstantInt::get(I64Type, Target.AccessSize));
-
-  builder.CreateCall(CheckAccessFunction, Args);
+  insertCall(Builder, CheckAccessFunction, CastVal, WitnessVal, Size);
 }
 
 void DummyMechanism::materializeBounds(ITarget &Target) const {
   assert(Target.RequiresExplicitBounds);
 
-  IRBuilder<> builder(Target.Location);
+  IRBuilder<> Builder(Target.Location);
 
   auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
-
-  std::vector<Value *> Args;
-  Args.push_back(Witness->WitnessValue);
+  auto *WitnessVal = Witness->WitnessValue;
 
   if (Target.CheckUpperBoundFlag) {
     auto Name = Target.Instrumentee->getName() + "_upper";
-    auto *UpperVal = builder.CreateCall(GetUpperBoundFunction, Args, Name);
+    auto *UpperVal =
+        insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
     Witness->UpperBound = UpperVal;
   }
   if (Target.CheckLowerBoundFlag) {
     auto Name = Target.Instrumentee->getName() + "_lower";
-    auto *LowerVal = builder.CreateCall(GetUpperBoundFunction, Args, Name);
+    auto *LowerVal =
+        insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
     Witness->LowerBound = LowerVal;
   }
 }
 
 bool DummyMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
-  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
-  auto *WitnessType = Type::getInt8PtrTy(Ctx);
-
-  std::vector<Type *> Args;
-
-  Args.push_back(InstrumenteeType);
-  auto *FunTy = FunctionType::get(WitnessType, Args, false);
-  CreateWitnessFunction =
-      M.getOrInsertFunction("__memsafe_dummy_create_witness", FunTy);
-
-  Args.clear();
-
-  Args.push_back(InstrumenteeType);
-  Args.push_back(WitnessType);
-  Args.push_back(Type::getInt64Ty(Ctx));
-
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  CheckAccessFunction =
-      M.getOrInsertFunction("__memsafe_dummy_check_access", FunTy);
-
-  Args.clear();
-
-  Args.push_back(WitnessType);
-
-  FunTy = FunctionType::get(InstrumenteeType, Args, false);
-  GetLowerBoundFunction =
-      M.getOrInsertFunction("__memsafe_dummy_get_lower_bound", FunTy);
-
-  GetUpperBoundFunction =
-      M.getOrInsertFunction("__memsafe_dummy_get_upper_bound", FunTy);
-
-  setNoInstrument(CreateWitnessFunction);
-  setNoInstrument(CheckAccessFunction);
-  setNoInstrument(GetUpperBoundFunction);
-  setNoInstrument(GetLowerBoundFunction);
+  initTypes(Ctx);
+  auto *VoidTy = Type::getVoidTy(Ctx);
+  CreateWitnessFunction = insertFunDecl(M, "__memsafe_dummy_create_witness",
+                                        WitnessType, PtrArgType);
+  CheckAccessFunction = insertFunDecl(M, "__memsafe_dummy_check_access", VoidTy,
+                                      PtrArgType, WitnessType, SizeType);
+  GetLowerBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_lower_bound",
+                                        PtrArgType, WitnessType);
+  GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
+                                        PtrArgType, WitnessType);
 
   return true;
 }
@@ -135,11 +98,10 @@ DummyMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *Phi = cast<PHINode>(Target.Instrumentee);
 
   IRBuilder<> builder(Phi);
-  auto &Ctx = Phi->getContext();
 
   auto Name = Phi->getName() + "_witness";
-  auto *NewPhi = builder.CreatePHI(DummyWitness::getWitnessType(Ctx),
-                                   Phi->getNumIncomingValues(), Name);
+  auto *NewPhi =
+      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
   Target.BoundWitness = std::make_shared<DummyWitness>(NewPhi);
   return Target.BoundWitness;
