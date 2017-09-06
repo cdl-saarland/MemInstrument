@@ -16,11 +16,13 @@ using namespace meminstrument;
 
 namespace {
 bool flagSubsumes(const ITarget &i1, const ITarget &i2) {
-  return (i1.AccessSize >= i2.AccessSize) &&
-         (i1.CheckUpperBoundFlag >= i2.CheckUpperBoundFlag) &&
-         (i1.CheckLowerBoundFlag >= i2.CheckLowerBoundFlag) &&
-         (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
-         (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
+  return
+      //  i1.HasConstAccessSize && i2.HasConstAccessSize &&
+      // (i1.AccessSize >= i2.AccessSize) &&
+      (i1.CheckUpperBoundFlag >= i2.CheckUpperBoundFlag) &&
+      (i1.CheckLowerBoundFlag >= i2.CheckLowerBoundFlag) &&
+      (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
+      (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
 }
 }
 
@@ -29,6 +31,7 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  bool CheckLowerBoundFlag, bool CheckTemporalFlag,
                  bool RequiresExplicitBounds)
     : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
+      HasConstAccessSize(true), AccessSizeVal(nullptr),
       CheckUpperBoundFlag(CheckUpperBoundFlag),
       CheckLowerBoundFlag(CheckLowerBoundFlag),
       CheckTemporalFlag(CheckTemporalFlag),
@@ -49,14 +52,42 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 Value *AccessSize, bool CheckUpperBoundFlag,
+                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
+                 bool RequiresExplicitBounds)
+    : Instrumentee(Instrumentee), Location(Location), AccessSize(0),
+      HasConstAccessSize(false), AccessSizeVal(AccessSize),
+      CheckUpperBoundFlag(CheckUpperBoundFlag),
+      CheckLowerBoundFlag(CheckLowerBoundFlag),
+      CheckTemporalFlag(CheckTemporalFlag),
+      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {}
+
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 Value *AccessSize, bool CheckUpperBoundFlag,
+                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
+    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
+              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
+
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 Value *AccessSize, bool RequiresExplicitBounds)
+    : ITarget(Instrumentee, Location, AccessSize, true, true,
+              RequiresExplicitBounds) {}
+
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 Value *AccessSize)
+    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
+
 bool ITarget::subsumes(const ITarget &other) const {
-  return (Instrumentee == other.Instrumentee) && flagSubsumes(*this, other);
+  return (Instrumentee == other.Instrumentee) && HasConstAccessSize &&
+         other.HasConstAccessSize && (AccessSize >= other.AccessSize) &&
+         flagSubsumes(*this, other);
 }
 
 bool ITarget::joinFlags(const ITarget &other) {
   bool Changed = !flagSubsumes(*this, other);
 
-  AccessSize = std::max(AccessSize, other.AccessSize);
+  // AccessSize = std::max(AccessSize, other.AccessSize);
   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
@@ -104,7 +135,11 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
   Stream << "<" << IT.Instrumentee->getName() << ", ";
   IT.printLocation(Stream);
   Stream << ", ";
-  Stream << IT.AccessSize << "B, ";
+  if (IT.HasConstAccessSize) {
+    Stream << IT.AccessSize << "B, ";
+  } else {
+    Stream << "xB, ";
+  }
   if (IT.CheckUpperBoundFlag) {
     Stream << "u";
   } else {

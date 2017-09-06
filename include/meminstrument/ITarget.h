@@ -35,6 +35,10 @@ struct ITarget {
   /// access size in bytes that should be checked starting from the instrumentee
   size_t AccessSize;
 
+  bool HasConstAccessSize;
+
+  llvm::Value *AccessSizeVal;
+
   /// indicator whether instrumentee should be checked against its upper bound
   bool CheckUpperBoundFlag;
 
@@ -59,6 +63,18 @@ struct ITarget {
           size_t AccessSize, bool RequiresExplicitBounds);
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           size_t AccessSize);
+
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          llvm::Value *AccessSize, bool CheckUpperBoundFlag,
+          bool CheckLowerBoundFlag, bool CheckTemporalFlag,
+          bool RequiresExplicitBounds);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          llvm::Value *AccessSize, bool CheckUpperBoundFlag,
+          bool CheckLowerBoundFlag, bool RequiresExplicitBounds);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          llvm::Value *AccessSize, bool RequiresExplicitBounds);
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          llvm::Value *AccessSize);
 
   bool subsumes(const ITarget &other) const;
 

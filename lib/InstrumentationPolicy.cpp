@@ -14,11 +14,17 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
 
 #include "meminstrument/Util.h"
 
 STATISTIC(NumITargetsGathered,
           "The # of instrumentation targets initially gathered");
+
+STATISTIC(NumIntrinsicsHandled, "The # of intrinsics that could be handled");
+STATISTIC(NumIntrinsicsNotHandled,
+          "The # of intrinsics that could not be handled");
 
 using namespace meminstrument;
 using namespace llvm;
@@ -68,6 +74,38 @@ size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *V) {
   return Size;
 }
 
+bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
+                          llvm::IntrinsicInst *II) {
+  switch (II->getIntrinsicID()) {
+  case Intrinsic::memcpy:
+  case Intrinsic::memmove: {
+    auto *MT = cast<MemTransferInst>(II);
+    auto *Len = MT->getLength();
+    auto *Src = MT->getSource();
+    Dest.push_back(std::make_shared<ITarget>(
+        Src, II, Len,
+        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+
+    auto *Dst = MT->getDest();
+    Dest.push_back(std::make_shared<ITarget>(
+        Dst, II, Len,
+        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    return true;
+  }
+  case Intrinsic::memset: {
+    auto *MS = cast<MemSetInst>(II);
+    auto *Len = MS->getLength();
+    auto *Dst = MS->getDest();
+    Dest.push_back(std::make_shared<ITarget>(
+        Dst, II, Len,
+        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    return true;
+  }
+  default:
+    return false;
+  }
+}
+
 void BeforeOutflowPolicy::classifyTargets(
     std::vector<std::shared_ptr<ITarget>> &Destination,
     llvm::Instruction *Location) {
@@ -89,6 +127,14 @@ void BeforeOutflowPolicy::classifyTargets(
   case Instruction::Call: {
     llvm::CallInst *I = llvm::cast<llvm::CallInst>(Location);
 
+    if (auto *II = dyn_cast<IntrinsicInst>(I)) {
+      if (handleInstrinsicInst(Destination, II)) {
+        ++NumIntrinsicsHandled;
+        break;
+      }
+      ++NumIntrinsicsNotHandled;
+    }
+
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
       Destination.push_back(std::make_shared<ITarget>(
@@ -100,7 +146,6 @@ void BeforeOutflowPolicy::classifyTargets(
       // skip debug information pseudo-calls
       break;
     }
-
     bool FunIsNoVarArg = Fun && !Fun->isVarArg();
     // FIXME If we know the function, we can insert actual dereference checks
     // for byval arguments. Otherwise, we have to hope for the best.

@@ -50,7 +50,9 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
   auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
   auto *WitnessVal = Witness->WitnessValue;
   auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
-  auto *Size = ConstantInt::get(SizeType, Target.AccessSize);
+  auto *Size = Target.HasConstAccessSize
+                   ? ConstantInt::get(SizeType, Target.AccessSize)
+                   : Target.AccessSizeVal;
 
   insertCall(Builder, CheckAccessFunction, CastVal, WitnessVal, Size);
 }

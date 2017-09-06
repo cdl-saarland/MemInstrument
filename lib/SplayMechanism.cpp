@@ -73,7 +73,9 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   }
 
   if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
-    auto *Size = ConstantInt::get(SizeType, Target.AccessSize);
+    auto *Size = Target.HasConstAccessSize
+                     ? ConstantInt::get(SizeType, Target.AccessSize)
+                     : Target.AccessSizeVal;
     if (SplayVerbose) {
       insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size,
                  NameVal);
