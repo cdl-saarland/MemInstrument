@@ -46,12 +46,39 @@ public:
 
   static InstrumentationMechanism &get(void);
 
+private:
+  /// Base case for the implementation of the insertFunDecl helper function.
+  static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
+                                            llvm::Module &M,
+                                            llvm::StringRef Name,
+                                            llvm::Type *RetTy);
+
+  /// Recursive case for the implementation of the insertFunDecl helper
+  /// function.
+  template <typename... Args>
+  llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
+                                     llvm::Module &M, llvm::StringRef Name,
+                                     llvm::Type *RetTy, llvm::Type *Ty,
+                                     Args... args) {
+    Vec.push_back(Ty);
+    return insertFunDecl_impl(Vec, M, Name, RetTy, args...);
+  }
+
 protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
                 llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
   static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
                                                    llvm::StringRef Str);
+
+  /// Inserts a function declaration into a Module and marks it to not be
+  /// instrumented.
+  template <typename... Args>
+  llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
+                                llvm::Type *RetTy, Args... args) {
+    std::vector<llvm::Type *> Vec;
+    return insertFunDecl_impl(Vec, M, Name, RetTy, args...);
+  }
 };
 
 } // end namespace meminstrument

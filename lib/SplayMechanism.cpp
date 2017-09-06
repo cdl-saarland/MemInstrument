@@ -41,6 +41,28 @@ cl::opt<bool> SplayVerbose("memsafety-splay-verbose",
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
 
+llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                        llvm::IRBuilder<> &Builder, llvm::StringRef Suffix) {
+  return Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
+}
+
+llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                        llvm::IRBuilder<> &Builder) {
+  return insertCast(DestType, FromVal, Builder, "_casted");
+}
+
+llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                        llvm::Instruction *Location) {
+  IRBuilder<> Builder(Location);
+  return insertCast(DestType, FromVal, Builder);
+}
+
+llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
+                        llvm::Instruction *Location, llvm::StringRef Suffix) {
+  IRBuilder<> Builder(Location);
+  return insertCast(DestType, FromVal, Builder, Suffix);
+}
+
 llvm::Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
 
 llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
@@ -48,34 +70,18 @@ llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
 SplayWitness::SplayWitness(llvm::Value *WitnessValue)
     : Witness(WK_Splay), WitnessValue(WitnessValue) {}
 
-llvm::Type *SplayWitness::getWitnessType(LLVMContext &Ctx) {
-  return Type::getInt8PtrTy(Ctx);
-}
-
 void SplayMechanism::insertWitness(ITarget &Target) const {
-  IRBuilder<> builder(Target.Location);
-
-  auto *VoidPtrTy = Type::getInt8PtrTy(Target.Instrumentee->getContext());
-
   auto *CastVal =
-      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
-                            Target.Instrumentee->getName() + "_witness");
-
+      insertCast(WitnessType, Target.Instrumentee, Target.Location, "_witness");
   Target.BoundWitness = std::make_shared<SplayWitness>(CastVal);
   ++SplayNumWitnessLookups;
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
-  IRBuilder<> builder(Target.Location);
+  IRBuilder<> Builder(Target.Location);
 
   auto *Witness = cast<SplayWitness>(Target.BoundWitness.get());
-
-  auto &Ctx = Target.Instrumentee->getContext();
-  auto *VoidPtrTy = Type::getInt8PtrTy(Ctx);
-
-  auto *CastVal =
-      builder.CreateBitCast(Target.Instrumentee, VoidPtrTy,
-                            Target.Instrumentee->getName() + "_casted");
+  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
 
   std::vector<Value *> Args;
   Args.push_back(Witness->WitnessValue);
@@ -90,19 +96,18 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
   if (SplayVerbose) {
     Module *M = Target.Location->getModule();
-    auto *Val = insertStringLiteral(*M,
-                                    (Target.Location->getFunction()->getName() +
-                                     "::" + Target.Instrumentee->getName())
-                                        .str());
-    auto *CastedVal = builder.CreateBitCast(Val, Type::getInt8PtrTy(Ctx));
+    auto Name = Target.Location->getFunction()->getName() +
+                "::" + Target.Instrumentee->getName();
+    auto *Val = insertStringLiteral(*M, Name.str());
+    auto *CastedVal = insertCast(PtrArgType, Val, Builder);
     Args.push_back(CastedVal);
   }
 
   if (doDerefCheck) {
-    builder.CreateCall(CheckDereferenceFunction, Args);
+    Builder.CreateCall(CheckDereferenceFunction, Args);
     ++SplayNumDereferenceChecks;
   } else {
-    builder.CreateCall(CheckInboundsFunction, Args);
+    Builder.CreateCall(CheckInboundsFunction, Args);
     ++SplayNumInboundsChecks;
   }
 }
@@ -132,74 +137,37 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
 
 void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto &Ctx = M.getContext();
-  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
-  auto *WitnessType = Type::getInt8PtrTy(Ctx);
-  auto *SizeType = Type::getInt64Ty(Ctx);
-
-  std::vector<Type *> Args;
-  FunctionType *FunTy = nullptr;
-
-  Args.push_back(WitnessType);
-  Args.push_back(InstrumenteeType);
+  auto *VoidTy = Type::getVoidTy(Ctx);
+  auto *StringTy = Type::getInt8PtrTy(Ctx);
 
   if (SplayVerbose) {
-    Args.push_back(Type::getInt8PtrTy(Ctx));
-    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
     CheckInboundsFunction =
-        M.getOrInsertFunction("__splay_check_inbounds_named", FunTy);
+        insertFunDecl(M, "__splay_check_inbounds_named", VoidTy, WitnessType,
+                      PtrArgType, StringTy);
+    CheckDereferenceFunction =
+        insertFunDecl(M, "__splay_check_dereference_named", VoidTy, WitnessType,
+                      PtrArgType, SizeType, StringTy);
   } else {
-    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-    CheckInboundsFunction =
-        M.getOrInsertFunction("__splay_check_inbounds", FunTy);
+    CheckInboundsFunction = insertFunDecl(M, "__splay_check_inbounds", VoidTy,
+                                          WitnessType, PtrArgType);
+    CheckDereferenceFunction =
+        insertFunDecl(M, "__splay_check_dereference", VoidTy, WitnessType,
+                      PtrArgType, SizeType);
   }
 
-  Args.clear();
+  GetLowerBoundFunction =
+      insertFunDecl(M, "__splay_get_lower", PtrArgType, WitnessType);
+  GetUpperBoundFunction =
+      insertFunDecl(M, "__splay_get_upper", PtrArgType, WitnessType);
 
-  Args.push_back(WitnessType);
-  Args.push_back(InstrumenteeType);
-  Args.push_back(SizeType);
-
-  if (SplayVerbose) {
-    Args.push_back(Type::getInt8PtrTy(Ctx));
-
-    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-    CheckDereferenceFunction =
-        M.getOrInsertFunction("__splay_check_dereference_named", FunTy);
-  } else {
-    FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-    CheckDereferenceFunction =
-        M.getOrInsertFunction("__splay_check_dereference", FunTy);
-  }
-
-  Args.clear();
-
-  Args.push_back(WitnessType);
-
-  FunTy = FunctionType::get(InstrumenteeType, Args, false);
-  GetLowerBoundFunction = M.getOrInsertFunction("__splay_get_lower", FunTy);
-
-  GetUpperBoundFunction = M.getOrInsertFunction("__splay_get_upper", FunTy);
-
-  Args.clear();
-  Args.push_back(InstrumenteeType);
-  Args.push_back(SizeType);
-
-  FunTy = FunctionType::get(Type::getVoidTy(Ctx), Args, false);
-  GlobalAllocFunction = M.getOrInsertFunction("__splay_alloc_or_merge", FunTy);
-  AllocFunction = M.getOrInsertFunction("__splay_alloc_or_replace", FunTy);
-
-  setNoInstrument(GlobalAllocFunction);
-  setNoInstrument(AllocFunction);
-  setNoInstrument(CheckInboundsFunction);
-  setNoInstrument(CheckDereferenceFunction);
-  setNoInstrument(GetUpperBoundFunction);
-  setNoInstrument(GetLowerBoundFunction);
+  GlobalAllocFunction =
+      insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
+  AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
+                                PtrArgType, SizeType);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
   auto &Ctx = M.getContext();
-  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
-  auto *SizeType = Type::getInt64Ty(Ctx);
 
   // register a static constructor that inserts all globals into the splay tree
   auto Fun = registerCtors(
@@ -215,8 +183,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     }
     DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
                  << "`\n");
-    auto *PtrArg =
-        Builder.CreateBitCast(&GV, InstrumenteeType, GV.getName() + "_casted");
+    auto *PtrArg = insertCast(PtrArgType, &GV, Builder);
     ArgVals.push_back(PtrArg); // Pointer
 
     auto *PtrType = cast<PointerType>(GV.getType());
@@ -236,8 +203,8 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
       continue;
     }
     DEBUG(dbgs() << "Creating splay init code for Function `" << F << "`\n");
-    auto *PtrArg =
-        Builder.CreateBitCast(&F, InstrumenteeType, F.getName() + "_casted");
+    auto *PtrArg = insertCast(PtrArgType, &F, Builder);
+
     ArgVals.push_back(PtrArg); // Pointer
 
     ArgVals.push_back(Constant::getIntegerValue(SizeType, APInt(64, 1)));
@@ -250,14 +217,10 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 }
 
 void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
-  auto &Ctx = AI->getContext();
-  auto *InstrumenteeType = Type::getInt8PtrTy(Ctx);
-  auto *SizeType = Type::getInt64Ty(Ctx);
   IRBuilder<> Builder(AI->getNextNode());
   std::vector<Value *> ArgVals;
 
-  auto *PtrArg =
-      Builder.CreateBitCast(AI, InstrumenteeType, AI->getName() + "_casted");
+  auto *PtrArg = insertCast(PtrArgType, AI, Builder);
   ArgVals.push_back(PtrArg);
 
   uint64_t sz = M.getDataLayout().getTypeAllocSize(AI->getAllocatedType());
@@ -275,7 +238,15 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   ++SplayNumAllocas;
 }
 
+void SplayMechanism::initTypes(llvm::LLVMContext &Ctx) {
+  WitnessType = Type::getInt8PtrTy(Ctx);
+  PtrArgType = Type::getInt8PtrTy(Ctx);
+  SizeType = Type::getInt64Ty(Ctx);
+}
+
 bool SplayMechanism::initialize(llvm::Module &M) {
+  initTypes(M.getContext());
+
   insertFunctionDeclarations(M);
 
   setupGlobals(M);
@@ -300,11 +271,10 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *Phi = cast<PHINode>(Target.Instrumentee);
 
   IRBuilder<> builder(Phi);
-  auto &Ctx = Phi->getContext();
 
   auto Name = Phi->getName() + "_witness";
-  auto *NewPhi = builder.CreatePHI(SplayWitness::getWitnessType(Ctx),
-                                   Phi->getNumIncomingValues(), Name);
+  auto *NewPhi =
+      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
   Target.BoundWitness = std::make_shared<SplayWitness>(NewPhi);
   ++SplayNumWitnessPhis;
