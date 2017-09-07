@@ -100,7 +100,7 @@ void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,
 
   auto *NewNode = getInternalNode(WG, Req, Loc);
   addRequired(NewNode);
-  Node->Requirements.push_back(NewNode);
+  Node->addRequirement(NewNode);
 }
 
 void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
@@ -109,7 +109,7 @@ void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
   auto *NewNode = getInternalNode(WG, Req, Loc);
   NewNode->HasAllRequirements = true;
   if (NewNode != Node) // FIXME?
-    Node->Requirements.push_back(NewNode);
+    Node->addRequirement(NewNode);
 }
 
 void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
@@ -139,7 +139,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       // Setting the location to I (and not after I) makes sure that this
       // particular internal Node is only "gotten" when handling Phis here.
       auto *PhiNode = getInternalNode(WG, I, I);
-      Node->Requirements.push_back(PhiNode);
+      Node->addRequirement(PhiNode);
       if (PhiNode->HasAllRequirements) {
         return;
       }
@@ -212,16 +212,16 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
 
-  if (Node->Requirements.size() == 0) {
+  if (Node->getRequiredNodes().size() == 0) {
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
     IM.insertWitness(*(Node->Target));
     return;
   }
 
-  if (Node->Requirements.size() == 1) {
+  if (Node->getRequiredNodes().size() == 1) {
     // We just use the witness of the single requirement, nothing to combine.
-    auto *Requirement = Node->Requirements[0];
+    auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
     Node->Target->BoundWitness = Requirement->Target->BoundWitness;
     return;
@@ -231,14 +231,14 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
     // Insert new phis that use the witnesses of the operands of the
     // instrumentee. This has to happen in two separate steps to break loops.
-    assert(Node->Requirements.size() == Phi->getNumIncomingValues());
+    assert(Node->getRequiredNodes().size() == Phi->getNumIncomingValues());
 
     // First insert phis with no arguments.
     auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
 
     // Now, add the corresponding incoming values for the operands.
     unsigned int i = 0;
-    for (auto *ReqNode : Node->Requirements) {
+    for (auto *ReqNode : Node->getRequiredNodes()) {
       createWitness(IM, ReqNode);
       auto *BB = Phi->getIncomingBlock(i);
       IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->BoundWitness, BB);
@@ -250,15 +250,15 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
   if (isa<SelectInst>(Instrumentee)) {
     // Insert new selects that use the witnesses of the operands of the
     // instrumentee.
-    assert(Node->Requirements.size() == 2);
+    assert(Node->getRequiredNodes().size() == 2);
 
-    for (auto *ReqNode : Node->Requirements) {
+    for (auto *ReqNode : Node->getRequiredNodes()) {
       createWitness(IM, ReqNode);
     }
 
     IM.insertWitnessSelect(*(Node->Target),
-                           Node->Requirements[0]->Target->BoundWitness,
-                           Node->Requirements[1]->Target->BoundWitness);
+                           Node->getRequiredNodes()[0]->Target->BoundWitness,
+                           Node->getRequiredNodes()[1]->Target->BoundWitness);
 
     return;
   }
@@ -266,3 +266,65 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
   // There should be no way to end up here.
   llvm_unreachable("Invalid Node");
 }
+
+namespace {
+void updateWitnessNode(std::map<WitnessGraphNode*, WitnessGraphNode*> &UltimateReqMap, WitnessGraphNode *N) {
+  assert(N != nullptr);
+  WitnessGraphNode *ValBefore = UltimateReqMap.at(N);
+  if (N->getRequiredNodes().size() == 0) {
+    UltimateReqMap.at(N) = N;
+  } else {
+    WitnessGraphNode *Reference = nullptr;
+    bool AllSame = true;
+
+    for (auto &Req : N->getRequiredNodes()) {
+      if (Reference == nullptr) {
+        Reference = Req;
+      } else if (Req != nullptr && Reference != Req) {
+        AllSame = false;
+        break;
+      }
+    }
+    if (AllSame) {
+      UltimateReqMap.at(N) = Reference;
+    } else {
+      UltimateReqMap.at(N) = N;
+    }
+  }
+
+  if (UltimateReqMap.at(N) != ValBefore) {
+    for (auto *other : N->getRequiringNodes()) {
+      updateWitnessNode(UltimateReqMap, other);
+    }
+  }
+}
+}
+
+void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
+  std::map<WitnessGraphNode*, WitnessGraphNode*> UltimateReqMap;
+  std::vector<WitnessGraphNode*> Roots;
+
+  WG.map([&UltimateReqMap, &Roots](WitnessGraphNode *N){
+      UltimateReqMap[N] = nullptr;
+      if (N->getRequiredNodes().size() == 0) {
+        Roots.push_back(N);
+      }
+      });
+
+  for (auto *N : Roots) {
+    updateWitnessNode(UltimateReqMap, N);
+  }
+
+  WG.map([&UltimateReqMap, &Roots](WitnessGraphNode *N){
+      auto *Req = UltimateReqMap.at(N);
+      assert(Req != nullptr);
+
+      if (Req != N) {
+        N->clearRequirements();
+        N->addRequirement(Req);
+      }
+
+      });
+  WG.removeDeadNodes();
+}
+

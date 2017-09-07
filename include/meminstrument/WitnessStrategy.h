@@ -21,15 +21,22 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
 
+
 namespace meminstrument {
 
 struct WitnessGraphNode;
+
+class WitnessGraph;
 
 class WitnessStrategy {
 public:
   virtual ~WitnessStrategy(void) {}
 
   virtual void addRequired(WitnessGraphNode *Node) const = 0;
+
+  virtual void simplifyWitnessGraph(WitnessGraph &WG) const {
+
+  }
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const = 0;
@@ -47,6 +54,8 @@ protected:
 class SimpleStrategy : public WitnessStrategy {
 public:
   virtual void addRequired(WitnessGraphNode *Node) const override;
+
+  virtual void simplifyWitnessGraph(WitnessGraph &WG) const override;
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const override;

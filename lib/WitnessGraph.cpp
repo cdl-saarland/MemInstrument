@@ -17,6 +17,25 @@
 using namespace meminstrument;
 using namespace llvm;
 
+void WitnessGraphNode::addRequirement(WitnessGraphNode *N) {
+  assert(N != nullptr);
+
+  _Requirements.push_back(N);
+  N->_RequiredBy.push_back(this);
+}
+
+void WitnessGraphNode::clearRequirements(void) {
+  for (auto *Req : _Requirements) {
+    auto &Vec = Req->_RequiredBy;
+    Vec.erase(std::remove_if(
+                  Vec.begin(), Vec.end(),
+                  [&Req](WitnessGraphNode *&N) {
+                    return N == Req;
+                  }),
+              Vec.end());
+  }
+}
+
 WitnessGraphNode *
 WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
   // see whether we already have a node for Target
@@ -64,7 +83,7 @@ void WitnessGraph::propagateFlags(void) {
   while (!Worklist.empty()) {
     auto *Node = Worklist.front();
     Worklist.pop();
-    for (auto &Succ : Node->Requirements) {
+    for (auto &Succ : Node->getRequiredNodes()) {
       if (Succ->Target->joinFlags(*Node->Target)) {
         Worklist.push(Succ);
       }
@@ -97,7 +116,7 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   for (const auto &P : InternalNodes) {
     const auto &Node = P.getSecond();
     stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
-    if (Node->Requirements.size() == 0) {
+    if (Node->getRequiredNodes().size() == 0) {
       stream << ", color=red";
     }
     stream << "];\n";
@@ -106,14 +125,14 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "\n";
 
   for (const auto &Node : LeafNodes) {
-    for (const auto *Other : Node.Requirements) {
+    for (const auto *Other : Node.getRequiredNodes()) {
       stream << "  n" << Node.id << " -> n" << Other->id << ";\n";
     }
   }
 
   for (const auto &P : InternalNodes) {
     const auto &Node = P.getSecond();
-    for (const auto *Other : Node->Requirements) {
+    for (const auto *Other : Node->getRequiredNodes()) {
       stream << "  n" << Node->id << " -> n" << Other->id << ";\n";
     }
   }
@@ -145,5 +164,45 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
              << "; ";
     }
     Stream << "\n";
+  }
+}
+
+void markAsReachable(std::set<WitnessGraphNode*> &Res, WitnessGraphNode *N) {
+  if (Res.find(N) != Res.end()) {
+    return;
+  }
+
+  Res.insert(N);
+
+  for (auto &O : N->getRequiredNodes()) {
+    markAsReachable(Res, O);
+  }
+}
+
+void WitnessGraph::removeDeadNodes(void) {
+  std::set<WitnessGraphNode*> DoNotRemove;
+
+  for (auto &N : LeafNodes) {
+    markAsReachable(DoNotRemove, &N);
+  }
+
+  for (auto it = InternalNodes.begin(); it != InternalNodes.end();) {
+    if (DoNotRemove.find(it->second) != DoNotRemove.end()) {
+      ++it;
+    } else {
+      it->second->clearRequirements();
+      delete(it->second);
+      InternalNodes.erase(it++);
+    }
+  }
+
+}
+
+void WitnessGraph::map(const std::function<void(WitnessGraphNode*)>& f) {
+  for (auto &N : LeafNodes) {
+    f(&N);
+  }
+  for (auto &Pair : InternalNodes) {
+    f(Pair.second);
   }
 }

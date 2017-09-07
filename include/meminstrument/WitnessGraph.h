@@ -21,6 +21,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <memory>
+#include <functional>
 
 namespace meminstrument {
 
@@ -30,7 +31,19 @@ class WitnessStrategy;
 struct WitnessGraphNode {
   WitnessGraph &Graph;
   std::shared_ptr<ITarget> Target;
-  llvm::SmallVector<WitnessGraphNode *, 4> Requirements;
+
+  const llvm::SmallVectorImpl<WitnessGraphNode *>& getRequiredNodes() const {
+    return _Requirements;
+  }
+
+  const llvm::SmallVectorImpl<WitnessGraphNode *>& getRequiringNodes() const {
+    return _RequiredBy;
+  }
+
+  void clearRequirements(void);
+
+  void addRequirement(WitnessGraphNode *N);
+
   bool HasAllRequirements = false;
 
 private:
@@ -39,6 +52,9 @@ private:
     static unsigned long RunningId = 0;
     id = RunningId++;
   }
+
+  llvm::SmallVector<WitnessGraphNode *, 4> _Requirements;
+  llvm::SmallVector<WitnessGraphNode *, 4> _RequiredBy;
 
   unsigned long id;
 
@@ -55,6 +71,8 @@ public:
 
   WitnessGraphNode *createNewInternalNode(std::shared_ptr<ITarget> T);
 
+  void removeDeadNodes(void);
+
   void propagateFlags(void);
 
   void createWitnesses(InstrumentationMechanism &IM);
@@ -67,6 +85,8 @@ public:
       delete (P.second);
     }
   }
+
+  void map(const std::function<void(WitnessGraphNode*)>& f);
 
   void printDotGraph(llvm::raw_ostream &stream) const;
 
