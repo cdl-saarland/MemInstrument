@@ -79,9 +79,10 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
     : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
 bool ITarget::subsumes(const ITarget &other) const {
-  return (Instrumentee == other.Instrumentee) && HasConstAccessSize &&
-         other.HasConstAccessSize && (AccessSize >= other.AccessSize) &&
-         flagSubsumes(*this, other);
+  return (Instrumentee == other.Instrumentee) &&
+         ((HasConstAccessSize && other.HasConstAccessSize) ||
+          AccessSizeVal == other.AccessSizeVal) &&
+         (AccessSize >= other.AccessSize) && flagSubsumes(*this, other);
 }
 
 bool ITarget::joinFlags(const ITarget &other) {
