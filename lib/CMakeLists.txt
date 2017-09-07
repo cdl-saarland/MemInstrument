@@ -20,6 +20,7 @@ add_meminstrument_library(meminstrument
   InstrumentationMechanism.cpp
   WitnessStrategy.cpp
   InstrumentationPolicy.cpp
+  BeforeOutflowPolicy.cpp
   RegisterPasses.cpp
   DummyMechanism.cpp
   SplayMechanism.cpp

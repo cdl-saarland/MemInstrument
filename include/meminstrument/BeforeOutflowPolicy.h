@@ -1,4 +1,4 @@
-//===- meminstrument/InstrumentationPolicy.h - MemSafety Instr. -*- C++ -*-===//
+//===--- meminstrument/BeforeOutflowPolicy.h - MemSafety Instr. -*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,9 +11,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_INSTRUMENTATIONPOLICY_H
-#define MEMINSTRUMENT_INSTRUMENTATIONPOLICY_H
+#ifndef MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
+#define MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
 
+#include "meminstrument/InstrumentationPolicy.h"
 #include "meminstrument/ITarget.h"
 
 #include "llvm/IR/DataLayout.h"
@@ -22,16 +23,19 @@
 
 namespace meminstrument {
 
-class InstrumentationPolicy {
+class BeforeOutflowPolicy : public InstrumentationPolicy {
 public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
-                               llvm::Instruction *Loc) = 0;
+                               llvm::Instruction *Loc) override;
 
-  virtual ~InstrumentationPolicy() {}
+  BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}
 
-  static InstrumentationPolicy &get(const llvm::DataLayout &DL);
+private:
+  const llvm::DataLayout &DL;
+  size_t getPointerAccessSize(llvm::Value *V);
 };
 
 } // end namespace meminstrument
 
-#endif // MEMINSTRUMENT_INSTRUMENTATIONPOLICY_H
+#endif // MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
+
