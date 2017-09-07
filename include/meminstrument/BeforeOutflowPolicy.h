@@ -14,8 +14,8 @@
 #ifndef MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
 #define MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
 
-#include "meminstrument/InstrumentationPolicy.h"
 #include "meminstrument/ITarget.h"
+#include "meminstrument/InstrumentationPolicy.h"
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
@@ -38,4 +38,3 @@ private:
 } // end namespace meminstrument
 
 #endif // MEMINSTRUMENT_BEFOREOUTFLOWPOLICY_H
-
