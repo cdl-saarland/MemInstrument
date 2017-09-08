@@ -339,4 +339,20 @@ void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
 
   });
   WG.removeDeadNodes();
+
+  bool StillHasPhis = false;
+  WG.map([&](WitnessGraphNode *N) {
+    if (N->getRequiredNodes().size() > 1) {
+      StillHasPhis = true;
+    }
+  });
+
+#ifdef DEBUG_WG_SIMPLIFY
+  if (StillHasPhis) {
+    static int cnt = 0;
+    std::stringstream ss;
+    ss << "phis." << ++cnt << ".dot";
+    WG.dumpDotGraph(ss.str());
+  }
+#endif
 }
