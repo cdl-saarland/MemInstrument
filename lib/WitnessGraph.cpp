@@ -11,6 +11,8 @@
 
 #include "meminstrument/WitnessGraph.h"
 
+#include "llvm/Support/FileSystem.h"
+
 #include <queue>
 #include <set>
 
@@ -27,13 +29,11 @@ void WitnessGraphNode::addRequirement(WitnessGraphNode *N) {
 void WitnessGraphNode::clearRequirements(void) {
   for (auto *Req : _Requirements) {
     auto &Vec = Req->_RequiredBy;
-    Vec.erase(std::remove_if(
-                  Vec.begin(), Vec.end(),
-                  [&Req](WitnessGraphNode *&N) {
-                    return N == Req;
-                  }),
+    Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
+                             [&Req](WitnessGraphNode *&N) { return N == Req; }),
               Vec.end());
   }
+  _Requirements.clear();
 }
 
 WitnessGraphNode *
@@ -53,6 +53,7 @@ WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
   auto Key = std::make_pair(Target->Instrumentee, Target->Location);
   auto *NewNode = new WitnessGraphNode(*this, Target);
   InternalNodes.insert(std::make_pair(Key, NewNode));
+
   return NewNode;
 }
 
@@ -68,8 +69,8 @@ WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
 }
 
 void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
-  LeafNodes.push_back(WitnessGraphNode(*this, T));
-  auto *Res = &LeafNodes.back();
+  auto *Res = new WitnessGraphNode(*this, T);
+  LeafNodes.push_back(Res);
   Strategy.addRequired(Res);
   AlreadyPropagated = false;
 }
@@ -77,7 +78,7 @@ void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
 void WitnessGraph::propagateFlags(void) {
   std::queue<WitnessGraphNode *> Worklist;
   for (auto &Node : LeafNodes) {
-    Worklist.push(&Node);
+    Worklist.push(Node);
   }
 
   while (!Worklist.empty()) {
@@ -97,11 +98,18 @@ void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
   assert(AlreadyPropagated &&
          "Call `propagateRequirements()` before creating witnesses!");
   for (auto &Node : LeafNodes) {
-    Strategy.createWitness(IM, &Node);
+    Strategy.createWitness(IM, Node);
   }
 }
 
 void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
+  std::map<WitnessGraphNode *, WitnessGraphNode *> edges;
+  printDotGraph(stream, edges);
+}
+
+void WitnessGraph::printDotGraph(
+    llvm::raw_ostream &stream,
+    std::map<WitnessGraphNode *, WitnessGraphNode *> &edges) const {
   stream << "digraph witnessgraph_" << Func.getName() << "\n{\n";
   stream << "  rankdir=BT;\n";
   stream << "  label=\"Witness Graph for `" << Func.getName() << "`:\";\n";
@@ -109,7 +117,7 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "  labeljust=left;\n";
 
   for (const auto &Node : LeafNodes) {
-    stream << "  n" << Node.id << " [label=\"" << *(Node.Target) << "\"";
+    stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
     stream << ", color=blue];\n";
   }
 
@@ -125,8 +133,8 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
   stream << "\n";
 
   for (const auto &Node : LeafNodes) {
-    for (const auto *Other : Node.getRequiredNodes()) {
-      stream << "  n" << Node.id << " -> n" << Other->id << ";\n";
+    for (const auto *Other : Node->getRequiredNodes()) {
+      stream << "  n" << Node->id << " -> n" << Other->id << ";\n";
     }
   }
 
@@ -137,14 +145,41 @@ void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
     }
   }
 
+  for (const auto &E : edges) {
+    if (E.first == nullptr || E.second == nullptr) {
+      continue;
+    }
+    stream << "  n" << E.first->id << " -> n" << E.second->id
+           << "[color=green];\n";
+  }
+
   stream << "}\n";
+}
+
+void WitnessGraph::dumpDotGraph(const std::string &filename) const {
+  std::map<WitnessGraphNode *, WitnessGraphNode *> edges;
+  dumpDotGraph(filename, edges);
+}
+
+void WitnessGraph::dumpDotGraph(
+    const std::string &filename,
+    std::map<WitnessGraphNode *, WitnessGraphNode *> &edges) const {
+  std::error_code EC;
+  raw_ostream *fout = new raw_fd_ostream(filename, EC, sys::fs::F_None);
+
+  if (EC) {
+    errs() << "Failed to open file for witness graph\n";
+  } else {
+    printDotGraph(*fout, edges);
+  }
+  delete (fout);
 }
 
 void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
   llvm::DenseMap<Witness *, std::set<ITarget *>> PrintMap;
 
   for (auto &Node : LeafNodes) {
-    auto &Target = Node.Target;
+    auto &Target = Node->Target;
     assert(Target->hasWitness());
     PrintMap[Target->BoundWitness.get()].insert(Target.get());
   }
@@ -167,7 +202,9 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
   }
 }
 
-void markAsReachable(std::set<WitnessGraphNode*> &Res, WitnessGraphNode *N) {
+namespace {
+
+void markAsReachable(std::set<WitnessGraphNode *> &Res, WitnessGraphNode *N) {
   if (Res.find(N) != Res.end()) {
     return;
   }
@@ -178,12 +215,13 @@ void markAsReachable(std::set<WitnessGraphNode*> &Res, WitnessGraphNode *N) {
     markAsReachable(Res, O);
   }
 }
+}
 
 void WitnessGraph::removeDeadNodes(void) {
-  std::set<WitnessGraphNode*> DoNotRemove;
+  std::set<WitnessGraphNode *> DoNotRemove;
 
   for (auto &N : LeafNodes) {
-    markAsReachable(DoNotRemove, &N);
+    markAsReachable(DoNotRemove, N);
   }
 
   for (auto it = InternalNodes.begin(); it != InternalNodes.end();) {
@@ -191,16 +229,15 @@ void WitnessGraph::removeDeadNodes(void) {
       ++it;
     } else {
       it->second->clearRequirements();
-      delete(it->second);
+      delete (it->second);
       InternalNodes.erase(it++);
     }
   }
-
 }
 
-void WitnessGraph::map(const std::function<void(WitnessGraphNode*)>& f) {
+void WitnessGraph::map(const std::function<void(WitnessGraphNode *)> &f) {
   for (auto &N : LeafNodes) {
-    f(&N);
+    f(N);
   }
   for (auto &Pair : InternalNodes) {
     f(Pair.second);

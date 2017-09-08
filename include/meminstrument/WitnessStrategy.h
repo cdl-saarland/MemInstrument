@@ -21,7 +21,6 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
 
-
 namespace meminstrument {
 
 struct WitnessGraphNode;
@@ -34,9 +33,7 @@ public:
 
   virtual void addRequired(WitnessGraphNode *Node) const = 0;
 
-  virtual void simplifyWitnessGraph(WitnessGraph &WG) const {
-
-  }
+  virtual void simplifyWitnessGraph(WitnessGraph &WG) const {}
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const = 0;

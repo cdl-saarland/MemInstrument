@@ -34,6 +34,10 @@ cl::opt<bool> PrintWitnessGraphOpt("memsafety-print-witnessgraph",
                                    cl::desc("Print the WitnessGraph"),
                                    cl::init(false) // default
                                    );
+cl::opt<bool> NoSimplifyWitnessGraphOpt("memsafety-nosimplifywitnessgraph",
+                                        cl::desc("Print the WitnessGraph"),
+                                        cl::init(false) // default
+                                        );
 }
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
@@ -64,19 +68,16 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
     WG.propagateFlags();
 
-    WS.simplifyWitnessGraph(WG);
-
     if (PrintWitnessGraphOpt) {
-      std::error_code EC;
-      auto Name = ("witnessgraph." + F.getName() + ".dot").str();
-      raw_ostream *fout = new raw_fd_ostream(Name, EC, sys::fs::F_None);
+      WG.dumpDotGraph(("wg." + F.getName() + ".dot").str());
+    }
 
-      if (EC) {
-        errs() << "Failed to open file for witness graph\n";
-      } else {
-        WG.printDotGraph(*fout);
+    if (!NoSimplifyWitnessGraphOpt) {
+      WS.simplifyWitnessGraph(WG);
+
+      if (PrintWitnessGraphOpt) {
+        WG.dumpDotGraph(("wg.simplified." + F.getName() + ".dot").str());
       }
-      delete (fout);
     }
 
     WG.createWitnesses(IM);

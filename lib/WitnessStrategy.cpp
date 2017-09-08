@@ -15,6 +15,8 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
 
+#include <sstream>
+
 using namespace meminstrument;
 using namespace llvm;
 
@@ -267,17 +269,21 @@ void SimpleStrategy::createWitness(InstrumentationMechanism &IM,
   llvm_unreachable("Invalid Node");
 }
 
+// #define DEBUG_WG_SIMPLIFY 1
+
 namespace {
-void updateWitnessNode(std::map<WitnessGraphNode*, WitnessGraphNode*> &UltimateReqMap, WitnessGraphNode *N) {
+void updateWitnessNode(std::map<WitnessGraphNode *, WitnessGraphNode *> &ReqMap,
+                       WitnessGraphNode *N) {
   assert(N != nullptr);
-  WitnessGraphNode *ValBefore = UltimateReqMap.at(N);
+  WitnessGraphNode *ValBefore = ReqMap.at(N);
   if (N->getRequiredNodes().size() == 0) {
-    UltimateReqMap.at(N) = N;
+    ReqMap.at(N) = N;
   } else {
     WitnessGraphNode *Reference = nullptr;
     bool AllSame = true;
 
-    for (auto &Req : N->getRequiredNodes()) {
+    for (auto &N2 : N->getRequiredNodes()) {
+      auto *Req = ReqMap.at(N2);
       if (Reference == nullptr) {
         Reference = Req;
       } else if (Req != nullptr && Reference != Req) {
@@ -286,45 +292,51 @@ void updateWitnessNode(std::map<WitnessGraphNode*, WitnessGraphNode*> &UltimateR
       }
     }
     if (AllSame) {
-      UltimateReqMap.at(N) = Reference;
+      ReqMap.at(N) = Reference;
     } else {
-      UltimateReqMap.at(N) = N;
+      ReqMap.at(N) = N;
     }
   }
 
-  if (UltimateReqMap.at(N) != ValBefore) {
+#ifdef DEBUG_WG_SIMPLIFY
+  static int cnt = 0;
+  std::stringstream ss;
+  ss << "simplifyStep." << ++cnt << ".dot";
+  N->Graph.dumpDotGraph(ss.str(), ReqMap);
+#endif
+
+  if (ReqMap.at(N) != ValBefore) {
     for (auto *other : N->getRequiringNodes()) {
-      updateWitnessNode(UltimateReqMap, other);
+      updateWitnessNode(ReqMap, other);
     }
   }
 }
 }
 
 void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
-  std::map<WitnessGraphNode*, WitnessGraphNode*> UltimateReqMap;
-  std::vector<WitnessGraphNode*> Roots;
+  std::map<WitnessGraphNode *, WitnessGraphNode *> ReqMap;
+  std::vector<WitnessGraphNode *> Roots;
 
-  WG.map([&UltimateReqMap, &Roots](WitnessGraphNode *N){
-      UltimateReqMap[N] = nullptr;
-      if (N->getRequiredNodes().size() == 0) {
-        Roots.push_back(N);
-      }
-      });
+  WG.map([&](WitnessGraphNode *N) {
+    ReqMap.insert(std::make_pair(N, nullptr));
+    if (N->getRequiredNodes().size() == 0) {
+      Roots.push_back(N);
+    }
+  });
 
   for (auto *N : Roots) {
-    updateWitnessNode(UltimateReqMap, N);
+    updateWitnessNode(ReqMap, N);
   }
 
-  WG.map([&UltimateReqMap, &Roots](WitnessGraphNode *N){
-      auto *Req = UltimateReqMap.at(N);
-      assert(Req != nullptr);
+  WG.map([&](WitnessGraphNode *N) {
+    auto *Req = ReqMap.at(N);
+    assert(Req != nullptr);
 
-      if (Req != N) {
-        N->clearRequirements();
-        N->addRequirement(Req);
-      }
+    if (Req != N) {
+      N->clearRequirements();
+      N->addRequirement(Req);
+    }
 
-      });
+  });
   WG.removeDeadNodes();
 }
-

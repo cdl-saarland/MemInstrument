@@ -20,8 +20,8 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-#include <memory>
 #include <functional>
+#include <memory>
 
 namespace meminstrument {
 
@@ -32,11 +32,11 @@ struct WitnessGraphNode {
   WitnessGraph &Graph;
   std::shared_ptr<ITarget> Target;
 
-  const llvm::SmallVectorImpl<WitnessGraphNode *>& getRequiredNodes() const {
+  const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiredNodes() const {
     return _Requirements;
   }
 
-  const llvm::SmallVectorImpl<WitnessGraphNode *>& getRequiringNodes() const {
+  const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiringNodes() const {
     return _RequiredBy;
   }
 
@@ -81,14 +81,27 @@ public:
       : Func(F), Strategy(WS) {}
 
   ~WitnessGraph(void) {
+    for (auto &N : LeafNodes) {
+      delete N;
+    }
     for (auto &P : InternalNodes) {
       delete (P.second);
     }
   }
 
-  void map(const std::function<void(WitnessGraphNode*)>& f);
+  void map(const std::function<void(WitnessGraphNode *)> &f);
 
   void printDotGraph(llvm::raw_ostream &stream) const;
+
+  void
+  printDotGraph(llvm::raw_ostream &stream,
+                std::map<WitnessGraphNode *, WitnessGraphNode *> &edges) const;
+
+  void dumpDotGraph(const std::string &filename) const;
+
+  void
+  dumpDotGraph(const std::string &filename,
+               std::map<WitnessGraphNode *, WitnessGraphNode *> &edges) const;
 
   void printWitnessClasses(llvm::raw_ostream &stream) const;
 
@@ -99,7 +112,7 @@ private:
 
   llvm::DenseMap<KeyType, WitnessGraphNode *> InternalNodes;
 
-  std::vector<WitnessGraphNode> LeafNodes;
+  std::vector<WitnessGraphNode *> LeafNodes;
 
   bool AlreadyPropagated = false;
 };
