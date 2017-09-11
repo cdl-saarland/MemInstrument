@@ -38,7 +38,7 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
                           "only insert dummy calls for instrumentation")),
     cl::values(clEnumValN(IM_splay, "splay",
                           "use splay tree for instrumentation")),
-    cl::init(IM_dummy) // default
+    cl::init(IM_splay) // default
     );
 
 std::unique_ptr<InstrumentationMechanism> GlobalIM(nullptr);
