@@ -56,9 +56,12 @@ static RegisterPass<GatherITargetsPass>
                                true,  // CFGOnly
                                true); // isAnalysis
 
-static void registerMeminstrumentPass(const llvm::PassManagerBuilder&, llvm::legacy::PassManagerBase& PM) {
+static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
+                                      llvm::legacy::PassManagerBase &PM) {
   PM.add(new GenerateChecksPass());
 }
 
-static llvm::RegisterStandardPasses RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
+static llvm::RegisterStandardPasses
+    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
+                              registerMeminstrumentPass);
 }
