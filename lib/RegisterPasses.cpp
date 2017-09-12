@@ -17,7 +17,9 @@
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
-#include "llvm/IR/PassManager.h"
+
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -53,4 +55,10 @@ static RegisterPass<GatherITargetsPass>
     RegisterGatherITargetsPass("memsafety-gatheritargets", "GatherITargets",
                                true,  // CFGOnly
                                true); // isAnalysis
+
+static void registerMeminstrumentPass(const llvm::PassManagerBuilder&, llvm::legacy::PassManagerBase& PM) {
+  PM.add(new GenerateChecksPass());
+}
+
+static llvm::RegisterStandardPasses RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
 }
