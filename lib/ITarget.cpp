@@ -35,7 +35,10 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
       CheckUpperBoundFlag(CheckUpperBoundFlag),
       CheckLowerBoundFlag(CheckLowerBoundFlag),
       CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {}
+      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
+  assert(Instrumentee);
+  assert(Location);
+}
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,
@@ -61,7 +64,11 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
       CheckUpperBoundFlag(CheckUpperBoundFlag),
       CheckLowerBoundFlag(CheckLowerBoundFlag),
       CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {}
+      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
+  assert(Instrumentee);
+  assert(Location);
+  assert(AccessSize);
+}
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  Value *AccessSize, bool CheckUpperBoundFlag,

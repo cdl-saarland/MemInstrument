@@ -128,11 +128,21 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     switch (I->getOpcode()) {
     case Instruction::Alloca:
     case Instruction::Call:
+    case Instruction::LandingPad:
+    case Instruction::ExtractValue:
     case Instruction::Load:
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
       requireSource(Node, I, I->getNextNode());
+      return;
+    }
+    case Instruction::Invoke: {
+      // We cannot insert witnesses after invokes as these are terminators.
+      // Therefore, use the first non-phi instruction of the 'normal' successor.
+      auto *II = dyn_cast<InvokeInst>(I);
+      auto *Loc = II->getNormalDest()->getFirstNonPHI();
+      requireSource(Node, I, Loc);
       return;
     }
 
@@ -181,6 +191,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     }
 
     default:
+      errs() << "Unsupported instruction:\n" << *I << "\n\n";
       llvm_unreachable("Unsupported instruction!");
     }
   }
