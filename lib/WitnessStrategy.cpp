@@ -351,6 +351,7 @@ void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   });
   WG.removeDeadNodes();
 
+#ifdef DEBUG_WG_SIMPLIFY
   bool StillHasPhis = false;
   WG.map([&](WitnessGraphNode *N) {
     if (N->getRequiredNodes().size() > 1) {
@@ -358,7 +359,6 @@ void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
     }
   });
 
-#ifdef DEBUG_WG_SIMPLIFY
   if (StillHasPhis) {
     static int cnt = 0;
     std::stringstream ss;
