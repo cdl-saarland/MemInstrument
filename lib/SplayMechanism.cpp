@@ -16,6 +16,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 
 #include "meminstrument/Util.h"
 
@@ -36,7 +37,7 @@ using namespace meminstrument;
 namespace {
 cl::opt<bool> SplayVerbose("memsafety-splay-verbose",
                            cl::desc("Use verbose splay check functions"),
-                           cl::init(false));
+                           cl::init(true));
 }
 
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
@@ -65,10 +66,19 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
   Value *NameVal = nullptr;
   if (SplayVerbose) {
+    std::string Name;
+    if (DILocation *Loc = Target.Location->getDebugLoc()) {
+      unsigned Line = Loc->getLine();
+      StringRef File = Loc->getFilename();
+      Name = (File + ": " + std::to_string(Line)).str();
+    } else {
+      Name = "unknown location";
+    }
+
     Module *M = Target.Location->getModule();
-    auto Name = Target.Location->getFunction()->getName() +
-                "::" + Target.Instrumentee->getName();
-    auto *Str = insertStringLiteral(*M, Name.str());
+    // auto Name = Target.Location->getFunction()->getName() +
+    //             "::" + Target.Instrumentee->getName();
+    auto *Str = insertStringLiteral(*M, Name);
     NameVal = insertCast(PtrArgType, Str, Builder);
   }
 
