@@ -180,7 +180,7 @@ if(NOT ${MEMINSTRUMENT_RT_LIB_PATH_FOUND})
   message(STATUS "Cannot find meminstrument runtime libs")
 else()
   set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
-  set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/lib/LLVMmeminstrument.so")
+  set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/LLVMmeminstrument.so")
   set(RT_LIBS_PATH ${MEMINSTRUMENT_RT_LIB_PATH})
 
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tools/mi_compile.sh.in
