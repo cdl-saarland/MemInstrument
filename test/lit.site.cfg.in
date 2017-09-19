@@ -20,7 +20,7 @@ else:
     config.available_features.add("no_pmda")
 
 # PMDA is linked into meminstrument if it is available, so no -load for PMDA required.
-config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMMEMINSTRUMENT.so'))
+config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMmeminstrument.so'))
 
 # Let the main config do the real work.
 lit_config.load_config(config, "@LLVM_SOURCE_DIR@/projects/meminstrument/test/lit.cfg")

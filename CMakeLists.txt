@@ -175,11 +175,26 @@ install(DIRECTORY ${MEMINSTRUMENT_BINARY_DIR}/include/
 
 add_definitions( -D_GNU_SOURCE )
 
+find_path(MEMINSTRUMENT_RT_LIB_PATH libsplay.a)
+if(NOT ${MEMINSTRUMENT_RT_LIB_PATH_FOUND})
+  message(STATUS "Cannot find meminstrument runtime libs")
+else()
+  set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
+  set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/lib/LLVMmeminstrument.so")
+  set(RT_LIBS_PATH ${MEMINSTRUMENT_RT_LIB_PATH})
+
+  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tools/mi_compile.sh.in
+                  ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh )
+
+  file(COPY ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh
+    DESTINATION ${LLVM_BINARY_DIR}/bin
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(test)
 #add_subdirectory(tools)
 # TODO: docs.
-
 
 #configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/include/meminstrument/Config/config.h.cmake
 #                ${MEMINSTRUMENT_BINARY_DIR}/include/meminstrument/Config/config.h )

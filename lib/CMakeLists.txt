@@ -57,11 +57,11 @@ link_directories(
 # that static library.
 if (MSVC)
   # Add dummy target, because loadable modules are not supported on Windows
-  add_custom_target(LLVMMEMINSTRUMENT)
-  set_target_properties(LLVMMEMINSTRUMENT PROPERTIES FOLDER "meminstrument")
+  add_custom_target(LLVMmeminstrument)
+  set_target_properties(LLVMmeminstrument PROPERTIES FOLDER "meminstrument")
 else ()
   # Specify the files clang needs for the pass manager
-  add_meminstrument_loadable_module(LLVMMEMINSTRUMENT
+  add_meminstrument_loadable_module(LLVMmeminstrument
     GatherITargetsPass.cpp
     MemSafetyAnalysisPass.cpp
     MemInstrumentSetupPass.cpp
@@ -70,9 +70,9 @@ else ()
     RegisterPasses.cpp
   )
 
-  target_link_libraries(LLVMMEMINSTRUMENT meminstrument)
+  target_link_libraries(LLVMmeminstrument meminstrument)
 
-  set_target_properties(LLVMMEMINSTRUMENT
+  set_target_properties(LLVMmeminstrument
     PROPERTIES
     LINKER_LANGUAGE CXX
     PREFIX "")
