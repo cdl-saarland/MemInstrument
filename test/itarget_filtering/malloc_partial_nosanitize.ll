@@ -1,5 +1,5 @@
-; RUN: %opt %loadlibs -memsafety-gatheritargets -debug-only meminstrument-gatheritargets %s -S > /dev/null 2> %t1.log
-; RUN: %opt %loadlibs -memsafety-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
+; RUN: %opt %loadlibs -mi-gatheritargets -debug-only meminstrument-gatheritargets %s -S > /dev/null 2> %t1.log
+; RUN: %opt %loadlibs -mi-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "<arrayidx, entry::[store], 4B, ul_>" %t1.log
 ; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t1.log
 ; RUN: %not fgrep "<arrayidx, entry::[store], 4B, ul_>" %t2.log

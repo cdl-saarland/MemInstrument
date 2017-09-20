@@ -35,7 +35,7 @@ using namespace llvm;
 using namespace meminstrument;
 
 namespace {
-cl::opt<bool> SplayVerbose("memsafety-splay-verbose",
+cl::opt<bool> SplayVerbose("mi-splay-verbose",
                            cl::desc("Use verbose splay check functions"),
                            cl::init(true));
 }

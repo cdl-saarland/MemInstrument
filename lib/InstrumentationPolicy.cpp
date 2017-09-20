@@ -31,7 +31,7 @@ enum InstrumentationPolicyKind {
 };
 
 cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
-    "memsafety-ipolicy",
+    "mi-ipolicy",
     cl::desc("Choose InstructionPolicy: (default: before-outflow)"),
     cl::values(clEnumValN(IP_beforeOutflow, "before-outflow",
                           "only insert dummy calls for instrumentation")),

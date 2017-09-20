@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -memsafety-gatheritargets -debug-only=meminstrument-gatheritargets %s > /dev/null 2> %t.log
+; RUN: %opt %loadlibs -mi-gatheritargets -debug-only=meminstrument-gatheritargets %s > /dev/null 2> %t.log
 ; RUN: fgrep "<a, bar_bb::res, 1B, ___>" %t.log
 ; RUN: fgrep "<b, bar_bb::res, 1B, ___>" %t.log
 ; RUN: fgrep "<x, foo_bb::res, 1B, ___>" %t.log

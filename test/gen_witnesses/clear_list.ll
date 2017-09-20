@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -memsafety-genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
+; RUN: %opt %loadlibs -mi-genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
 
 %struct.List = type { %struct.ListItem* }
 %struct.ListItem = type { %struct.ListItem*, i8* }

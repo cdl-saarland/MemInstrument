@@ -1,5 +1,5 @@
 // RUN: %clang -O3 -x c++ -emit-llvm -c -S -o %t0.ll %s
-// RUN: %opt %loadlibs -mem2reg -instnamer -memsafety-genchecks %t0.ll -memsafety-imechanism=splay -S > %t1.ll
+// RUN: %opt %loadlibs -mem2reg -instnamer -mi-genchecks %t0.ll -mi-imechanism=splay -S > %t1.ll
 // RUN: %clink -lstdc++ -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2
 #include <cstdlib>

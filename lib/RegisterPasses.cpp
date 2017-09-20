@@ -26,33 +26,33 @@ using namespace llvm;
 
 namespace meminstrument {
 static RegisterPass<GenerateChecksPass>
-    RegisterGenerateChecksPass("memsafety-genchecks", "GenerateChecks",
+    RegisterGenerateChecksPass("mi-genchecks", "GenerateChecks",
                                false,  // CFGOnly
                                false); // isAnalysis
 
 static RegisterPass<FancyChecksPass>
-    RegisterFancyChecksPass("memsafety-fancychecks", "FancyChecks",
+    RegisterFancyChecksPass("mi-fancychecks", "FancyChecks",
                             false,  // CFGOnly
                             false); // isAnalysis
 
 static RegisterPass<GenerateWitnessesPass>
-    RegisterGenerateWitnessesPass("memsafety-genwitnesses", "GenerateWitnesses",
+    RegisterGenerateWitnessesPass("mi-genwitnesses", "GenerateWitnesses",
                                   false,  // CFGOnly
                                   false); // isAnalysis
 
 static RegisterPass<MemInstrumentSetupPass>
-    RegisterMemInstrumentSetupPass("memsafety-instrumentsetup",
+    RegisterMemInstrumentSetupPass("mi-instrumentsetup",
                                    "MemInstrumentSetup",
                                    false,  // CFGOnly
                                    false); // isAnalysis
 
 static RegisterPass<MemSafetyAnalysisPass>
-    RegisterMemSafetyAnalysisPass("memsafety-analysis", "MemSafetyAnalysis",
+    RegisterMemSafetyAnalysisPass("mi-analysis", "MemSafetyAnalysis",
                                   true,  // CFGOnly
                                   true); // isAnalysis
 
 static RegisterPass<GatherITargetsPass>
-    RegisterGatherITargetsPass("memsafety-gatheritargets", "GatherITargets",
+    RegisterGatherITargetsPass("mi-gatheritargets", "GatherITargets",
                                true,  // CFGOnly
                                true); // isAnalysis
 

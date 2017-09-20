@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -memsafety-genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
+; RUN: %opt %loadlibs -mi-genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
 ; RUN: %not fgrep "(ptr, bb::five)" < %t.log
 
 define i64 @test(i64* %ptr) #0 {

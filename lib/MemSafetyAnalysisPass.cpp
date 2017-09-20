@@ -37,7 +37,7 @@ using namespace llvm;
 
 namespace {
 cl::opt<bool> NoOptimizations(
-    "memsafety-noopt",
+    "mi-no-optimize",
     cl::desc("Disable all memsafety instrumentation optimizations"),
     cl::init(false));
 }

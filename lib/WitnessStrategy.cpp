@@ -27,7 +27,7 @@ enum WitnessStrategyKind {
 };
 
 cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
-    "memsafety-wstrategy",
+    "mi-wstrategy",
     cl::desc("Choose WitnessStrategy: (default: simple)"),
     cl::values(clEnumValN(WS_simple, "simple",
                           "simple strategy for witness placement")),

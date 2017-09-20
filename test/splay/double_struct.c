@@ -1,5 +1,5 @@
 // RUN: %clang -emit-llvm -c -S -o %t0.ll %s
-// RUN: %opt %loadlibs -mem2reg -memsafety-genchecks %t0.ll -memsafety-imechanism=splay -memsafety-splay-verbose -S > %t1.ll
+// RUN: %opt %loadlibs -mem2reg -mi-genchecks %t0.ll -mi-imechanism=splay -mi-splay-verbose -S > %t1.ll
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2
 
