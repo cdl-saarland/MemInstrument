@@ -63,7 +63,9 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     WitnessGraph WG(F, WS);
 
     for (auto &Target : Destination) {
-      WG.insertRequiredTarget(Target);
+      if (Target->isValid()) {
+        WG.insertRequiredTarget(Target);
+      }
     }
 
     WG.propagateFlags();
@@ -88,7 +90,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
                          WG.printWitnessClasses(dbgs()););
 
     for (auto &T : Destination) {
-      if (T->RequiresExplicitBounds) {
+      if (T->isValid() && T->RequiresExplicitBounds) {
         IM.materializeBounds(*T);
       }
     }

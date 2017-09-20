@@ -15,6 +15,7 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
 
+#include <set>
 #include <sstream>
 
 using namespace meminstrument;
@@ -322,9 +323,49 @@ void updateWitnessNode(std::map<WitnessGraphNode *, WitnessGraphNode *> &ReqMap,
     }
   }
 }
+
+bool didNotChangeSinceWitness(std::set<WitnessGraphNode*>& Seen, WitnessGraphNode* N) {
+  if (Seen.find(N) != Seen.end()) {
+    return true;
+  }
+
+  Seen.insert(N);
+
+  if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->Location)) {
+    if (!GEP->hasAllZeroIndices()) {
+      return false;
+    }
+  }
+
+  for (auto *req : N->getRequiredNodes()) {
+    bool res = didNotChangeSinceWitness(Seen, req);
+    if (!res) {
+      return false;
+    }
+  }
+
+  return true;
+}
 }
 
 void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
+
+  // Check whether the value of the instrumentee is definitely the same as
+  // when we extracted its witness. In this case, we can skip inbounds checks
+  // for out-flowing pointers (as we assume the values to be valid anyway).
+  for (auto *External : WG.getExternalNodes()) {
+    if (!(External->Target->CheckUpperBoundFlag || External->Target->CheckLowerBoundFlag)) {
+      std::set<WitnessGraphNode*> Seen;
+      if (didNotChangeSinceWitness(Seen, External)) {
+        External->Target->invalidate();
+      }
+    }
+  }
+
+  // WG.removeDeadNodes();
+
+  // Eliminate nodes that correspond to superfluous PHIs, i.e. that always have
+  // equal operands.
   std::map<WitnessGraphNode *, WitnessGraphNode *> ReqMap;
   std::vector<WitnessGraphNode *> Roots;
 

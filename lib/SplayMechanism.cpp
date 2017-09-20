@@ -105,6 +105,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
 void SplayMechanism::materializeBounds(ITarget &Target) const {
   assert(Target.RequiresExplicitBounds);
+  assert(Target.isValid());
 
   IRBuilder<> Builder(Target.Location);
 

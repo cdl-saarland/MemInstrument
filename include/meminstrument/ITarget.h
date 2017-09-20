@@ -51,6 +51,12 @@ struct ITarget {
   /// indicator whether explicit bound information is required
   bool RequiresExplicitBounds;
 
+  /// indicator whether the ITarget has been invalidated and should therefore
+  /// not be realized.
+  bool isValid(void) const { return !_Invalidated; }
+
+  void invalidate(void) { _Invalidated = true; }
+
   std::shared_ptr<Witness> BoundWitness;
 
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
@@ -86,6 +92,9 @@ struct ITarget {
 
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
+
+private:
+  bool _Invalidated = false;
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &IT);

@@ -140,6 +140,11 @@ void ITarget::printLocation(llvm::raw_ostream &Stream) const {
 
 llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
                                              const ITarget &IT) {
+  if (!IT.isValid()) {
+    Stream << "<invalidated itarget>";
+    return Stream;
+  }
+
   Stream << "<" << IT.Instrumentee->getName() << ", ";
   IT.printLocation(Stream);
   Stream << ", ";

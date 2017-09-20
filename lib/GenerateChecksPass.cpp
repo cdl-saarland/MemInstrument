@@ -46,7 +46,9 @@ bool GenerateChecksPass::runOnModule(Module &M) {
         this->getITargetsForFunction(&F);
 
     for (auto &T : Destination) {
-      IM.insertCheck(*T);
+      if (T->isValid()) {
+        IM.insertCheck(*T);
+      }
     }
   }
   return true;

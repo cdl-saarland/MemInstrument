@@ -48,28 +48,17 @@ bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) { return false; }
 
 void filterByDominance(const DominatorTree &DomTree,
                        std::vector<std::shared_ptr<ITarget>> &Vec) {
-  std::set<std::shared_ptr<ITarget>> toDelete;
-
   for (auto &i1 : Vec) {
     for (auto &i2 : Vec) {
       if (i1 == i2)
         continue;
 
       if (i1->subsumes(*i2) && DomTree.dominates(i1->Location, i2->Location)) {
-        toDelete.emplace(i2);
+        i2->invalidate();
+        ++NumITargetsSubsumed;
       }
     }
   }
-
-  Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
-                           [&toDelete](std::shared_ptr<ITarget> &IT) {
-                             bool res = toDelete.find(IT) != toDelete.end();
-                             if (res) {
-                               ++NumITargetsSubsumed;
-                             }
-                             return res;
-                           }),
-            Vec.end());
 }
 
 bool MemSafetyAnalysisPass::runOnModule(Module &M) {
@@ -87,20 +76,17 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     }
     auto &Vec = this->getITargetsForFunction(&F);
 
-    Vec.erase(std::remove_if(
-                  Vec.begin(), Vec.end(),
-                  [](std::shared_ptr<ITarget> &IT) {
-                    auto *L = IT->Location;
-                    auto *V = IT->Instrumentee;
-                    bool res = L->getMetadata("nosanitize") &&
-                               ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
-                                (isa<StoreInst>(L) && (V == L->getOperand(1))));
-                    if (res) {
-                      ++NumITargetsNoSanitize;
-                    }
-                    return res;
-                  }),
-              Vec.end());
+    for (auto& IT : Vec) {
+      auto *L = IT->Location;
+      auto *V = IT->Instrumentee;
+      bool res = L->getMetadata("nosanitize") &&
+                 ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
+                  (isa<StoreInst>(L) && (V == L->getOperand(1))));
+      if (res) {
+        ++NumITargetsNoSanitize;
+        IT->invalidate();
+      }
+    }
 
     DEBUG_ALSO_WITH_TYPE(
         "meminstrument-memsafetyanalysis",

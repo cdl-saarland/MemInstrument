@@ -36,6 +36,10 @@ void WitnessGraphNode::clearRequirements(void) {
   _Requirements.clear();
 }
 
+WitnessGraphNode::~WitnessGraphNode(void) {
+  clearRequirements();
+}
+
 WitnessGraphNode *
 WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
   // see whether we already have a node for Target
@@ -70,14 +74,14 @@ WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
 
 void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
   auto *Res = new WitnessGraphNode(*this, T);
-  LeafNodes.push_back(Res);
+  ExternalNodes.push_back(Res);
   Strategy.addRequired(Res);
   AlreadyPropagated = false;
 }
 
 void WitnessGraph::propagateFlags(void) {
   std::queue<WitnessGraphNode *> Worklist;
-  for (auto &Node : LeafNodes) {
+  for (auto &Node : ExternalNodes) {
     Worklist.push(Node);
   }
 
@@ -97,7 +101,7 @@ void WitnessGraph::propagateFlags(void) {
 void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
   assert(AlreadyPropagated &&
          "Call `propagateRequirements()` before creating witnesses!");
-  for (auto &Node : LeafNodes) {
+  for (auto &Node : ExternalNodes) {
     Strategy.createWitness(IM, Node);
   }
 }
@@ -116,7 +120,7 @@ void WitnessGraph::printDotGraph(
   stream << "  labelloc=top;\n";
   stream << "  labeljust=left;\n";
 
-  for (const auto &Node : LeafNodes) {
+  for (const auto &Node : ExternalNodes) {
     stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
     stream << ", color=blue];\n";
   }
@@ -132,7 +136,7 @@ void WitnessGraph::printDotGraph(
 
   stream << "\n";
 
-  for (const auto &Node : LeafNodes) {
+  for (const auto &Node : ExternalNodes) {
     for (const auto *Other : Node->getRequiredNodes()) {
       stream << "  n" << Node->id << " -> n" << Other->id << ";\n";
     }
@@ -178,7 +182,7 @@ void WitnessGraph::dumpDotGraph(
 void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
   llvm::DenseMap<Witness *, std::set<ITarget *>> PrintMap;
 
-  for (auto &Node : LeafNodes) {
+  for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;
     assert(Target->hasWitness());
     PrintMap[Target->BoundWitness.get()].insert(Target.get());
@@ -220,7 +224,22 @@ void markAsReachable(std::set<WitnessGraphNode *> &Res, WitnessGraphNode *N) {
 void WitnessGraph::removeDeadNodes(void) {
   std::set<WitnessGraphNode *> DoNotRemove;
 
-  for (auto &N : LeafNodes) {
+  std::vector<WitnessGraphNode*> ToDelete;
+
+  ExternalNodes.erase(std::remove_if(ExternalNodes.begin(), ExternalNodes.end(),
+        [&](WitnessGraphNode* N) {
+          bool res = !N->Target->isValid();
+          if (res) {
+            ToDelete.push_back(N);
+          }
+          return res;
+        }), ExternalNodes.end());
+
+  for (auto *N : ToDelete) {
+    delete N;
+  }
+
+  for (auto &N : ExternalNodes) {
     markAsReachable(DoNotRemove, N);
   }
 
@@ -228,7 +247,6 @@ void WitnessGraph::removeDeadNodes(void) {
     if (DoNotRemove.find(it->second) != DoNotRemove.end()) {
       ++it;
     } else {
-      it->second->clearRequirements();
       delete (it->second);
       InternalNodes.erase(it++);
     }
@@ -236,7 +254,7 @@ void WitnessGraph::removeDeadNodes(void) {
 }
 
 void WitnessGraph::map(const std::function<void(WitnessGraphNode *)> &f) {
-  for (auto &N : LeafNodes) {
+  for (auto &N : ExternalNodes) {
     f(N);
   }
   for (auto &Pair : InternalNodes) {
