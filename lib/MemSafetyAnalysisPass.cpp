@@ -50,7 +50,7 @@ void filterByDominance(const DominatorTree &DomTree,
                        std::vector<std::shared_ptr<ITarget>> &Vec) {
   for (auto &i1 : Vec) {
     for (auto &i2 : Vec) {
-      if (i1 == i2)
+      if (i1 == i2 || !i1->isValid() || !i2->isValid())
         continue;
 
       if (i1->subsumes(*i2) && DomTree.dominates(i1->Location, i2->Location)) {

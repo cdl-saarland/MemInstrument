@@ -11,6 +11,7 @@
 
 #include "meminstrument/WitnessStrategy.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
@@ -18,8 +19,13 @@
 #include <set>
 #include <sstream>
 
+#include "meminstrument/Util.h"
+
 using namespace meminstrument;
 using namespace llvm;
+
+STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
+                                 "because of witness graph information");
 
 namespace {
 
@@ -354,11 +360,12 @@ void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   // when we extracted its witness. In this case, we can skip inbounds checks
   // for out-flowing pointers (as we assume the values to be valid anyway).
   for (auto *External : WG.getExternalNodes()) {
-    if (!(External->Target->CheckUpperBoundFlag ||
-          External->Target->CheckLowerBoundFlag)) {
+    auto &T = External->Target;
+    if (T->isValid() && !(T->CheckUpperBoundFlag || T->CheckLowerBoundFlag)) {
       std::set<WitnessGraphNode *> Seen;
       if (didNotChangeSinceWitness(Seen, External)) {
         External->Target->invalidate();
+        ++NumITargetsRemovedWGSimplify;
       }
     }
   }
