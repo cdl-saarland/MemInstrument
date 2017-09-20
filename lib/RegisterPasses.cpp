@@ -41,8 +41,7 @@ static RegisterPass<GenerateWitnessesPass>
                                   false); // isAnalysis
 
 static RegisterPass<MemInstrumentSetupPass>
-    RegisterMemInstrumentSetupPass("mi-instrumentsetup",
-                                   "MemInstrumentSetup",
+    RegisterMemInstrumentSetupPass("mi-instrumentsetup", "MemInstrumentSetup",
                                    false,  // CFGOnly
                                    false); // isAnalysis
 

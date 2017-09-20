@@ -119,7 +119,7 @@ public:
 
   /// Gets a vector of the nodes registered as externally required and that
   /// should get witnesses.
-  std::vector<WitnessGraphNode*> &getExternalNodes(void) {
+  std::vector<WitnessGraphNode *> &getExternalNodes(void) {
     return ExternalNodes;
   }
 

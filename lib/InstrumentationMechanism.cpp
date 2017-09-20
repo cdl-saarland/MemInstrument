@@ -32,8 +32,7 @@ enum InstrumentationMechanismKind {
 };
 
 cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
-    "mi-imechanism",
-    cl::desc("Choose InstructionMechanism: (default: dummy)"),
+    "mi-imechanism", cl::desc("Choose InstructionMechanism: (default: dummy)"),
     cl::values(clEnumValN(IM_dummy, "dummy",
                           "only insert dummy calls for instrumentation")),
     cl::values(clEnumValN(IM_splay, "splay",
@@ -72,7 +71,7 @@ InstrumentationMechanism::registerCtors(
   size_t NumElements = List.size();
 
   Type *ComponentTypes[3];
-  ComponentTypes[0] = Type::getInt32Ty(Ctx); // priority
+  ComponentTypes[0] = Type::getInt32Ty(Ctx);      // priority
   ComponentTypes[1] = PointerType::get(FunTy, 0); // the actual function
   ComponentTypes[2] = Type::getInt8PtrTy(Ctx);
   // an optional globalvalue to connect with (here unnecessary)
@@ -97,15 +96,15 @@ InstrumentationMechanism::registerCtors(
     Functions->push_back(Fun);
   }
 
-  if (auto* GV = M.getNamedGlobal("llvm.global_ctors")) {
+  if (auto *GV = M.getNamedGlobal("llvm.global_ctors")) {
     // If the special variable already exists, we have to remove it and add all
     // its arguments to our new global variable.
     if (GV->hasInitializer()) {
-      auto* Init = GV->getInitializer();
+      auto *Init = GV->getInitializer();
       if (!Init->isZeroValue()) {
         // Trivial static constructors can lead to a just zero-initialized
         // global_ctors variable, we can just replace it then.
-        auto* InitArr = dyn_cast<ConstantArray>(Init);
+        auto *InitArr = dyn_cast<ConstantArray>(Init);
         assert(InitArr && "Constructor initializer is not a ConstantArray!");
         for (size_t i = 0; i < InitArr->getNumOperands(); ++i) {
           ArrInits.push_back(InitArr->getAggregateElement(i));
@@ -116,7 +115,8 @@ InstrumentationMechanism::registerCtors(
     GV->eraseFromParent();
   }
 
-  assert(! M.getNamedGlobal("llvm.global_ctors") && "Failed to remove existing ctor variable!");
+  assert(!M.getNamedGlobal("llvm.global_ctors") &&
+         "Failed to remove existing ctor variable!");
 
   auto *ArrType = ArrayType::get(ElemType, NumElements);
   auto *GV = new GlobalVariable(

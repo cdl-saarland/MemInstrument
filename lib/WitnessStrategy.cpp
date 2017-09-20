@@ -28,8 +28,7 @@ enum WitnessStrategyKind {
 };
 
 cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
-    "mi-wstrategy",
-    cl::desc("Choose WitnessStrategy: (default: simple)"),
+    "mi-wstrategy", cl::desc("Choose WitnessStrategy: (default: simple)"),
     cl::values(clEnumValN(WS_simple, "simple",
                           "simple strategy for witness placement")),
     cl::init(WS_simple) // default
@@ -324,7 +323,8 @@ void updateWitnessNode(std::map<WitnessGraphNode *, WitnessGraphNode *> &ReqMap,
   }
 }
 
-bool didNotChangeSinceWitness(std::set<WitnessGraphNode*>& Seen, WitnessGraphNode* N) {
+bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
+                              WitnessGraphNode *N) {
   if (Seen.find(N) != Seen.end()) {
     return true;
   }
@@ -354,8 +354,9 @@ void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   // when we extracted its witness. In this case, we can skip inbounds checks
   // for out-flowing pointers (as we assume the values to be valid anyway).
   for (auto *External : WG.getExternalNodes()) {
-    if (!(External->Target->CheckUpperBoundFlag || External->Target->CheckLowerBoundFlag)) {
-      std::set<WitnessGraphNode*> Seen;
+    if (!(External->Target->CheckUpperBoundFlag ||
+          External->Target->CheckLowerBoundFlag)) {
+      std::set<WitnessGraphNode *> Seen;
       if (didNotChangeSinceWitness(Seen, External)) {
         External->Target->invalidate();
       }

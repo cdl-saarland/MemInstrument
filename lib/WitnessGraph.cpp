@@ -36,9 +36,7 @@ void WitnessGraphNode::clearRequirements(void) {
   _Requirements.clear();
 }
 
-WitnessGraphNode::~WitnessGraphNode(void) {
-  clearRequirements();
-}
+WitnessGraphNode::~WitnessGraphNode(void) { clearRequirements(); }
 
 WitnessGraphNode *
 WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
@@ -224,16 +222,17 @@ void markAsReachable(std::set<WitnessGraphNode *> &Res, WitnessGraphNode *N) {
 void WitnessGraph::removeDeadNodes(void) {
   std::set<WitnessGraphNode *> DoNotRemove;
 
-  std::vector<WitnessGraphNode*> ToDelete;
+  std::vector<WitnessGraphNode *> ToDelete;
 
   ExternalNodes.erase(std::remove_if(ExternalNodes.begin(), ExternalNodes.end(),
-        [&](WitnessGraphNode* N) {
-          bool res = !N->Target->isValid();
-          if (res) {
-            ToDelete.push_back(N);
-          }
-          return res;
-        }), ExternalNodes.end());
+                                     [&](WitnessGraphNode *N) {
+                                       bool res = !N->Target->isValid();
+                                       if (res) {
+                                         ToDelete.push_back(N);
+                                       }
+                                       return res;
+                                     }),
+                      ExternalNodes.end());
 
   for (auto *N : ToDelete) {
     delete N;

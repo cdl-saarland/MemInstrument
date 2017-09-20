@@ -12,11 +12,11 @@
 #include "meminstrument/SplayMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "llvm/IR/DebugInfoMetadata.h"
 
 #include "meminstrument/Util.h"
 

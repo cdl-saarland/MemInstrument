@@ -34,10 +34,11 @@ cl::opt<bool> PrintWitnessGraphOpt("mi-print-witnessgraph",
                                    cl::desc("Print the WitnessGraph"),
                                    cl::init(false) // default
                                    );
-cl::opt<bool> NoSimplifyWitnessGraphOpt("mi-no-simplify-witnessgraph",
-                                        cl::desc("Disable witness graph simplifications"),
-                                        cl::init(false) // default
-                                        );
+cl::opt<bool>
+    NoSimplifyWitnessGraphOpt("mi-no-simplify-witnessgraph",
+                              cl::desc("Disable witness graph simplifications"),
+                              cl::init(false) // default
+                              );
 }
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}

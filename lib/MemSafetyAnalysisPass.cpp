@@ -76,7 +76,7 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     }
     auto &Vec = this->getITargetsForFunction(&F);
 
-    for (auto& IT : Vec) {
+    for (auto &IT : Vec) {
       auto *L = IT->Location;
       auto *V = IT->Instrumentee;
       bool res = L->getMetadata("nosanitize") &&
