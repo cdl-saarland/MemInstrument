@@ -169,7 +169,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
   IRBuilder<> Builder(BB);
 
   for (auto &GV : M.globals()) {
-    if (hasNoInstrument(&GV)) {
+    if (hasNoInstrument(&GV) || GV.getName().startswith("llvm.")) {
       continue;
     }
     DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
