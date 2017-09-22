@@ -21,7 +21,7 @@
 
 namespace meminstrument {
 
-class GenerateChecksPass : public llvm::ModulePass, public ITargetProvider {
+class GenerateChecksPass : public llvm::ModulePass {
 public:
   /// \brief Identification
   static char ID;

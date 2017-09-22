@@ -20,10 +20,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Support/FileSystem.h"
 
-#if MEMINSTRUMENT_USE_PMDA
-#include "PMDA/PMDA.h"
-#endif
-
 #include "meminstrument/Util.h"
 
 using namespace meminstrument;
@@ -46,9 +42,7 @@ GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
-  auto *MSAPass =
-      cast<MemSafetyAnalysisPass>(&this->getAnalysis<MemSafetyAnalysisPass>());
-  this->connectToProvider(MSAPass);
+  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
 
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();
@@ -60,7 +54,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
                  << F.getName().str() << "`\n";);
 
     std::vector<std::shared_ptr<ITarget>> &Destination =
-        this->getITargetsForFunction(&F);
+        GITPass->getITargetsForFunction(&F);
     WitnessGraph WG(F, WS);
 
     for (auto &Target : Destination) {
@@ -101,12 +95,9 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<MemInstrumentSetupPass>();
-  AU.addRequiredTransitive<MemSafetyAnalysisPass>();
+  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<MemSafetyAnalysisPass>();
   AU.addPreserved<GatherITargetsPass>();
-  AU.addPreserved<MemSafetyAnalysisPass>();
-#if MEMINSTRUMENT_USE_PMDA
-  AU.addPreserved<pmda::PMDA>();
-#endif
 }
 
 char GenerateWitnessesPass::ID = 0;

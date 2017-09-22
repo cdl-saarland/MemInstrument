@@ -21,7 +21,7 @@
 
 namespace meminstrument {
 
-class GenerateWitnessesPass : public llvm::ModulePass, public ITargetProvider {
+class GenerateWitnessesPass : public llvm::ModulePass {
 public:
   /// \brief Identification
   static char ID;
@@ -34,14 +34,11 @@ public:
   ///
   virtual bool doInitialization(llvm::Module &M) override;
 
-  /// \name Module pass interface
-  //@{
   virtual bool runOnModule(llvm::Module &M) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
-  //@}
 };
 
 } // end namespace meminstrument

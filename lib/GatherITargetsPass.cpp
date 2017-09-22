@@ -26,8 +26,6 @@ GatherITargetsPass::GatherITargetsPass() : ModulePass(ID) {}
 bool GatherITargetsPass::doInitialization(llvm::Module &) { return false; }
 
 bool GatherITargetsPass::runOnModule(Module &M) {
-  this->initializeEmpty();
-
   const DataLayout &DL = M.getDataLayout();
 
   auto &IP = InstrumentationPolicy::get(DL);
@@ -59,6 +57,12 @@ bool GatherITargetsPass::runOnModule(Module &M) {
              : Destination) { dbgs() << "  " << *Target << "\n"; });
   }
   return false;
+}
+
+std::vector<std::shared_ptr<ITarget>> &
+GatherITargetsPass::getITargetsForFunction(llvm::Function *F) {
+  TargetMap.lookup(F);
+  return TargetMap[F];
 }
 
 void GatherITargetsPass::getAnalysisUsage(AnalysisUsage &AU) const {

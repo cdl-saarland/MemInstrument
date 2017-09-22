@@ -15,13 +15,18 @@
 #define MEMINSTRUMENT_GATHERITARGETSPASS_H
 
 #include "meminstrument/ITargetProvider.h"
+#include "meminstrument/ITarget.h"
 
 #include "llvm/IR/Module.h"
+#include "llvm/IR/ValueMap.h"
 #include "llvm/Pass.h"
+
+#include <memory>
+#include <vector>
 
 namespace meminstrument {
 
-class GatherITargetsPass : public llvm::ModulePass, public ITargetProvider {
+class GatherITargetsPass : public llvm::ModulePass {
 public:
   /// \brief Identification
   static char ID;
@@ -31,17 +36,21 @@ public:
 
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary initialization before any pass is run.
-  ///
   virtual bool doInitialization(llvm::Module &) override;
 
-  /// \name Module pass interface
-  //@{
   virtual bool runOnModule(llvm::Module &F) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
-  //@}
+
+  std::vector<std::shared_ptr<ITarget>> &getITargetsForFunction(llvm::Function *F);
+
+private:
+  typedef llvm::ValueMap<llvm::Function *,
+                         std::vector<std::shared_ptr<ITarget>>>
+      MapType;
+  MapType TargetMap;
 };
 
 } // end namespace meminstrument

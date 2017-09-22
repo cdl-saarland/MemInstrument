@@ -62,9 +62,7 @@ void filterByDominance(const DominatorTree &DomTree,
 }
 
 bool MemSafetyAnalysisPass::runOnModule(Module &M) {
-  auto *GITPass =
-      cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
-  this->connectToProvider(GITPass);
+  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
 
   if (NoOptimizations) {
     return false;
@@ -74,7 +72,7 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     if (F.empty()) {
       continue;
     }
-    auto &Vec = this->getITargetsForFunction(&F);
+    auto &Vec = GITPass->getITargetsForFunction(&F);
 
     for (auto &IT : Vec) {
       auto *L = IT->Location;
@@ -104,9 +102,9 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
 
 void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
 #if MEMINSTRUMENT_USE_PMDA
-  AU.addRequiredTransitive<pmda::PMDA>();
+  AU.addRequired<pmda::PMDA>();
 #endif
-  AU.addRequiredTransitive<GatherITargetsPass>();
+  AU.addRequired<GatherITargetsPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.setPreservesAll();
 }

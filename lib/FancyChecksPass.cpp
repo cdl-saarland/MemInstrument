@@ -16,10 +16,6 @@
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
-#if MEMINSTRUMENT_USE_PMDA
-#include "PMDA/PMDA.h"
-#endif
-
 #include "meminstrument/Util.h"
 
 using namespace meminstrument;
@@ -30,9 +26,7 @@ FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 bool FancyChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool FancyChecksPass::runOnModule(Module &M) {
-  auto *GWPass =
-      cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
-  this->connectToProvider(GWPass);
+  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))
@@ -45,13 +39,9 @@ bool FancyChecksPass::runOnModule(Module &M) {
 }
 
 void FancyChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequiredTransitive<GenerateWitnessesPass>();
+  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<GenerateWitnessesPass>();
   AU.addPreserved<GatherITargetsPass>();
-  AU.addPreserved<MemSafetyAnalysisPass>();
-  AU.addPreserved<GenerateWitnessesPass>();
-#if MEMINSTRUMENT_USE_PMDA
-  AU.addPreserved<pmda::PMDA>();
-#endif
 }
 
 char FancyChecksPass::ID = 0;

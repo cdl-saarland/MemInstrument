@@ -16,7 +16,7 @@ add_meminstrument_library(meminstrument
   GenerateChecksPass.cpp
   FancyChecksPass.cpp
   ITarget.cpp
-  ITargetProvider.cpp
+  # ITargetProvider.cpp
   InstrumentationMechanism.cpp
   WitnessStrategy.cpp
   InstrumentationPolicy.cpp

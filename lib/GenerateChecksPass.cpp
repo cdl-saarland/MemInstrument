@@ -12,7 +12,7 @@
 #include "meminstrument/GenerateChecksPass.h"
 
 #include "meminstrument/FancyChecksPass.h"
-#include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/GatherITargetsPass.h"
 #include "meminstrument/InstrumentationMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -27,11 +27,7 @@ GenerateChecksPass::GenerateChecksPass() : ModulePass(ID) {}
 bool GenerateChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateChecksPass::runOnModule(Module &M) {
-  auto *FCPass = cast<FancyChecksPass>(&this->getAnalysis<FancyChecksPass>());
-  this->connectToProvider(FCPass);
-  // auto *GWPass =
-  //     cast<GenerateWitnessesPass>(&this->getAnalysis<GenerateWitnessesPass>());
-  // this->connectToProvider(GWPass);
+  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
 
   auto &IM = InstrumentationMechanism::get();
 
@@ -43,7 +39,7 @@ bool GenerateChecksPass::runOnModule(Module &M) {
                  << F.getName().str() << "`\n";);
 
     std::vector<std::shared_ptr<ITarget>> &Destination =
-        this->getITargetsForFunction(&F);
+        GITPass->getITargetsForFunction(&F);
 
     for (auto &T : Destination) {
       if (T->isValid()) {
@@ -55,8 +51,8 @@ bool GenerateChecksPass::runOnModule(Module &M) {
 }
 
 void GenerateChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  // AU.addRequiredTransitive<GenerateWitnessesPass>();
-  AU.addRequiredTransitive<FancyChecksPass>();
+  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<FancyChecksPass>();
 }
 
 char GenerateChecksPass::ID = 0;
