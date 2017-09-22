@@ -27,6 +27,9 @@ using namespace llvm;
 STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
                                  "because of witness graph information");
 
+STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
+                                    "encountered");
+
 namespace {
 
 enum WitnessStrategyKind {
@@ -79,12 +82,14 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
     default:
+      errs() << "Unsupported constant expression:\n" << *CE << "\n\n";
       llvm_unreachable("Unsupported constant expression!");
     }
 
     return;
   }
 
+  errs() << "Unsupported constant value:\n" << *C << "\n\n";
   llvm_unreachable("Unsupported constant value!");
 }
 }
@@ -196,6 +201,10 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
       return;
     }
 
+    case Instruction::ExtractElement:
+    case Instruction::InsertElement:
+    case Instruction::ShuffleVector:
+      ++NumPtrVectorInstructions; // fallthrough
     default:
       errs() << "Unsupported instruction:\n" << *I << "\n\n";
       llvm_unreachable("Unsupported instruction!");
@@ -221,6 +230,7 @@ void SimpleStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
+  errs() << "Unsupported value operand:\n" << *Target->Instrumentee << "\n\n";
   llvm_unreachable("Unsupported value operand!");
 }
 
