@@ -14,8 +14,6 @@
 #ifndef MEMINSTRUMENT_GENERATECHECKSPASS_H
 #define MEMINSTRUMENT_GENERATECHECKSPASS_H
 
-#include "meminstrument/ITargetProvider.h"
-
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
@@ -34,14 +32,11 @@ public:
   ///
   virtual bool doInitialization(llvm::Module &M) override;
 
-  /// \name Module pass interface
-  //@{
   virtual bool runOnModule(llvm::Module &M) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
-  //@}
 };
 
 } // end namespace meminstrument

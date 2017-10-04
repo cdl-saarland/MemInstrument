@@ -14,8 +14,6 @@
 #ifndef MEMINSTRUMENT_MEMSAFETYANALYSISPASS_H
 #define MEMINSTRUMENT_MEMSAFETYANALYSISPASS_H
 
-#include "meminstrument/ITargetProvider.h"
-
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 

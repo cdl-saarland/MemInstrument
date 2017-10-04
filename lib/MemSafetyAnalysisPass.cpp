@@ -12,7 +12,7 @@
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
@@ -62,17 +62,17 @@ void filterByDominance(const DominatorTree &DomTree,
 }
 
 bool MemSafetyAnalysisPass::runOnModule(Module &M) {
-  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
-
   if (NoOptimizations) {
     return false;
   }
+
+  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   for (auto &F : M) {
     if (F.empty()) {
       continue;
     }
-    auto &Vec = GITPass->getITargetsForFunction(&F);
+    auto &Vec = IPPass->getITargetsForFunction(&F);
 
     for (auto &IT : Vec) {
       auto *L = IT->Location;
@@ -104,7 +104,7 @@ void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
 #if MEMINSTRUMENT_USE_PMDA
   AU.addRequired<pmda::PMDA>();
 #endif
-  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<ITargetProviderPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.setPreservesAll();
 }

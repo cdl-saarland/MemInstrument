@@ -12,7 +12,7 @@
 #include "meminstrument/GenerateChecksPass.h"
 
 #include "meminstrument/FancyChecksPass.h"
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/InstrumentationMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -27,7 +27,7 @@ GenerateChecksPass::GenerateChecksPass() : ModulePass(ID) {}
 bool GenerateChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateChecksPass::runOnModule(Module &M) {
-  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
+  auto *GITPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   auto &IM = InstrumentationMechanism::get();
 
@@ -51,7 +51,7 @@ bool GenerateChecksPass::runOnModule(Module &M) {
 }
 
 void GenerateChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<ITargetProviderPass>();
   AU.addRequired<FancyChecksPass>();
 }
 

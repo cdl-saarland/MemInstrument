@@ -1,4 +1,4 @@
-//===-------- GatherITargetsPass.cpp -- MemSafety Instrumentation ---------===//
+//===------- ITargetProviderPass.cpp -- MemSafety Instrumentation ---------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -9,7 +9,7 @@
 /// \file TODO doku
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 
 #include "meminstrument/InstrumentationPolicy.h"
 
@@ -21,11 +21,11 @@
 using namespace meminstrument;
 using namespace llvm;
 
-GatherITargetsPass::GatherITargetsPass() : ModulePass(ID) {}
+ITargetProviderPass::ITargetProviderPass() : ModulePass(ID) {}
 
-bool GatherITargetsPass::doInitialization(llvm::Module &) { return false; }
+bool ITargetProviderPass::doInitialization(llvm::Module &) { return false; }
 
-bool GatherITargetsPass::runOnModule(Module &M) {
+bool ITargetProviderPass::runOnModule(Module &M) {
   const DataLayout &DL = M.getDataLayout();
 
   auto &IP = InstrumentationPolicy::get(DL);
@@ -34,12 +34,12 @@ bool GatherITargetsPass::runOnModule(Module &M) {
     if (F.empty() || hasNoInstrument(&F)) {
       continue;
     }
-    DEBUG(dbgs() << "GatherITargetsPass: processing function `"
+    DEBUG(dbgs() << "ITargetProviderPass: processing function `"
                  << F.getName().str() << "`\n";);
     std::vector<std::shared_ptr<ITarget>> &Destination =
         this->getITargetsForFunction(&F);
     for (auto &BB : F) {
-      DEBUG(dbgs() << "GatherITargetsPass: processing block `"
+      DEBUG(dbgs() << "ITargetProviderPass: processing block `"
                    << F.getName().str() << "::" << BB.getName().str()
                    << "`\n";);
       for (auto &I : BB) {
@@ -50,7 +50,7 @@ bool GatherITargetsPass::runOnModule(Module &M) {
       }
     }
     DEBUG_ALSO_WITH_TYPE(
-        "meminstrument-gatheritargets",
+        "meminstrument-itargetprovider",
         dbgs() << "identified instrumentation targets:"
                << "\n";
         for (auto &Target
@@ -60,13 +60,13 @@ bool GatherITargetsPass::runOnModule(Module &M) {
 }
 
 std::vector<std::shared_ptr<ITarget>> &
-GatherITargetsPass::getITargetsForFunction(llvm::Function *F) {
+ITargetProviderPass::getITargetsForFunction(llvm::Function *F) {
   TargetMap.lookup(F);
   return TargetMap[F];
 }
 
-void GatherITargetsPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void ITargetProviderPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
 
-char GatherITargetsPass::ID = 0;
+char ITargetProviderPass::ID = 0;

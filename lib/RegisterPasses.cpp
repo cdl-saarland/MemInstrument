@@ -12,7 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/FancyChecksPass.h"
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/GenerateChecksPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
@@ -50,10 +50,10 @@ static RegisterPass<MemSafetyAnalysisPass>
                                   true,  // CFGOnly
                                   true); // isAnalysis
 
-static RegisterPass<GatherITargetsPass>
-    RegisterGatherITargetsPass("mi-gatheritargets", "GatherITargets",
-                               true,  // CFGOnly
-                               true); // isAnalysis
+static RegisterPass<ITargetProviderPass>
+    RegisterITargetProviderPass("mi-itargetprovider", "ITargetProvider",
+                                true,  // CFGOnly
+                                true); // isAnalysis
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {

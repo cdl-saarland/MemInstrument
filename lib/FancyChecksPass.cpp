@@ -12,7 +12,7 @@
 #include "meminstrument/FancyChecksPass.h"
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
@@ -26,7 +26,7 @@ FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 bool FancyChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool FancyChecksPass::runOnModule(Module &M) {
-  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
+  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))
@@ -39,9 +39,9 @@ bool FancyChecksPass::runOnModule(Module &M) {
 }
 
 void FancyChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<ITargetProviderPass>();
   AU.addRequired<GenerateWitnessesPass>();
-  AU.addPreserved<GatherITargetsPass>();
+  AU.addPreserved<ITargetProviderPass>();
 }
 
 char FancyChecksPass::ID = 0;

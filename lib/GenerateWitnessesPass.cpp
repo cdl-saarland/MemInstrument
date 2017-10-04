@@ -12,7 +12,7 @@
 #include "meminstrument/GenerateWitnessesPass.h"
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/GatherITargetsPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 #include "meminstrument/WitnessStrategy.h"
@@ -42,7 +42,7 @@ GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
-  auto *GITPass = cast<GatherITargetsPass>(&this->getAnalysis<GatherITargetsPass>());
+  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();
@@ -54,7 +54,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
                  << F.getName().str() << "`\n";);
 
     std::vector<std::shared_ptr<ITarget>> &Destination =
-        GITPass->getITargetsForFunction(&F);
+        IPPass->getITargetsForFunction(&F);
     WitnessGraph WG(F, WS);
 
     for (auto &Target : Destination) {
@@ -95,9 +95,9 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<MemInstrumentSetupPass>();
-  AU.addRequired<GatherITargetsPass>();
+  AU.addRequired<ITargetProviderPass>();
   AU.addRequired<MemSafetyAnalysisPass>();
-  AU.addPreserved<GatherITargetsPass>();
+  AU.addPreserved<ITargetProviderPass>();
 }
 
 char GenerateWitnessesPass::ID = 0;
