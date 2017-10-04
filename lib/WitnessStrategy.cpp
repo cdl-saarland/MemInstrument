@@ -25,7 +25,7 @@ using namespace meminstrument;
 using namespace llvm;
 
 STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
-                                 "because of witness graph information");
+                                        "because of witness graph information");
 
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
@@ -41,7 +41,7 @@ cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
     cl::values(clEnumValN(WS_simple, "simple",
                           "simple strategy for witness placement")),
     cl::init(WS_simple) // default
-    );
+);
 
 std::unique_ptr<WitnessStrategy> GlobalWS(nullptr);
 
@@ -92,7 +92,7 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
   errs() << "Unsupported constant value:\n" << *C << "\n\n";
   llvm_unreachable("Unsupported constant value!");
 }
-}
+} // namespace
 
 const WitnessStrategy &WitnessStrategy::get(void) {
   auto *Res = GlobalWS.get();
@@ -362,7 +362,7 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
   return true;
 }
-}
+} // namespace
 
 void SimpleStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
 

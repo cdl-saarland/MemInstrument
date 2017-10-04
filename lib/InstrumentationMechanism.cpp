@@ -38,10 +38,10 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
     cl::values(clEnumValN(IM_splay, "splay",
                           "use splay tree for instrumentation")),
     cl::init(IM_splay) // default
-    );
+);
 
 std::unique_ptr<InstrumentationMechanism> GlobalIM(nullptr);
-}
+} // namespace
 
 InstrumentationMechanism &InstrumentationMechanism::get(void) {
   auto *Res = GlobalIM.get();

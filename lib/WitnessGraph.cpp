@@ -217,7 +217,7 @@ void markAsReachable(std::set<WitnessGraphNode *> &Res, WitnessGraphNode *N) {
     markAsReachable(Res, O);
   }
 }
-}
+} // namespace
 
 void WitnessGraph::removeDeadNodes(void) {
   std::set<WitnessGraphNode *> DoNotRemove;

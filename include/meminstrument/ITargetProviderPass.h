@@ -43,7 +43,8 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  std::vector<std::shared_ptr<ITarget>> &getITargetsForFunction(llvm::Function *F);
+  std::vector<std::shared_ptr<ITarget>> &
+  getITargetsForFunction(llvm::Function *F);
 
 private:
   typedef llvm::ValueMap<llvm::Function *,

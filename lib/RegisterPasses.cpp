@@ -12,9 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/FancyChecksPass.h"
-#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/GenerateChecksPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
@@ -63,4 +63,4 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 static llvm::RegisterStandardPasses
     RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
                               registerMeminstrumentPass);
-}
+} // namespace meminstrument

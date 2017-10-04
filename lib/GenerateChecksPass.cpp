@@ -27,7 +27,8 @@ GenerateChecksPass::GenerateChecksPass() : ModulePass(ID) {}
 bool GenerateChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateChecksPass::runOnModule(Module &M) {
-  auto *GITPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *GITPass =
+      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   auto &IM = InstrumentationMechanism::get();
 

@@ -35,7 +35,7 @@ bool hasNoInstrumentImpl(MDNode *N) {
 
   return false;
 }
-}
+} // namespace
 
 namespace meminstrument {
 
@@ -63,4 +63,4 @@ bool hasNoInstrument(GlobalObject *O) {
 bool hasNoInstrument(Instruction *O) {
   return hasNoInstrumentImpl(O->getMetadata(MEMINSTRUMENT_MD));
 }
-}
+} // namespace meminstrument

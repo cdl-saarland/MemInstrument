@@ -36,10 +36,10 @@ cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
     cl::values(clEnumValN(IP_beforeOutflow, "before-outflow",
                           "only insert dummy calls for instrumentation")),
     cl::init(IP_beforeOutflow) // default
-    );
+);
 
 std::unique_ptr<InstrumentationPolicy> GlobalIM(nullptr);
-}
+} // namespace
 
 InstrumentationPolicy &InstrumentationPolicy::get(const DataLayout &DL) {
   auto *Res = GlobalIM.get();

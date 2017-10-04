@@ -24,7 +24,7 @@ bool flagSubsumes(const ITarget &i1, const ITarget &i2) {
       (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
       (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
 }
-}
+} // namespace
 
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,

@@ -12,8 +12,8 @@
 #include "meminstrument/FancyChecksPass.h"
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
 
 #include "meminstrument/Util.h"
@@ -26,7 +26,8 @@ FancyChecksPass::FancyChecksPass() : ModulePass(ID) {}
 bool FancyChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool FancyChecksPass::runOnModule(Module &M) {
-  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *IPPass =
+      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))

@@ -29,20 +29,21 @@ namespace {
 cl::opt<bool> PrintWitnessGraphOpt("mi-print-witnessgraph",
                                    cl::desc("Print the WitnessGraph"),
                                    cl::init(false) // default
-                                   );
+);
 cl::opt<bool>
     NoSimplifyWitnessGraphOpt("mi-no-simplify-witnessgraph",
                               cl::desc("Disable witness graph simplifications"),
                               cl::init(false) // default
-                              );
-}
+    );
+} // namespace
 
 GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
-  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *IPPass =
+      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();

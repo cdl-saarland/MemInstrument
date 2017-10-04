@@ -66,7 +66,8 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     return false;
   }
 
-  auto *IPPass = cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *IPPass =
+      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
 
   for (auto &F : M) {
     if (F.empty()) {
