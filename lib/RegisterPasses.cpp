@@ -11,12 +11,17 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "meminstrument/Definitions.h"
 #include "meminstrument/FancyChecksPass.h"
 #include "meminstrument/GenerateChecksPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
 #include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/MemSafetyAnalysisPass.h"
+
+#if MEMINSTRUMENT_USE_PMDA
+#include "CheckOptimizer/CheckOptimizerPass.h"
+#endif
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -57,6 +62,9 @@ static RegisterPass<ITargetProviderPass>
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
+#if MEMINSTRUMENT_USE_PMDA
+  PM.add(new checkoptimizer::CheckOptimizerPass());
+#endif
   PM.add(new GenerateChecksPass());
 }
 

@@ -2,7 +2,7 @@
 
 message(STATUS "Configuring meminstrument...")
 
-option(MEMINSTRUMENT_USE_PMDA "Use PMDA to elimintate checks" 0)
+option(MEMINSTRUMENT_USE_PMDA "Use PMDA CheckOptimizer to elimintate checks" 0)
 
 if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   project(meminstrument)
@@ -93,31 +93,18 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
 if(MEMINSTRUMENT_USE_PMDA)
-  message(STATUS "Looking for PMDA...")
+  message(STATUS "Looking for PMDA CheckOptimizer...")
 
-  find_path(PMDA_BASE "include/PMDA/PMDA.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/PMDA")
-  if(PMDA_BASE)
-    message(STATUS "Found PMDA in ${PMDA_BASE}")
+  find_path(PMDA_CO_BASE "include/CheckOptimizer/CheckOptimizerPass.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/CheckOptimizer")
+  if(PMDA_CO_BASE)
+    message(STATUS "Found PMDA CheckOptimizer in ${PMDA_CO_BASE}")
   else()
-    message(FATAL_ERROR "PMDA not found ${PMDA_BASE}")
-  endif()
-
-  if(NOT ${ISL_INCLUDE_PATH_FOUND})
-    message(FATAL_ERROR "Cannot find isl include directory.")
-  endif()
-
-  if(NOT EXISTS ${ISL_INCLUDE_PATH}/isl/ctx.h)
-    message(FATAL_ERROR "Cannot find ctx.h in ${ISL_INCLUDE_PATH}/isl.")
-  endif()
-
-  # This header is built by isl, check if the build worked properly
-  if(NOT EXISTS ${ISL_BUILD_INCLUDE_PATH}/isl/stdint.h)
-    message(FATAL_ERROR "Cannot find stdint.h in ${ISL_BUILD_INCLUDE_PATH}/isl.")
+    message(FATAL_ERROR "PMDA CheckOptimizer not found ${PMDA_CO_BASE}")
   endif()
 
   include_directories(
     BEFORE
-    ${PMDA_BASE}/include
+    ${PMDA_CO_BASE}/include
     ${ISL_INCLUDE_PATH}
     ${ISL_BUILD_INCLUDE_PATH}
     )

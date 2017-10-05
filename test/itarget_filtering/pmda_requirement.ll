@@ -1,10 +1,10 @@
 ; RUN: %opt %loadlibs -mi-itargetprovider -debug-only meminstrument-itargetprovider %s -S > /dev/null 2> %t1.log
-; RUN: %opt %loadlibs -mi-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
+; RUN: %opt %loadlibs -checkoptimizer -mi-analysis -debug-only meminstrument-memsafetyanalysis %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "<arrayidx, entry::[store], 4B, ul_>" %t1.log
 ; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t1.log
 ; RUN: %not fgrep "<arrayidx, entry::[store], 4B, ul_>" %t2.log
 ; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t2.log
-; XFAIL: no_pmda
+; REQUIRES: pmda
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"

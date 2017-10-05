@@ -45,7 +45,7 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 if (MEMINSTRUMENT_USE_PMDA)
-target_link_libraries(meminstrument PMDA)
+target_link_libraries(meminstrument checkoptimizer)
 endif()
 
 link_directories(

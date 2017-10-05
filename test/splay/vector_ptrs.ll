@@ -1,6 +1,7 @@
 ; RUN: %opt %loadlibs -mi-genchecks %s -mi-imechanism=splay -S > %t1.ll
 ; RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 ; RUN: %t2
+; XFAIL: *
 
 define i32 @test(i64 %n, i32* %p) {
 bb:

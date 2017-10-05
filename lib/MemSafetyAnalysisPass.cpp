@@ -19,7 +19,7 @@
 #include "llvm/IR/Instructions.h"
 
 #if MEMINSTRUMENT_USE_PMDA
-#include "PMDA/PMDA.h"
+#include "CheckOptimizer/CheckOptimizerPass.h"
 #endif
 
 #include <algorithm>
@@ -102,9 +102,6 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
 }
 
 void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
-#if MEMINSTRUMENT_USE_PMDA
-  AU.addRequired<pmda::PMDA>();
-#endif
   AU.addRequired<ITargetProviderPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.setPreservesAll();
