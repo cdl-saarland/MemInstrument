@@ -36,8 +36,7 @@ bool ITargetProviderPass::runOnModule(Module &M) {
     }
     DEBUG(dbgs() << "ITargetProviderPass: processing function `"
                  << F.getName().str() << "`\n";);
-    std::vector<std::shared_ptr<ITarget>> &Destination =
-        this->getITargetsForFunction(&F);
+    ITargetVector &Destination = this->getITargetsForFunction(&F);
     for (auto &BB : F) {
       DEBUG(dbgs() << "ITargetProviderPass: processing block `"
                    << F.getName().str() << "::" << BB.getName().str()
@@ -59,8 +58,7 @@ bool ITargetProviderPass::runOnModule(Module &M) {
   return false;
 }
 
-std::vector<std::shared_ptr<ITarget>> &
-ITargetProviderPass::getITargetsForFunction(llvm::Function *F) {
+ITargetVector &ITargetProviderPass::getITargetsForFunction(llvm::Function *F) {
   TargetMap.lookup(F);
   return TargetMap[F];
 }

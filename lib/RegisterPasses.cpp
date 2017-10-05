@@ -15,9 +15,9 @@
 #include "meminstrument/FancyChecksPass.h"
 #include "meminstrument/GenerateChecksPass.h"
 #include "meminstrument/GenerateWitnessesPass.h"
+#include "meminstrument/ITargetFilterPass.h"
 #include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
-#include "meminstrument/MemSafetyAnalysisPass.h"
 
 #if MEMINSTRUMENT_USE_PMDA
 #include "CheckOptimizer/CheckOptimizerPass.h"
@@ -50,14 +50,14 @@ static RegisterPass<MemInstrumentSetupPass>
                                    false,  // CFGOnly
                                    false); // isAnalysis
 
-static RegisterPass<MemSafetyAnalysisPass>
-    RegisterMemSafetyAnalysisPass("mi-analysis", "MemSafetyAnalysis",
-                                  true,  // CFGOnly
+static RegisterPass<ITargetFilterPass>
+    RegisterMemSafetyAnalysisPass("mi-itargetfilter", "ITargetFilter",
+                                  false, // CFGOnly
                                   true); // isAnalysis
 
 static RegisterPass<ITargetProviderPass>
     RegisterITargetProviderPass("mi-itargetprovider", "ITargetProvider",
-                                true,  // CFGOnly
+                                false, // CFGOnly
                                 true); // isAnalysis
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,

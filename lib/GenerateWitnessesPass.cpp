@@ -12,9 +12,9 @@
 #include "meminstrument/GenerateWitnessesPass.h"
 
 #include "meminstrument/Definitions.h"
+#include "meminstrument/ITargetFilterPass.h"
 #include "meminstrument/ITargetProviderPass.h"
 #include "meminstrument/MemInstrumentSetupPass.h"
-#include "meminstrument/MemSafetyAnalysisPass.h"
 #include "meminstrument/WitnessStrategy.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -42,8 +42,7 @@ GenerateWitnessesPass::GenerateWitnessesPass() : ModulePass(ID) {}
 bool GenerateWitnessesPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateWitnessesPass::runOnModule(Module &M) {
-  auto *IPPass =
-      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *IPPass = GET_ITARGET_PROVIDER_PASS;
 
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();
@@ -54,8 +53,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "GenerateWitnessesPass: processing function `"
                  << F.getName().str() << "`\n";);
 
-    std::vector<std::shared_ptr<ITarget>> &Destination =
-        IPPass->getITargetsForFunction(&F);
+    ITargetVector &Destination = IPPass->getITargetsForFunction(&F);
     WitnessGraph WG(F, WS);
 
     for (auto &Target : Destination) {
@@ -97,7 +95,7 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<MemInstrumentSetupPass>();
   AU.addRequired<ITargetProviderPass>();
-  AU.addRequired<MemSafetyAnalysisPass>();
+  AU.addRequired<ITargetFilterPass>();
   AU.addPreserved<ITargetProviderPass>();
 }
 

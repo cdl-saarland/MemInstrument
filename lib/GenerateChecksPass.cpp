@@ -27,8 +27,7 @@ GenerateChecksPass::GenerateChecksPass() : ModulePass(ID) {}
 bool GenerateChecksPass::doInitialization(llvm::Module &) { return false; }
 
 bool GenerateChecksPass::runOnModule(Module &M) {
-  auto *GITPass =
-      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  auto *GITPass = GET_ITARGET_PROVIDER_PASS;
 
   auto &IM = InstrumentationMechanism::get();
 
@@ -39,8 +38,7 @@ bool GenerateChecksPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "GenerateChecksPass: processing function `"
                  << F.getName().str() << "`\n";);
 
-    std::vector<std::shared_ptr<ITarget>> &Destination =
-        GITPass->getITargetsForFunction(&F);
+    ITargetVector &Destination = GITPass->getITargetsForFunction(&F);
 
     for (auto &T : Destination) {
       if (T->isValid()) {

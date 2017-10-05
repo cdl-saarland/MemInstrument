@@ -23,7 +23,12 @@
 #include <memory>
 #include <vector>
 
+#define GET_ITARGET_PROVIDER_PASS                                              \
+  cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+
 namespace meminstrument {
+
+typedef std::vector<std::shared_ptr<ITarget>> ITargetVector;
 
 class ITargetProviderPass : public llvm::ModulePass {
 public:
@@ -43,13 +48,10 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  std::vector<std::shared_ptr<ITarget>> &
-  getITargetsForFunction(llvm::Function *F);
+  ITargetVector &getITargetsForFunction(llvm::Function *F);
 
 private:
-  typedef llvm::ValueMap<llvm::Function *,
-                         std::vector<std::shared_ptr<ITarget>>>
-      MapType;
+  typedef llvm::ValueMap<llvm::Function *, ITargetVector> MapType;
   MapType TargetMap;
 };
 

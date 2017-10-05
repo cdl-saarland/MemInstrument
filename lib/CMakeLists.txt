@@ -10,8 +10,8 @@ configure_file("../include/meminstrument/Definitions.h.in" "../include/meminstru
 # add all source files of the project that should be linked together
 add_meminstrument_library(meminstrument
   ITargetProviderPass.cpp
-  MemSafetyAnalysisPass.cpp
   MemInstrumentSetupPass.cpp
+  ITargetFilterPass.cpp
   GenerateWitnessesPass.cpp
   GenerateChecksPass.cpp
   FancyChecksPass.cpp
@@ -62,7 +62,7 @@ else ()
   # Specify the files clang needs for the pass manager
   add_meminstrument_loadable_module(LLVMmeminstrument
     ITargetProviderPass.cpp
-    MemSafetyAnalysisPass.cpp
+    ITargetFilterPass.cpp
     MemInstrumentSetupPass.cpp
     GenerateWitnessesPass.cpp
     GenerateChecksPass.cpp

@@ -1,4 +1,4 @@
-//===----- MemSafetyAnalysisPass.cpp -- MemSafety Instrumentation ---------===//
+//===-------- ITargetFilterPass.cpp -- MemSafety Instrumentation ----------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -9,7 +9,7 @@
 /// \file TODO doku
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/MemSafetyAnalysisPass.h"
+#include "meminstrument/ITargetFilterPass.h"
 
 #include "meminstrument/Definitions.h"
 #include "meminstrument/ITargetProviderPass.h"
@@ -42,12 +42,11 @@ cl::opt<bool> NoOptimizations(
     cl::init(false));
 }
 
-MemSafetyAnalysisPass::MemSafetyAnalysisPass() : ModulePass(ID) {}
+void DominanceFilter::filterForFunction(llvm::Function &F,
+                                        ITargetVector &Vec) const {
+  const auto &DomTree =
+      ParentPass->getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
 
-bool MemSafetyAnalysisPass::doInitialization(llvm::Module &) { return false; }
-
-void filterByDominance(const DominatorTree &DomTree,
-                       std::vector<std::shared_ptr<ITarget>> &Vec) {
   for (auto &i1 : Vec) {
     for (auto &i2 : Vec) {
       if (i1 == i2 || !i1->isValid() || !i2->isValid())
@@ -61,13 +60,38 @@ void filterByDominance(const DominatorTree &DomTree,
   }
 }
 
-bool MemSafetyAnalysisPass::runOnModule(Module &M) {
+void AnnotationFilter::filterForFunction(llvm::Function &F,
+                                         ITargetVector &Vec) const {
+  for (auto &IT : Vec) {
+    auto *L = IT->Location;
+    auto *V = IT->Instrumentee;
+    bool res = L->getMetadata("nosanitize") &&
+               ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
+                (isa<StoreInst>(L) && (V == L->getOperand(1))));
+    if (res) {
+      ++NumITargetsNoSanitize;
+      IT->invalidate();
+    }
+  }
+}
+
+ITargetFilterPass::ITargetFilterPass() : ModulePass(ID) {}
+
+bool ITargetFilterPass::doInitialization(llvm::Module &) { return false; }
+
+void ITargetFilterPass::releaseMemory(void) {}
+
+bool ITargetFilterPass::runOnModule(Module &M) {
   if (NoOptimizations) {
     return false;
   }
 
-  auto *IPPass =
-      cast<ITargetProviderPass>(&this->getAnalysis<ITargetProviderPass>());
+  std::vector<ITargetFilter *> Filters{
+      new AnnotationFilter(this),
+      new DominanceFilter(this),
+  };
+
+  auto *IPPass = GET_ITARGET_PROVIDER_PASS;
 
   for (auto &F : M) {
     if (F.empty()) {
@@ -75,36 +99,28 @@ bool MemSafetyAnalysisPass::runOnModule(Module &M) {
     }
     auto &Vec = IPPass->getITargetsForFunction(&F);
 
-    for (auto &IT : Vec) {
-      auto *L = IT->Location;
-      auto *V = IT->Instrumentee;
-      bool res = L->getMetadata("nosanitize") &&
-                 ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
-                  (isa<StoreInst>(L) && (V == L->getOperand(1))));
-      if (res) {
-        ++NumITargetsNoSanitize;
-        IT->invalidate();
-      }
+    for (auto *Filter : Filters) {
+      Filter->filterForFunction(F, Vec);
     }
 
     DEBUG_ALSO_WITH_TYPE(
-        "meminstrument-memsafetyanalysis",
+        "meminstrument-itargetfilter",
         dbgs() << "remaining instrumentation targets after filter:"
                << "\n";
         for (auto &Target
              : Vec) { dbgs() << "  " << *Target << "\n"; });
-
-    const auto &DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-    filterByDominance(DomTree, Vec);
   }
 
+  for (auto *Filter : Filters) {
+    delete Filter;
+  }
   return false;
 }
 
-void MemSafetyAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void ITargetFilterPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<ITargetProviderPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.setPreservesAll();
 }
 
-char MemSafetyAnalysisPass::ID = 0;
+char ITargetFilterPass::ID = 0;
