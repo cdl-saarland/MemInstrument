@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -mi-genchecks %s -mi-imechanism=splay -S > %t1.ll
+; RUN: %opt %loadlibs -meminstrument %s -mi-imechanism=splay -S > %t1.ll
 ; RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 ; RUN: %t2
 

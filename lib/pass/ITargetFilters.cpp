@@ -65,7 +65,7 @@ void AnnotationFilter::filterForFunction(llvm::Function &F,
   }
 }
 
-void filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
+void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   if (NoFiltersOpt) {
     return;
   }

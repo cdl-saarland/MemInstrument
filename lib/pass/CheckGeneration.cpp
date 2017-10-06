@@ -15,7 +15,7 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void generateChecks(ITargetVector& Vec, llvm::Function &F) {
+void meminstrument::generateChecks(ITargetVector& Vec, llvm::Function &F) {
   auto &IM = InstrumentationMechanism::get();
 
   for (auto &T : Vec) {

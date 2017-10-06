@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -mi-imechanism=dummy -mi-instrumentsetup -S %s > %t.log
+; RUN: %opt %loadlibs -mi-imechanism=dummy -meminstrument -mi-mode=setup -S %s > %t.log
 ; RUN: grep -e "de\(clare\|fine\) .* @__memsafe_dummy_create_witness" %t.log
 ; RUN: grep -e "de\(clare\|fine\) .* @__memsafe_dummy_check_access" %t.log
 ; RUN: grep -e "de\(clare\|fine\) .* @__memsafe_dummy_get_lower_bound" %t.log

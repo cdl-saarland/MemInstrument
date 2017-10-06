@@ -35,7 +35,7 @@ cl::opt<bool>
     );
 }
 
-void generateWitnesses(ITargetVector &Vec, Function &F) {
+void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
   const auto &WS = WitnessStrategy::get();
   auto &IM = InstrumentationMechanism::get();
 

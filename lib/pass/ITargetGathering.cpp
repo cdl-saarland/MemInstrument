@@ -14,7 +14,7 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void gatherITargets(ITargetVector& Destination, Function &F) {
+void meminstrument::gatherITargets(ITargetVector& Destination, Function &F) {
   const DataLayout &DL = F.getParent()->getDataLayout();
   auto &IP = InstrumentationPolicy::get(DL);
 

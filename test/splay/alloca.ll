@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -mi-genchecks %s -mi-imechanism=splay -S > %t1.ll
+; RUN: %opt %loadlibs -meminstrument %s -mi-imechanism=splay -S > %t1.ll
 ; RUN: fgrep "call void @__splay_alloc" %t1.ll
 
 define i32 @test(i64 %n, i32* %p) {

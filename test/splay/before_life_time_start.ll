@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -mem2reg -mi-genchecks %s -mi-imechanism=splay -S > %t1.ll
+; RUN: %opt %loadlibs -mem2reg -meminstrument %s -mi-imechanism=splay -S > %t1.ll
 ; RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 ; RUN: %t2 2> %t3.err
 ; RUN: %not fgrep "non-existing witness" %t3.err
