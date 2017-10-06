@@ -12,6 +12,7 @@
 #include "meminstrument/ITargetProviderPass.h"
 
 #include "meminstrument/InstrumentationPolicy.h"
+#include "meminstrument/MemInstrumentSetupPass.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Module.h"
@@ -26,6 +27,10 @@ ITargetProviderPass::ITargetProviderPass() : ModulePass(ID) {}
 bool ITargetProviderPass::doInitialization(llvm::Module &) { return false; }
 
 bool ITargetProviderPass::runOnModule(Module &M) {
+  static Module *Prev = nullptr;
+  assert((Prev != &M) && "ITargetProviderPass ran twice!");
+  Prev = &M;
+
   const DataLayout &DL = M.getDataLayout();
 
   auto &IP = InstrumentationPolicy::get(DL);
@@ -64,6 +69,7 @@ ITargetVector &ITargetProviderPass::getITargetsForFunction(llvm::Function *F) {
 }
 
 void ITargetProviderPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<MemInstrumentSetupPass>();
   AU.setPreservesAll();
 }
 

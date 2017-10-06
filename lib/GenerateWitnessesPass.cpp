@@ -14,7 +14,6 @@
 #include "meminstrument/Definitions.h"
 #include "meminstrument/ITargetFilterPass.h"
 #include "meminstrument/ITargetProviderPass.h"
-#include "meminstrument/MemInstrumentSetupPass.h"
 #include "meminstrument/WitnessStrategy.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -93,7 +92,6 @@ bool GenerateWitnessesPass::runOnModule(Module &M) {
 }
 
 void GenerateWitnessesPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<MemInstrumentSetupPass>();
   AU.addRequired<ITargetProviderPass>();
   AU.addRequired<ITargetFilterPass>();
   AU.addPreserved<ITargetProviderPass>();
