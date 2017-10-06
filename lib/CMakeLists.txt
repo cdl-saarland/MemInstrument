@@ -9,22 +9,21 @@ configure_file("../include/meminstrument/Definitions.h.in" "../include/meminstru
 
 # add all source files of the project that should be linked together
 add_meminstrument_library(meminstrument
-  ITargetProviderPass.cpp
-  MemInstrumentSetupPass.cpp
-  ITargetFilterPass.cpp
-  GenerateWitnessesPass.cpp
-  GenerateChecksPass.cpp
-  FancyChecksPass.cpp
-  ITarget.cpp
-  InstrumentationMechanism.cpp
-  WitnessStrategy.cpp
-  InstrumentationPolicy.cpp
-  BeforeOutflowPolicy.cpp
+  pass/MemInstrumentPass.cpp
+  pass/ITargetGathering.cpp
+  pass/ITargetFilters.cpp
+  pass/WitnessGeneration.cpp
+  pass/CheckGeneration.cpp
+  pass/ITarget.cpp
+  pass/Util.cpp
+  pass/WitnessGraph.cpp
+  instrumentation_mechanisms/InstrumentationMechanism.cpp
+  instrumentation_mechanisms/DummyMechanism.cpp
+  instrumentation_mechanisms/SplayMechanism.cpp
+  instrumentation_policies/InstrumentationPolicy.cpp
+  instrumentation_policies/BeforeOutflowPolicy.cpp
+  witness_strategies/WitnessStrategy.cpp
   RegisterPasses.cpp
-  DummyMechanism.cpp
-  SplayMechanism.cpp
-  WitnessGraph.cpp
-  Util.cpp
 )
 
 # List external library dependencies that need to be linked to your library
@@ -61,11 +60,7 @@ if (MSVC)
 else ()
   # Specify the files clang needs for the pass manager
   add_meminstrument_loadable_module(LLVMmeminstrument
-    ITargetProviderPass.cpp
-    ITargetFilterPass.cpp
-    MemInstrumentSetupPass.cpp
-    GenerateWitnessesPass.cpp
-    GenerateChecksPass.cpp
+    pass/MemInstrumentPass.cpp
     RegisterPasses.cpp
   )
 
