@@ -65,6 +65,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       continue;
     }
 
+    Targets.clear();
+
     DEBUG(dbgs() << "MemInstrumentPass: processing function `"
                  << F.getName().str() << "`\n";);
 
@@ -95,8 +97,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);
 
     generateChecks(Targets, F);
-
-    Targets.clear();
   }
 
   return true;
