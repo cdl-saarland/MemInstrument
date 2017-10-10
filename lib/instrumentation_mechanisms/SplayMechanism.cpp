@@ -122,6 +122,10 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   ++SplayNumBounds;
 }
 
+llvm::Constant *SplayMechanism::getFailFunction(void) const {
+  return FailFunction;
+}
+
 void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
@@ -151,6 +155,7 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
       insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
   AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
                                 PtrArgType, SizeType);
+  FailFunction = insertFunDecl(M, "__splay_fail_simple", VoidTy);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {

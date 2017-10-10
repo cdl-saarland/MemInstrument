@@ -39,7 +39,7 @@ cl::opt<MIMode> MIModeOpt(
     cl::values(clEnumValN(MIM_FILTER_ITARGETS, "filteritargets", "only until ITarget filtering is done")),
     cl::values(clEnumValN(MIM_GENERATE_WITNESSES, "genwitnesses", "only until witness generation is done")),
     cl::values(clEnumValN(MIM_GENERATE_EXTERNAL_CHECKS, "extchecks", "only until external check generation is done")),
-    cl::values(clEnumValN(MIM_GENERATE_CHECKS, "genchecks", "the full pipline")),
+    cl::values(clEnumValN(MIM_GENERATE_CHECKS, "genchecks", "the full pipeline")),
     cl::init(MIM_GENERATE_CHECKS) // default
 );
 } // namespace

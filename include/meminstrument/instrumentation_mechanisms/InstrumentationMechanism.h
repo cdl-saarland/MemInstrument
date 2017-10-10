@@ -24,6 +24,8 @@ public:
 
   virtual void materializeBounds(ITarget &Target) const = 0;
 
+  virtual llvm::Constant *getFailFunction(void) const = 0;
+
   virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) const = 0;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,

@@ -7,6 +7,7 @@
 #include "meminstrument/pass/ITargetFilters.h"
 
 #include "meminstrument/Definitions.h"
+#include "meminstrument/pass/ExternalChecksPass.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
@@ -30,10 +31,8 @@ cl::opt<bool> NoFiltersOpt(
     "mi-no-filter",
     cl::desc("Disable all memsafety instrumentation target filters"),
     cl::init(false));
-}
 
-void DominanceFilter::filterForFunction(llvm::Function &F,
-                                        ITargetVector &Vec) const {
+void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
   const auto &DomTree =
       ParentPass->getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
 
@@ -50,8 +49,7 @@ void DominanceFilter::filterForFunction(llvm::Function &F,
   }
 }
 
-void AnnotationFilter::filterForFunction(llvm::Function &F,
-                                         ITargetVector &Vec) const {
+void filterByAnnotation(ITargetVector &Vec) {
   for (auto &IT : Vec) {
     auto *L = IT->Location;
     auto *V = IT->Instrumentee;
@@ -65,18 +63,19 @@ void AnnotationFilter::filterForFunction(llvm::Function &F,
   }
 }
 
+}
+
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   if (NoFiltersOpt) {
     return;
   }
 
-  std::vector<ITargetFilter *> Filters{
-      new AnnotationFilter(P),
-      new DominanceFilter(P),
-  };
+  filterByAnnotation(Vec);
 
-  for (auto *Filter : Filters) {
-    Filter->filterForFunction(F, Vec);
+  filterByDominance(P, Vec, F);
+
+  if (auto *ECP = P->getAnalysisIfAvailable<ExternalChecksPass>()) {
+    ECP->filterITargetsForFunction(Vec, F);
   }
 
   DEBUG_ALSO_WITH_TYPE(
@@ -85,8 +84,4 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
              << "\n";
       for (auto &Target
            : Vec) { dbgs() << "  " << *Target << "\n"; });
-
-  for (auto *Filter : Filters) {
-    delete Filter;
-  }
 }

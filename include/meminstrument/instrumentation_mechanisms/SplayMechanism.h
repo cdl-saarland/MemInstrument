@@ -39,6 +39,8 @@ public:
 
   virtual void materializeBounds(ITarget &Target) const override;
 
+  virtual llvm::Constant *getFailFunction(void) const override;
+
   virtual std::shared_ptr<Witness>
   insertWitnessPhi(ITarget &Target) const override;
 
@@ -59,6 +61,7 @@ private:
   llvm::Constant *CheckDereferenceFunction = nullptr;
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
+  llvm::Constant *FailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

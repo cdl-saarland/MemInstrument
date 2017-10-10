@@ -74,6 +74,10 @@ void DummyMechanism::materializeBounds(ITarget &Target) const {
   }
 }
 
+llvm::Constant *DummyMechanism::getFailFunction(void) const {
+  return FailFunction;
+}
+
 bool DummyMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
   initTypes(Ctx);
@@ -86,6 +90,7 @@ bool DummyMechanism::initialize(llvm::Module &M) {
                                         PtrArgType, WitnessType);
   GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
                                         PtrArgType, WitnessType);
+  FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", VoidTy);
 
   return true;
 }
