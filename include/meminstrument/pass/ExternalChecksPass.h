@@ -24,13 +24,18 @@ public:
 
   virtual bool doInitialization(llvm::Module &) override { return false; }
 
+  virtual bool doFinalization(llvm::Module &) override {
+    WorkList.clear();
+    return false;
+  }
+
   virtual bool runOnModule(llvm::Module &M) override;
   // virtual void releaseMemory() override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  void filterITargetsForFunction(ITargetVector &Vec, llvm::Function &F);
+  void updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F);
 
   void materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F);
 

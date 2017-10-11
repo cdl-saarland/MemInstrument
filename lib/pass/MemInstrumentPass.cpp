@@ -7,6 +7,7 @@
 #include "meminstrument/pass/MemInstrumentPass.h"
 
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/pass/ExternalChecksPass.h"
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/ITargetFilters.h"
@@ -76,7 +77,19 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     if (MIModeOpt == MIM_GATHER_ITARGETS) continue;
 
-    DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets\n";);
+    auto *ECP = getAnalysisIfAvailable<ExternalChecksPass>();
+    if (ECP) {
+      DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `" << ECP->getPassName() << "'\n";);
+      ECP->updateITargetsForFunction(Targets, F);
+
+      DEBUG_ALSO_WITH_TYPE(
+          "meminstrument-external",
+          dbgs() << "updated instrumentation targets after external filter:\n";
+          for (auto &Target
+               : Targets) { dbgs() << "  " << *Target << "\n"; });
+    }
+
+    DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal filters\n";);
 
     filterITargets(this, Targets, F);
 
@@ -88,9 +101,10 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     if (MIModeOpt == MIM_GENERATE_WITNESSES) continue;
 
-    DEBUG(dbgs() << "MemInstrumentPass: generating external checks\n";);
-
-    // generateExternalChecks(Targets, F);
+    if (ECP) {
+      DEBUG(dbgs() << "MemInstrumentPass: generating external checks with pass `" << ECP->getPassName() << "'\n";);
+      ECP->materializeExternalChecksForFunction(Targets, F);
+    }
 
     if (MIModeOpt == MIM_GENERATE_EXTERNAL_CHECKS) continue;
 
@@ -104,6 +118,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<ExternalChecksPass>();
 }
 
 char MemInstrumentPass::ID = 0;

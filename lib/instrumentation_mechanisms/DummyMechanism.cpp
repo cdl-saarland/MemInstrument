@@ -87,9 +87,9 @@ bool DummyMechanism::initialize(llvm::Module &M) {
   CheckAccessFunction = insertFunDecl(M, "__memsafe_dummy_check_access", VoidTy,
                                       PtrArgType, WitnessType, SizeType);
   GetLowerBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_lower_bound",
-                                        PtrArgType, WitnessType);
+                                        SizeType, WitnessType);
   GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
-                                        PtrArgType, WitnessType);
+                                        SizeType, WitnessType);
   FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", VoidTy);
 
   return true;

@@ -7,7 +7,6 @@
 #include "meminstrument/pass/ITargetFilters.h"
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/pass/ExternalChecksPass.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
@@ -73,10 +72,6 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   filterByAnnotation(Vec);
 
   filterByDominance(P, Vec, F);
-
-  if (auto *ECP = P->getAnalysisIfAvailable<ExternalChecksPass>()) {
-    ECP->filterITargetsForFunction(Vec, F);
-  }
 
   DEBUG_ALSO_WITH_TYPE(
       "meminstrument-itargetfilter",
