@@ -7,15 +7,16 @@
 #ifndef MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
 #define MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/ExternalChecksInterface.h"
+#include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class DummyExternalChecksPass : public llvm::ModulePass, public ExternalChecksInterface {
+class DummyExternalChecksPass : public llvm::ModulePass,
+                                public ExternalChecksInterface {
 public:
   /// \brief Identification
   static char ID;
@@ -36,14 +37,16 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  virtual void updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F) override;
+  virtual void updateITargetsForFunction(ITargetVector &Vec,
+                                         llvm::Function &F) override;
 
-  virtual void materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F) override;
+  virtual void materializeExternalChecksForFunction(ITargetVector &Vec,
+                                                    llvm::Function &F) override;
 
 private:
-  std::map<llvm::Function*, ITargetVector> WorkList;
+  std::map<llvm::Function *, ITargetVector> WorkList;
 };
 
-}
+} // namespace meminstrument
 
 #endif

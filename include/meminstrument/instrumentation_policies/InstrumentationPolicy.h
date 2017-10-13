@@ -32,6 +32,6 @@ public:
   static InstrumentationPolicy &get(const llvm::DataLayout &DL);
 };
 
-}
+} // namespace meminstrument
 
 #endif

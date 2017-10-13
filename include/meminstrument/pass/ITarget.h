@@ -102,9 +102,8 @@ private:
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &IT);
 
-
 typedef std::vector<std::shared_ptr<ITarget>> ITargetVector;
 
-}
+} // namespace meminstrument
 
 #endif

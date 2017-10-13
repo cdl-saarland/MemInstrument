@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_DUMMYMECHANISM_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_DUMMYMECHANISM_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LLVMContext.h"
@@ -67,6 +67,6 @@ private:
   void initTypes(llvm::LLVMContext &Ctx);
 };
 
-}
+} // namespace meminstrument
 
 #endif

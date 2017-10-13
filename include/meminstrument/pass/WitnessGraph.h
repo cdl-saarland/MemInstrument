@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_PASS_WITNESSGRAPH_H
 #define MEMINSTRUMENT_PASS_WITNESSGRAPH_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
 #include "llvm/Support/raw_ostream.h"
@@ -162,6 +162,6 @@ private:
   bool AlreadyPropagated = false;
 };
 
-}
+} // namespace meminstrument
 
 #endif

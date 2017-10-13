@@ -42,6 +42,6 @@ private:
   const WitnessKind Kind;
 };
 
-}
+} // namespace meminstrument
 
 #endif

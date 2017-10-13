@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SPLAYMECHANISM_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SPLAYMECHANISM_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
@@ -73,6 +73,6 @@ private:
   void instrumentAlloca(llvm::Module &M, llvm::AllocaInst *AI);
 };
 
-}
+} // namespace meminstrument
 
 #endif

@@ -15,7 +15,6 @@
 namespace meminstrument {
 
 void filterITargets(llvm::Pass *P, ITargetVector &Vec, llvm::Function &F);
-
 }
 
 #endif

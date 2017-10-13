@@ -29,6 +29,6 @@ public:
   // override;
 };
 
-}
+} // namespace meminstrument
 
 #endif

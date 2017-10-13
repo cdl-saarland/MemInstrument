@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_WITNESS_STRATEGIES_WITNESSSTRATEGY_H
 #define MEMINSTRUMENT_WITNESS_STRATEGIES_WITNESSSTRATEGY_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/WitnessGraph.h"
 
 #include "llvm/IR/Instruction.h"
@@ -51,6 +51,6 @@ public:
                              WitnessGraphNode *Node) const override;
 };
 
-}
+} // namespace meminstrument
 
 #endif

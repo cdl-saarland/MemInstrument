@@ -33,7 +33,7 @@ cl::opt<bool>
                               cl::desc("Disable witness graph simplifications"),
                               cl::init(false) // default
     );
-}
+} // namespace
 
 void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
   const auto &WS = WitnessStrategy::get();

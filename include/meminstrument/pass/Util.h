@@ -43,6 +43,6 @@ void setNoInstrument(llvm::Instruction *I);
 bool hasNoInstrument(llvm::GlobalObject *O);
 
 bool hasNoInstrument(llvm::Instruction *I);
-}
+} // namespace meminstrument
 
 #endif

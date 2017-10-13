@@ -13,8 +13,7 @@
 
 namespace meminstrument {
 
-void gatherITargets(ITargetVector& Destination, llvm::Function &F);
-
+void gatherITargets(ITargetVector &Destination, llvm::Function &F);
 }
 
 #endif

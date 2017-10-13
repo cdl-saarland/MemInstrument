@@ -33,16 +33,18 @@ void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 char DummyExternalChecksPass::ID = 0;
 
-void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F) {
+void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec,
+                                                        llvm::Function &F) {
   // we store our relevant targets in a worklist for later materialization
-  auto& CurrentWL = WorkList[&F];
+  auto &CurrentWL = WorkList[&F];
 
   // if an instruction is annotated as "checkearly", check function argument
   // operands at the beginning of the function instead of here.
-  auto* EntryLoc = F.getEntryBlock().getFirstNonPHI();
+  auto *EntryLoc = F.getEntryBlock().getFirstNonPHI();
 
   for (auto &IT : Vec) {
-    if (!(IT->isValid() && IT->CheckUpperBoundFlag && IT->CheckLowerBoundFlag )) {
+    if (!(IT->isValid() && IT->CheckUpperBoundFlag &&
+          IT->CheckLowerBoundFlag)) {
       continue;
     }
     auto *L = IT->Location;
@@ -50,7 +52,8 @@ void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm
       auto *A = dyn_cast<Argument>(IT->Instrumentee);
       if (A && IT->AccessSizeVal == nullptr) {
         // create a new ITarget for the beginning of the function
-        auto res = std::make_shared<ITarget>(A, EntryLoc, IT->AccessSize, /* RequiresExplicitBounds */true);
+        auto res = std::make_shared<ITarget>(A, EntryLoc, IT->AccessSize,
+                                             /* RequiresExplicitBounds */ true);
         // make sure it checks for the same criteria
         res->joinFlags(*IT);
         // also remember it for later
@@ -64,15 +67,16 @@ void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }
 
-void DummyExternalChecksPass::materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F) {
+void DummyExternalChecksPass::materializeExternalChecksForFunction(
+    ITargetVector &Vec, llvm::Function &F) {
   auto &IM = InstrumentationMechanism::get();
-  auto& Ctx = F.getContext();
+  auto &Ctx = F.getContext();
 
-  auto& CurrentWL = WorkList[&F];
+  auto &CurrentWL = WorkList[&F];
 
-  auto* I64Ty = Type::getInt64Ty(Ctx);
+  auto *I64Ty = Type::getInt64Ty(Ctx);
 
-  for (auto& IT : CurrentWL) {
+  for (auto &IT : CurrentWL) {
     IRBuilder<> Builder(IT->Location);
 
     auto *Ptr2Int = Builder.CreatePtrToInt(IT->Instrumentee, I64Ty);
@@ -80,7 +84,8 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(ITargetVector
     auto *Lower = IT->BoundWitness->getLowerBound();
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
-    auto *Sum = Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->AccessSize));
+    auto *Sum =
+        Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->AccessSize));
     auto *Upper = IT->BoundWitness->getUpperBound();
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);
 

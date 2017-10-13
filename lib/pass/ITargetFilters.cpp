@@ -62,7 +62,7 @@ void filterByAnnotation(ITargetVector &Vec) {
   }
 }
 
-}
+} // namespace
 
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   if (NoFiltersOpt) {
@@ -73,10 +73,10 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
 
   filterByDominance(P, Vec, F);
 
-  DEBUG_ALSO_WITH_TYPE(
-      "meminstrument-itargetfilter",
-      dbgs() << "remaining instrumentation targets after filter:"
-             << "\n";
-      for (auto &Target
-           : Vec) { dbgs() << "  " << *Target << "\n"; });
+  DEBUG_ALSO_WITH_TYPE("meminstrument-itargetfilter",
+                       dbgs()
+                           << "remaining instrumentation targets after filter:"
+                           << "\n";
+                       for (auto &Target
+                            : Vec) { dbgs() << "  " << *Target << "\n"; });
 }

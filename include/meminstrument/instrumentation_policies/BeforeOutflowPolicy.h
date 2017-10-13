@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_POLICIES_BEFOREOUTFLOWPOLICY_H
 #define MEMINSTRUMENT_INSTRUMENTATION_POLICIES_BEFOREOUTFLOWPOLICY_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
+#include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
@@ -28,6 +28,6 @@ private:
   size_t getPointerAccessSize(llvm::Value *V);
 };
 
-}
+} // namespace meminstrument
 
 #endif

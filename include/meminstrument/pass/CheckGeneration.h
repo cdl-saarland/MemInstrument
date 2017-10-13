@@ -14,8 +14,7 @@
 
 namespace meminstrument {
 
-void generateChecks(ITargetVector& Vec, llvm::Function &F);
-
+void generateChecks(ITargetVector &Vec, llvm::Function &F);
 }
 
 #endif
