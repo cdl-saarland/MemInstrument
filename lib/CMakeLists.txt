@@ -21,9 +21,13 @@ add_meminstrument_library(meminstrument
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp
+  instrumentation_mechanisms/RuntimeStatMechanism.cpp
   instrumentation_policies/InstrumentationPolicy.cpp
   instrumentation_policies/BeforeOutflowPolicy.cpp
+  instrumentation_policies/AccessOnlyPolicy.cpp
   witness_strategies/WitnessStrategy.cpp
+  witness_strategies/AfterInflowStrategy.cpp
+  witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
 )
 

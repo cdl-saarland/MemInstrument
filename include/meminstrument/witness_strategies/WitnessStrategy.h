@@ -38,19 +38,10 @@ protected:
                           llvm::Instruction *Loc) const;
   void requireSource(WitnessGraphNode *Node, llvm::Value *Req,
                      llvm::Instruction *Loc) const;
+
+  static WitnessGraphNode *getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
+                                  llvm::Instruction *Location);
 };
-
-// TODO rename this!
-class SimpleStrategy : public WitnessStrategy {
-public:
-  virtual void addRequired(WitnessGraphNode *Node) const override;
-
-  virtual void simplifyWitnessGraph(WitnessGraph &WG) const override;
-
-  virtual void createWitness(InstrumentationMechanism &IM,
-                             WitnessGraphNode *Node) const override;
-};
-
 } // namespace meminstrument
 
 #endif

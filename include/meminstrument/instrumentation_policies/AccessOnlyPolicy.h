@@ -4,8 +4,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_INSTRUMENTATION_POLICIES_BEFOREOUTFLOWPOLICY_H
-#define MEMINSTRUMENT_INSTRUMENTATION_POLICIES_BEFOREOUTFLOWPOLICY_H
+#ifndef MEMINSTRUMENT_INSTRUMENTATION_POLICIES_ACCESSONLYPOLICY_H
+#define MEMINSTRUMENT_INSTRUMENTATION_POLICIES_ACCESSONLYPOLICY_H
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/ITarget.h"
@@ -16,12 +16,12 @@
 
 namespace meminstrument {
 
-class BeforeOutflowPolicy : public InstrumentationPolicy {
+class AccessOnlyPolicy : public InstrumentationPolicy {
 public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) override;
 
-  BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}
+  AccessOnlyPolicy(const llvm::DataLayout &DL) : DL(DL) {}
 
 private:
   const llvm::DataLayout &DL;
@@ -30,3 +30,4 @@ private:
 } // namespace meminstrument
 
 #endif
+

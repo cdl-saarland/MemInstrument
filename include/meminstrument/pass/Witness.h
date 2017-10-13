@@ -26,6 +26,7 @@ public:
   enum WitnessKind {
     WK_Dummy,
     WK_Splay,
+    WK_RuntimeStat,
     // Insert new WitnessKinds for each new type of witnesses here!
   };
 
