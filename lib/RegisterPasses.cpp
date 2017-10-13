@@ -6,7 +6,7 @@
 
 #include "meminstrument/Definitions.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
-#include "meminstrument/pass/ExternalChecksPass.h"
+#include "meminstrument/pass/DummyExternalChecksPass.h"
 
 #if MEMINSTRUMENT_USE_PMDA
 #include "CheckOptimizer/CheckOptimizerPass.h"
@@ -24,10 +24,10 @@ static RegisterPass<MemInstrumentPass>
                                    false,  // CFGOnly
                                    false); // isAnalysis
 
-static RegisterPass<ExternalChecksPass>
-    RegisterExternalChecksPass("mi-externalchecks", "Meminstrument External Checks",
-                                   false,  // CFGOnly
-                                   true); // isAnalysis
+static RegisterPass<DummyExternalChecksPass>
+    RegisterDummyExternalChecksPass("mi-dummy-external-checks", "Dummy External Checks",
+                                    false,  // CFGOnly
+                                    true); // isAnalysis
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {

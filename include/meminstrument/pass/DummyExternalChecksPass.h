@@ -4,23 +4,24 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_PASS_EXTERNALCHECKSPASS_H
-#define MEMINSTRUMENT_PASS_EXTERNALCHECKSPASS_H
+#ifndef MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
+#define MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
 
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/pass/ExternalChecksInterface.h"
 
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-class ExternalChecksPass : public llvm::ModulePass {
+class DummyExternalChecksPass : public llvm::ModulePass, public ExternalChecksInterface {
 public:
   /// \brief Identification
   static char ID;
 
   /// \brief Default constructor to initialize the module pass interface
-  ExternalChecksPass();
+  DummyExternalChecksPass();
 
   virtual bool doInitialization(llvm::Module &) override { return false; }
 
@@ -35,9 +36,9 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  void updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F);
+  virtual void updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F) override;
 
-  void materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F);
+  virtual void materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F) override;
 
 private:
   std::map<llvm::Function*, ITargetVector> WorkList;

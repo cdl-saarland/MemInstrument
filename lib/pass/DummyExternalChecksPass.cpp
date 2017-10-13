@@ -4,7 +4,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/pass/ExternalChecksPass.h"
+#include "meminstrument/pass/DummyExternalChecksPass.h"
 
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/ITarget.h"
@@ -18,22 +18,22 @@
 using namespace meminstrument;
 using namespace llvm;
 
-ExternalChecksPass::ExternalChecksPass() : ModulePass(ID) {}
+DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
 
-bool ExternalChecksPass::runOnModule(Module &M) {
+bool DummyExternalChecksPass::runOnModule(Module &M) {
 
   DEBUG(dbgs() << "Running External Checks Pass\n";);
 
   return false;
 }
 
-void ExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
 
-char ExternalChecksPass::ID = 0;
+char DummyExternalChecksPass::ID = 0;
 
-void ExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F) {
+void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm::Function &F) {
   // we store our relevant targets in a worklist for later materialization
   auto& CurrentWL = WorkList[&F];
 
@@ -64,7 +64,7 @@ void ExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec, llvm::Fun
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }
 
-void ExternalChecksPass::materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F) {
+void DummyExternalChecksPass::materializeExternalChecksForFunction(ITargetVector &Vec, llvm::Function &F) {
   auto &IM = InstrumentationMechanism::get();
   auto& Ctx = F.getContext();
 
