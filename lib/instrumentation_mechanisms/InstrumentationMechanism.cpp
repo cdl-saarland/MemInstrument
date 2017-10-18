@@ -8,6 +8,7 @@
 
 #include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -24,6 +25,7 @@ namespace {
 enum InstrumentationMechanismKind {
   IM_dummy,
   IM_splay,
+  IM_rt_stat,
 };
 
 cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
@@ -32,6 +34,8 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
                           "only insert dummy calls for instrumentation")),
     cl::values(clEnumValN(IM_splay, "splay",
                           "use splay tree for instrumentation")),
+    cl::values(clEnumValN(IM_rt_stat, "rt_stat",
+                          "only instrument for collecting run-time statistics")),
     cl::init(IM_splay) // default
 );
 
@@ -48,6 +52,10 @@ InstrumentationMechanism &InstrumentationMechanism::get(void) {
 
     case IM_splay:
       GlobalIM.reset(new SplayMechanism());
+      break;
+
+    case IM_rt_stat:
+      GlobalIM.reset(new RuntimeStatMechanism());
       break;
     }
     Res = GlobalIM.get();

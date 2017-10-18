@@ -49,7 +49,15 @@ public:
   virtual bool initialize(llvm::Module &M) override;
 
 private:
+  llvm::Type *SizeType;
+  llvm::GlobalVariable *StatArray = nullptr;
 
+  llvm::Constant *StatIncFunction = nullptr;
+
+  const uint64_t LoadIdx = 1;
+  const uint64_t StoreIdx = 2;
+  const uint64_t NoSanLoadIdx = 3;
+  const uint64_t NoSanStoreIdx = 4;
 };
 
 } // namespace meminstrument
