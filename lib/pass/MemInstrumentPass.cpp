@@ -21,42 +21,6 @@
 using namespace meminstrument;
 using namespace llvm;
 
-namespace {
-
-enum MIMode {
-  MIM_SETUP,
-  MIM_GATHER_ITARGETS,
-  MIM_FILTER_ITARGETS,
-  MIM_GENERATE_WITNESSES,
-  MIM_GENERATE_EXTERNAL_CHECKS,
-  MIM_GENERATE_CHECKS,
-};
-
-cl::opt<MIMode> MIModeOpt(
-    "mi-mode",
-    cl::desc("Choose until which stage instrumentation should be performed: "
-             "(default: genchecks)"),
-    cl::values(clEnumValN(MIM_SETUP, "setup", "only until setup is done")),
-    cl::values(clEnumValN(MIM_GATHER_ITARGETS, "gatheritargets",
-                          "only until ITarget gathering is done")),
-    cl::values(clEnumValN(MIM_FILTER_ITARGETS, "filteritargets",
-                          "only until ITarget filtering is done")),
-    cl::values(clEnumValN(MIM_GENERATE_WITNESSES, "genwitnesses",
-                          "only until witness generation is done")),
-    cl::values(clEnumValN(MIM_GENERATE_EXTERNAL_CHECKS, "genextchecks",
-                          "only until external check generation is done")),
-    cl::values(clEnumValN(MIM_GENERATE_CHECKS, "genchecks",
-                          "the full pipeline")),
-    cl::init(MIM_GENERATE_CHECKS) // default
-);
-
-cl::opt<bool>
-    MIUseExternalChecksOpt("mi-use-extchecks",
-                           cl::desc("Enable generation of external checks"),
-                           cl::init(false) // default
-    );
-} // namespace
-
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 bool MemInstrumentPass::runOnModule(Module &M) {

@@ -40,8 +40,6 @@ public:
 
   virtual ~InstrumentationMechanism(void) {}
 
-  static InstrumentationMechanism &get(void);
-
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
   static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,

@@ -29,12 +29,6 @@ STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
 using namespace llvm;
 using namespace meminstrument;
 
-namespace {
-cl::opt<bool> SplayVerbose("mi-splay-verbose",
-                           cl::desc("Use verbose splay check functions"),
-                           cl::init(false));
-}
-
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
 

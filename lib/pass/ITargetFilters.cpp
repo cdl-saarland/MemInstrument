@@ -26,11 +26,6 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-cl::opt<bool> NoFiltersOpt(
-    "mi-no-filter",
-    cl::desc("Disable all memsafety instrumentation target filters"),
-    cl::init(false));
-
 void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
   const auto &DomTree =
       ParentPass->getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();

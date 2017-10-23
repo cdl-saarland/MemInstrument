@@ -19,47 +19,12 @@
 using namespace meminstrument;
 using namespace llvm;
 
-namespace {
-
-enum WitnessStrategyKind {
-  WS_after_inflow,
-  WS_none,
-};
-
-cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
-    "mi-wstrategy", cl::desc("Choose WitnessStrategy: (default: after-inflow)"),
-    cl::values(clEnumValN(WS_after_inflow, "after-inflow",
-                          "place witnesses after inflow of the base value")),
-    cl::values(clEnumValN(WS_none, "none",
-                          "place no witnesses")),
-    cl::init(WS_after_inflow) // default
-);
-
-std::unique_ptr<WitnessStrategy> GlobalWS(nullptr);
-} // namespace
-
 WitnessGraphNode *WitnessStrategy::getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
                                   llvm::Instruction *Location) {
   // Flags do not matter here as they are propagated later in propagateFlags()
   auto NewTarget = std::make_shared<ITarget>(Instrumentee, Location, 0, false,
                                              false, false, false);
   return WG.getInternalNode(NewTarget);
-}
-
-const WitnessStrategy &WitnessStrategy::get(void) {
-  auto *Res = GlobalWS.get();
-  if (Res == nullptr) {
-    switch (WitnessStrategyOpt) {
-    case WS_after_inflow:
-      GlobalWS.reset(new AfterInflowStrategy());
-      break;
-    case WS_none:
-      GlobalWS.reset(new NoneStrategy());
-      break;
-    }
-    Res = GlobalWS.get();
-  }
-  return *Res;
 }
 
 void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,

@@ -6,12 +6,19 @@
 
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
 
 #include "meminstrument/pass/Util.h"
+
+STATISTIC(RTStatNumNormalLoads, "The static # of normal loads");
+STATISTIC(RTStatNumNormalStores, "The static # of normal stores");
+
+STATISTIC(RTStatNumNoSanLoads, "The static # of nosanitize loads");
+STATISTIC(RTStatNumNoSanStores, "The static # of nosanitize stores");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -30,13 +37,18 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   IRBuilder<> Builder(Target.Location);
 
   uint64_t idx = 0;
-  if (isa<LoadInst>(Target.Location)) {
+  if (isa<LoadInst>(Target.Location) && Target.Location->getMetadata("nosanitize")) {
+    idx = NoSanLoadIdx;
+    ++RTStatNumNoSanLoads;
+  } else if (isa<StoreInst>(Target.Location) && Target.Location->getMetadata("nosanitize")) {
+    idx = NoSanStoreIdx;
+    ++RTStatNumNoSanStores;
+  } else if (isa<LoadInst>(Target.Location)) {
     idx = LoadIdx;
+    ++RTStatNumNormalLoads;
   } else if (isa<StoreInst>(Target.Location)) {
     idx = StoreIdx;
-  }
-  if (Target.Location->getMetadata("nosanitize")) {
-    idx += 2;
+    ++RTStatNumNormalStores;
   }
   insertCall(Builder, StatIncFunction, ConstantInt::get(SizeType, idx));
 }

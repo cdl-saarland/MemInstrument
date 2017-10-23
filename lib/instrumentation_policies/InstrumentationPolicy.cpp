@@ -25,43 +25,6 @@
 using namespace meminstrument;
 using namespace llvm;
 
-namespace {
-
-enum InstrumentationPolicyKind {
-  IP_beforeOutflow,
-  IP_accessOnly,
-};
-
-cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
-    "mi-ipolicy",
-    cl::desc("Choose InstructionPolicy: (default: before-outflow)"),
-    cl::values(clEnumValN(IP_beforeOutflow, "before-outflow",
-                          "check for dereference at loads/stores and for being"
-                          " inbounds when pointers flow out of functions")),
-    cl::values(clEnumValN(IP_accessOnly, "access-only",
-                          "check only at loads/stores for dereference")),
-    cl::init(IP_beforeOutflow) // default
-);
-
-std::unique_ptr<InstrumentationPolicy> GlobalIM(nullptr);
-} // namespace
-
-InstrumentationPolicy &InstrumentationPolicy::get(const DataLayout &DL) {
-  auto *Res = GlobalIM.get();
-  if (Res == nullptr) {
-    switch (InstrumentationPolicyOpt) {
-    case IP_beforeOutflow:
-      GlobalIM.reset(new BeforeOutflowPolicy(DL));
-      break;
-    case IP_accessOnly:
-      GlobalIM.reset(new AccessOnlyPolicy(DL));
-      break;
-    }
-    Res = GlobalIM.get();
-  }
-  return *Res;
-}
-
 size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
   auto *Ty = V->getType();
   assert(Ty->isPointerTy() && "Only pointer types allowed!");
