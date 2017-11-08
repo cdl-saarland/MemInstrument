@@ -24,7 +24,7 @@ using namespace meminstrument;
 using namespace llvm;
 
 void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
-  auto& CFG = GlobalConfig::get(*F.getParent());
+  auto &CFG = GlobalConfig::get(*F.getParent());
   const auto &WS = CFG.getWitnessStrategy();
   auto &IM = CFG.getInstrumentationMechanism();
 

@@ -38,8 +38,8 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
   PM.add(new MemInstrumentPass());
 }
 
-static llvm::RegisterStandardPasses
-    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
+static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
+    llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
     // RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
-                              registerMeminstrumentPass);
+    registerMeminstrumentPass);
 } // namespace meminstrument

@@ -19,8 +19,9 @@
 using namespace meminstrument;
 using namespace llvm;
 
-WitnessGraphNode *WitnessStrategy::getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
-                                  llvm::Instruction *Location) {
+WitnessGraphNode *
+WitnessStrategy::getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
+                                 llvm::Instruction *Location) {
   // Flags do not matter here as they are propagated later in propagateFlags()
   auto NewTarget = std::make_shared<ITarget>(Instrumentee, Location, 0, false,
                                              false, false, false);

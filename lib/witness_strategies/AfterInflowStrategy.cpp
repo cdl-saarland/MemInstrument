@@ -65,7 +65,7 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
   errs() << "Unsupported constant value:\n" << *C << "\n\n";
   llvm_unreachable("Unsupported constant value!");
 }
-}
+} // namespace
 
 void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   if (Node->HasAllRequirements) {
@@ -177,7 +177,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 }
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
-                                   WitnessGraphNode *Node) const {
+                                        WitnessGraphNode *Node) const {
   if (Node->Target->hasWitness()) {
     // We already handled this node.
     return;

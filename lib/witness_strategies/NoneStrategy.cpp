@@ -16,7 +16,7 @@ void NoneStrategy::addRequired(WitnessGraphNode *Node) const {
 }
 
 void NoneStrategy::createWitness(InstrumentationMechanism &IM,
-                                   WitnessGraphNode *Node) const {
+                                 WitnessGraphNode *Node) const {
   if (Node->Target->hasWitness()) {
     // We already handled this node.
     return;
@@ -25,5 +25,4 @@ void NoneStrategy::createWitness(InstrumentationMechanism &IM,
   IM.insertWitness(*(Node->Target));
 }
 
-void NoneStrategy::simplifyWitnessGraph(WitnessGraph &WG) const { }
-
+void NoneStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {}

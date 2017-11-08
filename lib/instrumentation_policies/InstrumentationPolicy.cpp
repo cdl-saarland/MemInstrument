@@ -11,8 +11,8 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 
-#include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
+#include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
@@ -25,7 +25,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
+size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
+                                                   llvm::Value *V) {
   auto *Ty = V->getType();
   assert(Ty->isPointerTy() && "Only pointer types allowed!");
 
@@ -44,4 +45,3 @@ size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL, l
 
   return Size;
 }
-

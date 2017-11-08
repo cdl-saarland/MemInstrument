@@ -8,8 +8,8 @@
 #define MEMINSTRUMENT_WITNESS_STRATEGIES_NONESTRATEGY_H
 
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
-#include "meminstrument/witness_strategies/WitnessStrategy.h"
 #include "meminstrument/pass/WitnessGraph.h"
+#include "meminstrument/witness_strategies/WitnessStrategy.h"
 
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"

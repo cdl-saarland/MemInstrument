@@ -55,7 +55,7 @@ bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
     return false;
   }
 }
-}
+} // namespace
 
 void BeforeOutflowPolicy::classifyTargets(
     std::vector<std::shared_ptr<ITarget>> &Destination,
@@ -70,7 +70,8 @@ void BeforeOutflowPolicy::classifyTargets(
     }
 
     Destination.push_back(std::make_shared<ITarget>(
-        Operand, Location, getPointerAccessSize(DL, Operand), /*CheckUpper*/ false,
+        Operand, Location, getPointerAccessSize(DL, Operand),
+        /*CheckUpper*/ false,
         /*CheckLower*/ false, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
     break;

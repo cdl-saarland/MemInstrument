@@ -7,8 +7,8 @@
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 
 #include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
-#include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"

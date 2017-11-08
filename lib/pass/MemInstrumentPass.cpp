@@ -26,7 +26,7 @@ MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
-  auto& CFG = GlobalConfig::get(M);
+  auto &CFG = GlobalConfig::get(M);
 
   Config::MIMode Mode = CFG.getMIMode();
 

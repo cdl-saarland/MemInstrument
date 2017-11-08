@@ -37,8 +37,9 @@ protected:
   void requireSource(WitnessGraphNode *Node, llvm::Value *Req,
                      llvm::Instruction *Loc) const;
 
-  static WitnessGraphNode *getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
-                                  llvm::Instruction *Location);
+  static WitnessGraphNode *getInternalNode(WitnessGraph &WG,
+                                           llvm::Value *Instrumentee,
+                                           llvm::Instruction *Location);
 };
 } // namespace meminstrument
 

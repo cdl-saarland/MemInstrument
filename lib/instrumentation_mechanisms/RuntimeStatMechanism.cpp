@@ -37,10 +37,12 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   IRBuilder<> Builder(Target.Location);
 
   uint64_t idx = 0;
-  if (isa<LoadInst>(Target.Location) && Target.Location->getMetadata("nosanitize")) {
+  if (isa<LoadInst>(Target.Location) &&
+      Target.Location->getMetadata("nosanitize")) {
     idx = NoSanLoadIdx;
     ++RTStatNumNoSanLoads;
-  } else if (isa<StoreInst>(Target.Location) && Target.Location->getMetadata("nosanitize")) {
+  } else if (isa<StoreInst>(Target.Location) &&
+             Target.Location->getMetadata("nosanitize")) {
     idx = NoSanStoreIdx;
     ++RTStatNumNoSanStores;
   } else if (isa<LoadInst>(Target.Location)) {
@@ -66,14 +68,17 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);
-  auto* StringType = Type::getInt8PtrTy(Ctx);
-  auto* VoidTy = Type::getVoidTy(Ctx);
+  auto *StringType = Type::getInt8PtrTy(Ctx);
+  auto *VoidTy = Type::getVoidTy(Ctx);
 
   StatIncFunction = insertFunDecl(M, "__mi_stat_inc", VoidTy, SizeType);
-  llvm::Constant* InitFun = insertFunDecl(M, "__mi_stat_init", VoidTy, SizeType);
-  llvm::Constant* InitEntryFun = insertFunDecl(M, "__mi_stat_init_entry", VoidTy, SizeType, StringType);
+  llvm::Constant *InitFun =
+      insertFunDecl(M, "__mi_stat_init", VoidTy, SizeType);
+  llvm::Constant *InitEntryFun =
+      insertFunDecl(M, "__mi_stat_init_entry", VoidTy, SizeType, StringType);
 
-  auto Fun = registerCtors(M, std::make_pair<StringRef, int>("__mi_stat_setup", 0));
+  auto Fun =
+      registerCtors(M, std::make_pair<StringRef, int>("__mi_stat_setup", 0));
 
   auto *BB = BasicBlock::Create(Ctx, "bb", (*Fun)[0], 0);
   IRBuilder<> Builder(BB);
@@ -94,11 +99,13 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
 
   Str = insertStringLiteral(M, "nosanitize loads");
   Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx), Str);
+  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx),
+             Str);
 
   Str = insertStringLiteral(M, "nosanitize stores");
   Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx), Str);
+  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx),
+             Str);
 
   Builder.CreateRetVoid();
 
@@ -112,14 +119,14 @@ RuntimeStatMechanism::insertWitnessPhi(ITarget &) const {
 }
 
 void RuntimeStatMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
-                                             std::shared_ptr<Witness> &,
-                                             llvm::BasicBlock *) const {
+                                                   std::shared_ptr<Witness> &,
+                                                   llvm::BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
-std::shared_ptr<Witness> RuntimeStatMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
-                      std::shared_ptr<Witness> &) const {
+std::shared_ptr<Witness>
+RuntimeStatMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
+                                          std::shared_ptr<Witness> &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
   return std::shared_ptr<Witness>(nullptr);
 }
-
