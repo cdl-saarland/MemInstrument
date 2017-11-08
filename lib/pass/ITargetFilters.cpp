@@ -6,6 +6,7 @@
 
 #include "meminstrument/pass/ITargetFilters.h"
 
+#include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -60,7 +61,8 @@ void filterByAnnotation(ITargetVector &Vec) {
 } // namespace
 
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
-  if (NoFiltersOpt) {
+  bool UseFilters = GlobalConfig::get(*F.getParent()).hasUseFilters();
+  if (!UseFilters) {
     return;
   }
 

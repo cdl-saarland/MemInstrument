@@ -6,6 +6,7 @@
 
 #include "meminstrument/pass/MemInstrumentPass.h"
 
+#include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/CheckGeneration.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
@@ -25,15 +26,19 @@ MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
+  auto& CFG = GlobalConfig::get(M);
+
+  Config::MIMode Mode = CFG.getMIMode();
+
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
   DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
-  auto &IM = InstrumentationMechanism::get();
+  auto &IM = CFG.getInstrumentationMechanism();
   IM.initialize(M);
 
-  if (MIModeOpt == MIM_SETUP)
+  if (Mode == Config::MIMode::SETUP)
     return true;
 
   ITargetVector Targets;
@@ -52,7 +57,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     gatherITargets(Targets, F);
 
-    if (MIModeOpt == MIM_GATHER_ITARGETS)
+    if (Mode == Config::MIMode::GATHER_ITARGETS)
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
@@ -61,7 +66,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     filterITargets(this, Targets, F);
 
     auto &ECP = getAnalysis<DummyExternalChecksPass>();
-    if (MIUseExternalChecksOpt) {
+    if (CFG.hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
       ECP.updateITargetsForFunction(Targets, F);
@@ -73,24 +78,24 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
 
-    if (MIModeOpt == MIM_FILTER_ITARGETS)
+    if (Mode == Config::MIMode::FILTER_ITARGETS)
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating Witnesses\n";);
 
     generateWitnesses(Targets, F);
 
-    if (MIModeOpt == MIM_GENERATE_WITNESSES)
+    if (Mode == Config::MIMode::GENERATE_WITNESSES)
       continue;
 
-    if (MIUseExternalChecksOpt) {
+    if (CFG.hasUseExternalChecks()) {
       DEBUG(
           dbgs() << "MemInstrumentPass: generating external checks with pass `"
                  << ECP.getPassName() << "'\n";);
       ECP.materializeExternalChecksForFunction(Targets, F);
     }
 
-    if (MIModeOpt == MIM_GENERATE_EXTERNAL_CHECKS)
+    if (Mode == Config::MIMode::GENERATE_EXTERNAL_CHECKS)
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);

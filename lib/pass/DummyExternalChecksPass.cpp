@@ -6,6 +6,7 @@
 
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 
+#include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/Witness.h"
@@ -69,7 +70,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec,
 
 void DummyExternalChecksPass::materializeExternalChecksForFunction(
     ITargetVector &Vec, llvm::Function &F) {
-  auto &IM = InstrumentationMechanism::get();
+  auto &IM = GlobalConfig::get(*F.getParent()).getInstrumentationMechanism();
   auto &Ctx = F.getContext();
 
   auto &CurrentWL = WorkList[&F];

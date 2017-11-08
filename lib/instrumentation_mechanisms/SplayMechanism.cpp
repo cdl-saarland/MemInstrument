@@ -6,6 +6,8 @@
 
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 
+#include "meminstrument/Config.h"
+
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
@@ -47,6 +49,10 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
+
+  Module *M = Target.Location->getModule();
+  bool Verbose = GlobalConfig::get(*M).hasInstrumentVerbose();
+
   IRBuilder<> Builder(Target.Location);
 
   auto *Witness = cast<SplayWitness>(Target.BoundWitness.get());
@@ -54,7 +60,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
 
   Value *NameVal = nullptr;
-  if (SplayVerbose) {
+  if (Verbose) {
     std::string Name;
     if (DILocation *Loc = Target.Location->getDebugLoc()) {
       unsigned Line = Loc->getLine();
@@ -64,7 +70,6 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
       Name = "unknown location";
     }
 
-    Module *M = Target.Location->getModule();
     // auto Name = Target.Location->getFunction()->getName() +
     //             "::" + Target.Instrumentee->getName();
     auto *Str = insertStringLiteral(*M, Name);
@@ -75,7 +80,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     auto *Size = Target.HasConstAccessSize
                      ? ConstantInt::get(SizeType, Target.AccessSize)
                      : Target.AccessSizeVal;
-    if (SplayVerbose) {
+    if (Verbose) {
       insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size,
                  NameVal);
     } else {
@@ -83,7 +88,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     }
     ++SplayNumDereferenceChecks;
   } else {
-    if (SplayVerbose) {
+    if (Verbose) {
       insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal, NameVal);
     } else {
       insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal);
@@ -125,7 +130,9 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto *VoidTy = Type::getVoidTy(Ctx);
   auto *StringTy = Type::getInt8PtrTy(Ctx);
 
-  if (SplayVerbose) {
+  bool Verbose = GlobalConfig::get(M).hasInstrumentVerbose();
+
+  if (Verbose) {
     CheckInboundsFunction =
         insertFunDecl(M, "__splay_check_inbounds_named", VoidTy, WitnessType,
                       PtrArgType, StringTy);

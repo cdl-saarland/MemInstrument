@@ -11,6 +11,7 @@
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
+namespace meminstrument {
 class Config {
 public:
   enum class MIMode {
@@ -20,7 +21,64 @@ public:
     GENERATE_WITNESSES,
     GENERATE_EXTERNAL_CHECKS,
     GENERATE_CHECKS,
+    DEFAULT,
   };
+
+  virtual ~Config(void) { }
+
+  virtual InstrumentationPolicy *createInstrumentationPolicy(const llvm::DataLayout& DL) = 0;
+
+  virtual InstrumentationMechanism *createInstrumentationMechanism(void) = 0;
+
+  virtual WitnessStrategy *createWitnessStrategy(void) = 0;
+
+  virtual MIMode getMIMode(void) = 0;
+
+  virtual bool hasUseFilters(void) = 0;
+
+  virtual bool hasUseExternalChecks(void) = 0;
+
+  virtual bool hasPrintWitnessGraph(void) = 0;
+
+  virtual bool hasSimplifyWitnessGraph(void) = 0;
+
+  virtual bool hasInstrumentVerbose(void) = 0;
+};
+
+
+class SplayConfig : public Config {
+public:
+  virtual ~SplayConfig(void) { }
+
+  virtual InstrumentationPolicy *createInstrumentationPolicy(const llvm::DataLayout& D) override;
+  virtual InstrumentationMechanism *createInstrumentationMechanism(void) override;
+  virtual WitnessStrategy *createWitnessStrategy(void) override;
+  virtual MIMode getMIMode(void) override;
+  virtual bool hasUseFilters(void) override;
+  virtual bool hasUseExternalChecks(void) override;
+  virtual bool hasPrintWitnessGraph(void) override;
+  virtual bool hasSimplifyWitnessGraph(void) override;
+  virtual bool hasInstrumentVerbose(void) override;
+};
+
+class RTStatConfig : public Config {
+public:
+  virtual ~RTStatConfig(void) { }
+
+  virtual InstrumentationPolicy *createInstrumentationPolicy(const llvm::DataLayout& D) override;
+  virtual InstrumentationMechanism *createInstrumentationMechanism(void) override;
+  virtual WitnessStrategy *createWitnessStrategy(void) override;
+  virtual MIMode getMIMode(void) override;
+  virtual bool hasUseFilters(void) override;
+  virtual bool hasUseExternalChecks(void) override;
+  virtual bool hasPrintWitnessGraph(void) override;
+  virtual bool hasSimplifyWitnessGraph(void) override;
+  virtual bool hasInstrumentVerbose(void) override;
+};
+
+class GlobalConfig {
+public:
+  GlobalConfig(Config& Cfg, const llvm::Module& M);
 
   InstrumentationPolicy &getInstrumentationPolicy(void) {
     assert(_IP && "InstrumentationPolicy not set!");
@@ -37,7 +95,7 @@ public:
     return *_WS;
   }
 
-  MIMode getMIMode(void) {
+  Config::MIMode getMIMode(void) {
     return _MIMode;
   }
 
@@ -61,15 +119,14 @@ public:
     return _InstrumentVerbose;
   }
 
-
-  static Config &get(void);
+  static GlobalConfig &get(const llvm::Module& M);
 
 private:
   InstrumentationMechanism *_IM = nullptr;
   InstrumentationPolicy *_IP = nullptr;
   WitnessStrategy *_WS = nullptr;
 
-  MIMode _MIMode = MIMode::GENERATE_CHECKS;
+  Config::MIMode _MIMode = Config::MIMode::DEFAULT;
 
   bool _UseFilters = false;
   bool _UseExternalChecks = false;
@@ -78,4 +135,5 @@ private:
   bool _InstrumentVerbose = false;
 };
 
+}
 #endif

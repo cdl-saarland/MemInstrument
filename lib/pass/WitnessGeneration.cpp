@@ -11,6 +11,7 @@
 
 #include "meminstrument/pass/WitnessGeneration.h"
 
+#include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
@@ -23,8 +24,9 @@ using namespace meminstrument;
 using namespace llvm;
 
 void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
-  const auto &WS = WitnessStrategy::get();
-  auto &IM = InstrumentationMechanism::get();
+  auto& CFG = GlobalConfig::get(*F.getParent());
+  const auto &WS = CFG.getWitnessStrategy();
+  auto &IM = CFG.getInstrumentationMechanism();
 
   WitnessGraph WG(F, WS);
 
@@ -36,14 +38,14 @@ void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
 
   WG.propagateFlags();
 
-  if (PrintWitnessGraphOpt) {
+  if (CFG.hasPrintWitnessGraph()) {
     WG.dumpDotGraph(("wg." + F.getName() + ".dot").str());
   }
 
-  if (!NoSimplifyWitnessGraphOpt) {
+  if (CFG.hasSimplifyWitnessGraph()) {
     WS.simplifyWitnessGraph(WG);
 
-    if (PrintWitnessGraphOpt) {
+    if (CFG.hasPrintWitnessGraph()) {
       WG.dumpDotGraph(("wg.simplified." + F.getName() + ".dot").str());
     }
   }
