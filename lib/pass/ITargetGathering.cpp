@@ -6,8 +6,8 @@
 
 #include "meminstrument/pass/ITargetGathering.h"
 
-#include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/Config.h"
+#include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/IR/Module.h"
