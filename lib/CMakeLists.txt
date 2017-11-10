@@ -29,6 +29,7 @@ add_meminstrument_library(meminstrument
   witness_strategies/AfterInflowStrategy.cpp
   witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
+  Config.cpp
 )
 
 # List external library dependencies that need to be linked to your library

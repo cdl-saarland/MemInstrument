@@ -78,7 +78,7 @@ public:
 
 class GlobalConfig {
 public:
-  GlobalConfig(Config& Cfg, const llvm::Module& M);
+  GlobalConfig(Config* Cfg, const llvm::Module& M);
 
   InstrumentationPolicy &getInstrumentationPolicy(void) {
     assert(_IP && "InstrumentationPolicy not set!");
