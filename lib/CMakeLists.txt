@@ -68,6 +68,7 @@ else ()
   add_meminstrument_loadable_module(LLVMmeminstrument
     pass/MemInstrumentPass.cpp
     RegisterPasses.cpp
+    Config.cpp
   )
 
   target_link_libraries(LLVMmeminstrument meminstrument)

@@ -29,8 +29,6 @@ public:
 
   virtual ~InstrumentationPolicy() {}
 
-  static InstrumentationPolicy &get(const llvm::DataLayout &DL);
-
 protected:
   static size_t getPointerAccessSize(const llvm::DataLayout &DL,
                                      llvm::Value *V);

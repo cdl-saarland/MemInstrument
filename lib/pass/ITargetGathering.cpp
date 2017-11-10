@@ -7,6 +7,7 @@
 #include "meminstrument/pass/ITargetGathering.h"
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
+#include "meminstrument/Config.h"
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/IR/Module.h"
@@ -15,8 +16,7 @@ using namespace meminstrument;
 using namespace llvm;
 
 void meminstrument::gatherITargets(ITargetVector &Destination, Function &F) {
-  const DataLayout &DL = F.getParent()->getDataLayout();
-  auto &IP = InstrumentationPolicy::get(DL);
+  auto &IP = GlobalConfig::get(*F.getParent()).getInstrumentationPolicy();
 
   for (auto &BB : F) {
     for (auto &I : BB) {

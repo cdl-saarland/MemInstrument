@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -mi-ipolicy=access-only -mi-wstrategy=none -mi-imechanism=rt_stat -S %s > %t1.ll
+; RUN: %opt %loadlibs -meminstrument -mi-config=rt_stat -S %s > %t1.ll
 ; RUN: %clink -ldl -l:librt_stat.a -o %t2 %t1.ll
 ; RUN: %t2 2> %t3.stats
 ; RUN: fgrep "normal loads : 43" %t3.stats
