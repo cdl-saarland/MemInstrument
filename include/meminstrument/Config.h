@@ -131,7 +131,15 @@ public:
 
   static GlobalConfig &get(const llvm::Module &M);
 
+  static void release(void);
+
   void dump(llvm::raw_ostream &Stream) const;
+
+  ~GlobalConfig(void) {
+    delete _IM;
+    delete _IP;
+    delete _WS;
+  }
 
 private:
   GlobalConfig(Config *Cfg, const llvm::Module &M);

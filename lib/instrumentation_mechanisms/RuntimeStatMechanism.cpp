@@ -7,10 +7,13 @@
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
+
+#include "meminstrument/Config.h"
 
 #include "meminstrument/pass/Util.h"
 
@@ -37,20 +40,28 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   IRBuilder<> Builder(Target.Location);
 
   uint64_t idx = 0;
-  if (isa<LoadInst>(Target.Location) &&
-      Target.Location->getMetadata("nosanitize")) {
-    idx = NoSanLoadIdx;
-    ++RTStatNumNoSanLoads;
-  } else if (isa<StoreInst>(Target.Location) &&
-             Target.Location->getMetadata("nosanitize")) {
-    idx = NoSanStoreIdx;
-    ++RTStatNumNoSanStores;
-  } else if (isa<LoadInst>(Target.Location)) {
-    idx = LoadIdx;
-    ++RTStatNumNormalLoads;
-  } else if (isa<StoreInst>(Target.Location)) {
-    idx = StoreIdx;
-    ++RTStatNumNormalStores;
+  if (Verbose) {
+    const auto &It = StringMap.find(Target.Location);
+    if (It == StringMap.end()) {
+      llvm_unreachable("RT instrumentation required for unknown instruction!");
+    }
+    idx = It->second.idx;
+  } else {
+    if (isa<LoadInst>(Target.Location) &&
+        Target.Location->getMetadata("nosanitize")) {
+      idx = NoSanLoadIdx;
+      ++RTStatNumNoSanLoads;
+    } else if (isa<StoreInst>(Target.Location) &&
+               Target.Location->getMetadata("nosanitize")) {
+      idx = NoSanStoreIdx;
+      ++RTStatNumNoSanStores;
+    } else if (isa<LoadInst>(Target.Location)) {
+      idx = LoadIdx;
+      ++RTStatNumNormalLoads;
+    } else if (isa<StoreInst>(Target.Location)) {
+      idx = StoreIdx;
+      ++RTStatNumNormalStores;
+    }
   }
   insertCall(Builder, StatIncFunction, ConstantInt::get(SizeType, idx));
 }
@@ -64,7 +75,49 @@ llvm::Constant *RuntimeStatMechanism::getFailFunction(void) const {
   return nullptr;
 }
 
+uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
+  uint64_t Counter = 0;
+  for (auto &F : M) {
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        const char *Kind = nullptr;
+        if (I.getMetadata("nosanitize")) {
+          if (isa<LoadInst>(I)) {
+            Kind = "nosanitize load";
+          } else if (isa<StoreInst>(I)) {
+            Kind = "nosanitize store";
+          }
+        } else {
+          if (isa<LoadInst>(I)) {
+            Kind = "wild load";
+          } else if (isa<StoreInst>(I)) {
+            Kind = "wild store";
+          }
+        }
+
+        if (Kind != nullptr) {
+          std::string Name;
+          if (DILocation *Loc = I.getDebugLoc()) {
+            unsigned Line = Loc->getLine();
+            StringRef File = Loc->getFilename();
+            Name = (File + ":" + std::to_string(Line) + ": ").str();
+          } else {
+            Name = std::string("unknown location: ");
+          }
+          Name += Kind;
+          Name += ": ";
+          Name += I.getName();
+          StringMap.insert(std::make_pair(&I, StringMapItem(Counter, Name)));
+          Counter++;
+        }
+      }
+    }
+  }
+  return Counter;
+}
+
 bool RuntimeStatMechanism::initialize(llvm::Module &M) {
+  Verbose = GlobalConfig::get(M).hasInstrumentVerbose();
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);
@@ -83,29 +136,42 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
   auto *BB = BasicBlock::Create(Ctx, "bb", (*Fun)[0], 0);
   IRBuilder<> Builder(BB);
 
-  insertCall(Builder, InitFun, ConstantInt::get(SizeType, 5));
+  if (Verbose) {
+    uint64_t Count = populateStringMap(M);
+    insertCall(Builder, InitFun, ConstantInt::get(SizeType, Count));
 
-  llvm::Value *Str = insertStringLiteral(M, "others");
-  Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, 0), Str);
+    for (const auto &P : StringMap) {
+      uint64_t idx = P.second.idx;
+      std::string& name = P.second.str;
+      llvm::Value *Str = insertStringLiteral(M, name);
+      Str = insertCast(StringType, Str, Builder);
+      insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);
+    }
+  } else {
+    insertCall(Builder, InitFun, ConstantInt::get(SizeType, 5));
 
-  Str = insertStringLiteral(M, "normal loads");
-  Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, LoadIdx), Str);
+    llvm::Value *Str = insertStringLiteral(M, "others");
+    Str = insertCast(StringType, Str, Builder);
+    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, 0), Str);
 
-  Str = insertStringLiteral(M, "normal stores");
-  Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, StoreIdx), Str);
+    Str = insertStringLiteral(M, "normal loads");
+    Str = insertCast(StringType, Str, Builder);
+    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, LoadIdx), Str);
 
-  Str = insertStringLiteral(M, "nosanitize loads");
-  Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx),
-             Str);
+    Str = insertStringLiteral(M, "normal stores");
+    Str = insertCast(StringType, Str, Builder);
+    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, StoreIdx), Str);
 
-  Str = insertStringLiteral(M, "nosanitize stores");
-  Str = insertCast(StringType, Str, Builder);
-  insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx),
-             Str);
+    Str = insertStringLiteral(M, "nosanitize loads");
+    Str = insertCast(StringType, Str, Builder);
+    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx),
+               Str);
+
+    Str = insertStringLiteral(M, "nosanitize stores");
+    Str = insertCast(StringType, Str, Builder);
+    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx),
+               Str);
+  }
 
   Builder.CreateRetVoid();
 

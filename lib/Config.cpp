@@ -213,7 +213,7 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
-std::unique_ptr<GlobalConfig> GlobalCfg(nullptr);
+GlobalConfig* GlobalCfg = nullptr;
 
 const char *getModeName(Config::MIMode M) {
   switch (M) {
@@ -270,16 +270,18 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
 }
 
 GlobalConfig &GlobalConfig::get(const llvm::Module &M) {
-  auto *Res = GlobalCfg.get();
-  if (Res == nullptr) {
-    GlobalCfg.reset(new GlobalConfig(createConfigCLI(), M));
+  if (GlobalCfg == nullptr) {
+    GlobalCfg = new GlobalConfig(createConfigCLI(), M);
     DEBUG(
       dbgs() << "Creating MemInstrument Config:\n";
       GlobalCfg->dump(dbgs());
     );
-    Res = GlobalCfg.get();
   }
-  return *Res;
+  return *GlobalCfg;
+}
+
+void GlobalConfig::release(void) {
+  delete GlobalCfg;
 }
 
 void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
@@ -346,7 +348,7 @@ bool RTStatConfig::hasUseFilters(void) { return false; }
 bool RTStatConfig::hasUseExternalChecks(void) { return false; }
 bool RTStatConfig::hasPrintWitnessGraph(void) { return false; }
 bool RTStatConfig::hasSimplifyWitnessGraph(void) { return false; }
-bool RTStatConfig::hasInstrumentVerbose(void) { return false; }
+bool RTStatConfig::hasInstrumentVerbose(void) { return true; }
 
 const char *RTStatConfig::getName(void) const {
   return "RTStat";
