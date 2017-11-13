@@ -12,6 +12,8 @@
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
 namespace meminstrument {
+
+/// The base class for configurations
 class Config {
 public:
   enum class MIMode {
@@ -48,6 +50,8 @@ public:
   virtual const char *getName(void) const = 0;
 };
 
+/// A configuration to perform splay-tree-based instrumentation.
+/// Includes all internal filters and simplifications.
 class SplayConfig : public Config {
 public:
   virtual ~SplayConfig(void) {}
@@ -66,6 +70,8 @@ public:
   virtual const char *getName(void) const override;
 };
 
+/// A configuration to perform instrumentation for collecting run-time
+/// statistics.
 class RTStatConfig : public Config {
 public:
   virtual ~RTStatConfig(void) {}
@@ -84,10 +90,18 @@ public:
   virtual const char *getName(void) const override;
 };
 
+/// Class for the actual configuration items in use.
+/// On a normal run, only one of these should be created in the first call of
+/// the static GlobalConfig::get() method, following calls just provide the
+/// same GlobalConfig.
+///
+/// Configurations are always based on one of the Classes that derive from
+/// `Config`. This `Config` instance can be chosen via the -mi-config=...
+/// command line flag or via the MI_CONFIG environment variable (the former
+/// takes precedence if both are specified).
+/// The chosen `Config` instance can be adjusted via further command line flags.
 class GlobalConfig {
 public:
-  GlobalConfig(Config *Cfg, const llvm::Module &M);
-
   InstrumentationPolicy &getInstrumentationPolicy(void) {
     assert(_IP && "InstrumentationPolicy not set!");
     return *_IP;
@@ -120,6 +134,8 @@ public:
   void dump(llvm::raw_ostream &Stream) const;
 
 private:
+  GlobalConfig(Config *Cfg, const llvm::Module &M);
+
   InstrumentationMechanism *_IM = nullptr;
   InstrumentationPolicy *_IP = nullptr;
   WitnessStrategy *_WS = nullptr;

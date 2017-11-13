@@ -16,10 +16,15 @@
 
 #include "llvm/Support/CommandLine.h"
 
+#include <cstdlib>
+
 #include "meminstrument/pass/Util.h"
 
 using namespace llvm;
 using namespace meminstrument;
+
+/// Name of the environment variable to check for configuration input
+#define MI_CONFIG_ENV_VAR "MI_CONFIG"
 
 namespace {
 
@@ -96,6 +101,7 @@ cl::opt<Config::MIMode> MIModeOpt(
 enum ConfigKind {
   CK_splay,
   CK_rt_stat,
+  CK_default,
 };
 
 cl::opt<ConfigKind> ConfigKindOpt(
@@ -105,7 +111,7 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(CK_rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only")),
-    cl::cat(MemInstrumentCat), cl::init(CK_splay)); // default config HERE
+    cl::cat(MemInstrumentCat), cl::init(CK_default));
 
 cl::opt<cl::boolOrDefault>
     UseFiltersOpt("mi-use-filters",
@@ -137,6 +143,22 @@ Config *createConfigCLI(void) {
     return new SplayConfig();
   case CK_rt_stat:
     return new RTStatConfig();
+  case CK_default: {
+      const char *EnvStr = std::getenv(MI_CONFIG_ENV_VAR);
+
+      if (EnvStr == nullptr) {
+        return new SplayConfig(); // default Config HERE
+      }
+
+      if (0 == strcmp(EnvStr, "splay")) {
+        return new SplayConfig();
+      } else if (0 == strcmp(EnvStr, "rt_stat")) {
+        return new RTStatConfig();
+      } else {
+        errs() << "Unknown meminstrument config name: `" << EnvStr << "'\n";
+        return new SplayConfig();
+      }
+    }
   }
   llvm_unreachable("Invalid ConfigKind!");
 }
