@@ -44,6 +44,8 @@ public:
   virtual bool hasSimplifyWitnessGraph(void) = 0;
 
   virtual bool hasInstrumentVerbose(void) = 0;
+
+  virtual const char *getName(void) const = 0;
 };
 
 class SplayConfig : public Config {
@@ -61,6 +63,7 @@ public:
   virtual bool hasPrintWitnessGraph(void) override;
   virtual bool hasSimplifyWitnessGraph(void) override;
   virtual bool hasInstrumentVerbose(void) override;
+  virtual const char *getName(void) const override;
 };
 
 class RTStatConfig : public Config {
@@ -78,6 +81,7 @@ public:
   virtual bool hasPrintWitnessGraph(void) override;
   virtual bool hasSimplifyWitnessGraph(void) override;
   virtual bool hasInstrumentVerbose(void) override;
+  virtual const char *getName(void) const override;
 };
 
 class GlobalConfig {
@@ -113,6 +117,8 @@ public:
 
   static GlobalConfig &get(const llvm::Module &M);
 
+  void dump(llvm::raw_ostream &Stream) const;
+
 private:
   InstrumentationMechanism *_IM = nullptr;
   InstrumentationPolicy *_IP = nullptr;
@@ -125,6 +131,8 @@ private:
   bool _PrintWitnessGraph = false;
   bool _SimplifyWitnessGraph = false;
   bool _InstrumentVerbose = false;
+
+  const char *_ConfigName;
 };
 
 } // namespace meminstrument

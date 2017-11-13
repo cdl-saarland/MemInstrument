@@ -16,6 +16,8 @@
 
 #include "llvm/Support/CommandLine.h"
 
+#include "meminstrument/pass/Util.h"
+
 using namespace llvm;
 using namespace meminstrument;
 
@@ -103,7 +105,7 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(CK_rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only")),
-    cl::cat(MemInstrumentCat), cl::init(CK_rt_stat));
+    cl::cat(MemInstrumentCat), cl::init(CK_splay)); // default config HERE
 
 cl::opt<cl::boolOrDefault>
     UseFiltersOpt("mi-use-filters",
@@ -190,6 +192,26 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
 }
 
 std::unique_ptr<GlobalConfig> GlobalCfg(nullptr);
+
+const char *getModeName(Config::MIMode M) {
+  switch (M) {
+    case Config::MIMode::SETUP:
+      return "Setup";
+    case Config::MIMode::GATHER_ITARGETS:
+      return "GatherITargets";
+    case Config::MIMode::FILTER_ITARGETS:
+      return "FilterITargets";
+    case Config::MIMode::GENERATE_WITNESSES:
+      return "GenerateWitnesses";
+    case Config::MIMode::GENERATE_EXTERNAL_CHECKS:
+      return "GenerateExternalChecks";
+    case Config::MIMode::GENERATE_CHECKS:
+      return "GenerateChecks";
+    default:
+      return "[Unexpected Mode]";
+  }
+}
+
 } // namespace
 
 GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
@@ -219,6 +241,9 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   ASSIGNBOOLOPT(InstrumentVerbose)
 
 #undef ASSIGNBOOLOPT
+
+  _ConfigName = Cfg->getName();
+
   delete Cfg;
 }
 
@@ -226,10 +251,30 @@ GlobalConfig &GlobalConfig::get(const llvm::Module &M) {
   auto *Res = GlobalCfg.get();
   if (Res == nullptr) {
     GlobalCfg.reset(new GlobalConfig(createConfigCLI(), M));
+    DEBUG(
+      dbgs() << "Creating MemInstrument Config:\n";
+      GlobalCfg->dump(dbgs());
+    );
     Res = GlobalCfg.get();
   }
   return *Res;
 }
+
+void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
+  Stream << "{{{ Config: " << _ConfigName << "\n";
+  Stream << "     InstrumentationPolicy: " << _IP->getName() << '\n';
+  Stream << "           WitnessStrategy: " << _WS->getName() << '\n';
+  Stream << "  InstrumentationMechanism: " << _IM->getName() << '\n';
+  Stream << "                      Mode: " << getModeName(_MIMode) << '\n';
+  Stream << "                UseFilters: " << _UseFilters << '\n';
+  Stream << "         UseExternalChecks: " << _UseExternalChecks << '\n';
+  Stream << "         PrintWitnessGraph: " << _PrintWitnessGraph << '\n';
+  Stream << "      SimplifyWitnessGraph: " << _SimplifyWitnessGraph << '\n';
+  Stream << "         InstrumentVerbose: " << _InstrumentVerbose << '\n';
+  Stream << "}}}\n\n";
+}
+
+// Implementation of SplayConfig
 
 InstrumentationPolicy *
 SplayConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
@@ -253,6 +298,12 @@ bool SplayConfig::hasPrintWitnessGraph(void) { return false; }
 bool SplayConfig::hasSimplifyWitnessGraph(void) { return true; }
 bool SplayConfig::hasInstrumentVerbose(void) { return false; }
 
+const char *SplayConfig::getName(void) const {
+  return "Splay";
+}
+
+
+// Implementation of RTStatConfig
 InstrumentationPolicy *
 RTStatConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
   return new AccessOnlyPolicy(DL);
@@ -274,3 +325,7 @@ bool RTStatConfig::hasUseExternalChecks(void) { return false; }
 bool RTStatConfig::hasPrintWitnessGraph(void) { return false; }
 bool RTStatConfig::hasSimplifyWitnessGraph(void) { return false; }
 bool RTStatConfig::hasInstrumentVerbose(void) { return false; }
+
+const char *RTStatConfig::getName(void) const {
+  return "RTStat";
+}

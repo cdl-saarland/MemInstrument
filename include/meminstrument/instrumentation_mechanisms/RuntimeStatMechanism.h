@@ -50,6 +50,10 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
+  virtual const char *getName(void) const {
+    return "RuntimeStat";
+  }
+
 private:
   llvm::Type *SizeType;
   llvm::GlobalVariable *StatArray = nullptr;

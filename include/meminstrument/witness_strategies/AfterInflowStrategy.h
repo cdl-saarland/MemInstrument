@@ -25,6 +25,10 @@ public:
 
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const override;
+
+  virtual const char *getName(void) const override {
+    return "AfterInflow";
+  }
 };
 
 } // namespace meminstrument

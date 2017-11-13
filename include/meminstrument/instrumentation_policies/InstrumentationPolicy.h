@@ -27,6 +27,8 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) = 0;
 
+  virtual const char *getName(void) const = 0;
+
   virtual ~InstrumentationPolicy() {}
 
 protected:

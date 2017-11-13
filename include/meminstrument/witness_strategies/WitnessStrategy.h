@@ -31,6 +31,8 @@ public:
   virtual void createWitness(InstrumentationMechanism &IM,
                              WitnessGraphNode *Node) const = 0;
 
+  virtual const char *getName(void) const = 0;
+
 protected:
   void requireRecursively(WitnessGraphNode *Node, llvm::Value *Req,
                           llvm::Instruction *Loc) const;
