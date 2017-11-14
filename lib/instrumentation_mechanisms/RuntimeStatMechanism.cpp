@@ -99,13 +99,14 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
           std::string Name;
           if (DILocation *Loc = I.getDebugLoc()) {
             unsigned Line = Loc->getLine();
+            unsigned Column = Loc->getColumn();
             StringRef File = Loc->getFilename();
-            Name = (File + ":" + std::to_string(Line) + ": ").str();
+            Name = (File + " - l " + std::to_string(Line) + " - c " + std::to_string(Column) + " - ").str();
           } else {
-            Name = std::string("unknown location: ");
+            Name = std::string("unknown location - ");
           }
           Name += Kind;
-          Name += ": ";
+          Name += " - ";
           Name += I.getName();
           StringMap.insert(std::make_pair(&I, StringMapItem(Counter, Name)));
           Counter++;

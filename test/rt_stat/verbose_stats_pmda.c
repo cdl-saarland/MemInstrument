@@ -1,7 +1,7 @@
 // RUN: export MI_CONFIG=rt_stat; %clink -Xclang -load -Xclang %passlib -ldl -l:librt_stat.a -g -O2 -o %t0 %s
 // RUN: %t0 2> %t1.log
-// RUN: grep -e "\.c:12: nosanitize store: .* : 20" %t1.log
-// RUN: grep -e "\.c:18: nosanitize load: .* : 20" %t1.log
+// RUN: grep -e "\.c - l 12 - c 10 - nosanitize store - .* : 20" %t1.log
+// RUN: grep -e "\.c - l 18 - c 12 - nosanitize load - .* : 20" %t1.log
 // REQUIRES: pmda
 
 int main(void) {
