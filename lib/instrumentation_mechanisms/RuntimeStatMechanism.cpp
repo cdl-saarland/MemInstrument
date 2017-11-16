@@ -23,6 +23,9 @@ STATISTIC(RTStatNumNormalStores, "The static # of normal stores");
 STATISTIC(RTStatNumNoSanLoads, "The static # of nosanitize loads");
 STATISTIC(RTStatNumNoSanStores, "The static # of nosanitize stores");
 
+STATISTIC(RTStatNumWild, "The static # of wild memory operations");
+STATISTIC(RTStatNumNoSan, "The static # of nosanitize memory operations");
+
 using namespace llvm;
 using namespace meminstrument;
 
@@ -45,22 +48,31 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     if (It == StringMap.end()) {
       llvm_unreachable("RT instrumentation required for unknown instruction!");
     }
+    if (Target.Location->getMetadata("nosanitize")) {
+      ++RTStatNumNoSan;
+    } else {
+      ++RTStatNumWild;
+    }
     idx = It->second.idx;
   } else {
     if (isa<LoadInst>(Target.Location) &&
         Target.Location->getMetadata("nosanitize")) {
       idx = NoSanLoadIdx;
       ++RTStatNumNoSanLoads;
+      ++RTStatNumNoSan;
     } else if (isa<StoreInst>(Target.Location) &&
                Target.Location->getMetadata("nosanitize")) {
       idx = NoSanStoreIdx;
       ++RTStatNumNoSanStores;
+      ++RTStatNumNoSan;
     } else if (isa<LoadInst>(Target.Location)) {
       idx = LoadIdx;
       ++RTStatNumNormalLoads;
+      ++RTStatNumWild;
     } else if (isa<StoreInst>(Target.Location)) {
       idx = StoreIdx;
       ++RTStatNumNormalStores;
+      ++RTStatNumWild;
     }
   }
   insertCall(Builder, StatIncFunction, ConstantInt::get(SizeType, idx));
