@@ -17,14 +17,20 @@
 
 #include "meminstrument/pass/Util.h"
 
-STATISTIC(RTStatNumNormalLoads, "The static # of normal loads");
-STATISTIC(RTStatNumNormalStores, "The static # of normal stores");
+STATISTIC(RTStatNumNormalLoads, "The static # of unmarked loads");
+STATISTIC(RTStatNumNormalStores, "The static # of unmarked stores");
 
-STATISTIC(RTStatNumNoSanLoads, "The static # of nosanitize loads");
-STATISTIC(RTStatNumNoSanStores, "The static # of nosanitize stores");
+STATISTIC(RTStatNumNoSanLoads, "The static # of marked loads");
+STATISTIC(RTStatNumNoSanStores, "The static # of marked stores");
 
-STATISTIC(RTStatNumWild, "The static # of wild memory operations");
-STATISTIC(RTStatNumNoSan, "The static # of nosanitize memory operations");
+STATISTIC(RTStatNumWild, "The static # of unmarked memory operations");
+STATISTIC(RTStatNumNoSan, "The static # of marked memory operations");
+
+namespace {
+  // markString = "nosanitize";
+  const char *markString = "temporallySafe";
+}
+
 
 using namespace llvm;
 using namespace meminstrument;
@@ -48,7 +54,7 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     if (It == StringMap.end()) {
       llvm_unreachable("RT instrumentation required for unknown instruction!");
     }
-    if (Target.Location->getMetadata("nosanitize")) {
+    if (Target.Location->getMetadata(markString)) {
       ++RTStatNumNoSan;
     } else {
       ++RTStatNumWild;
@@ -56,12 +62,12 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     idx = It->second.idx;
   } else {
     if (isa<LoadInst>(Target.Location) &&
-        Target.Location->getMetadata("nosanitize")) {
+        Target.Location->getMetadata(markString)) {
       idx = NoSanLoadIdx;
       ++RTStatNumNoSanLoads;
       ++RTStatNumNoSan;
     } else if (isa<StoreInst>(Target.Location) &&
-               Target.Location->getMetadata("nosanitize")) {
+               Target.Location->getMetadata(markString)) {
       idx = NoSanStoreIdx;
       ++RTStatNumNoSanStores;
       ++RTStatNumNoSan;
@@ -93,17 +99,17 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
     for (auto &BB : F) {
       for (auto &I : BB) {
         const char *Kind = nullptr;
-        if (I.getMetadata("nosanitize")) {
+        if (I.getMetadata(markString)) {
           if (isa<LoadInst>(I)) {
-            Kind = "nosanitize load";
+            Kind = "marked load";
           } else if (isa<StoreInst>(I)) {
-            Kind = "nosanitize store";
+            Kind = "marked store";
           }
         } else {
           if (isa<LoadInst>(I)) {
-            Kind = "wild load";
+            Kind = "unmarked load";
           } else if (isa<StoreInst>(I)) {
-            Kind = "wild store";
+            Kind = "unmarked store";
           }
         }
 
@@ -167,20 +173,20 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
     Str = insertCast(StringType, Str, Builder);
     insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, 0), Str);
 
-    Str = insertStringLiteral(M, "normal loads");
+    Str = insertStringLiteral(M, "unmarked loads");
     Str = insertCast(StringType, Str, Builder);
     insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, LoadIdx), Str);
 
-    Str = insertStringLiteral(M, "normal stores");
+    Str = insertStringLiteral(M, "unmarked stores");
     Str = insertCast(StringType, Str, Builder);
     insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, StoreIdx), Str);
 
-    Str = insertStringLiteral(M, "nosanitize loads");
+    Str = insertStringLiteral(M, "marked loads");
     Str = insertCast(StringType, Str, Builder);
     insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx),
                Str);
 
-    Str = insertStringLiteral(M, "nosanitize stores");
+    Str = insertStringLiteral(M, "marked stores");
     Str = insertCast(StringType, Str, Builder);
     insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx),
                Str);
