@@ -30,6 +30,13 @@ void MemInstrumentPass::releaseMemory(void) {
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
+  if (M.getName().endswith("tools/timeit.c")) {
+    // small hack to avoid unnecessary work in the lnt tests
+    DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
+                 << "`\n";);
+    return false;
+  }
+
   auto &CFG = GlobalConfig::get(M);
 
   Config::MIMode Mode = CFG.getMIMode();

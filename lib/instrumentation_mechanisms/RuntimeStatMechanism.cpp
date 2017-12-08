@@ -27,8 +27,8 @@ STATISTIC(RTStatNumWild, "The static # of unmarked memory operations");
 STATISTIC(RTStatNumNoSan, "The static # of marked memory operations");
 
 namespace {
-  // markString = "nosanitize";
-  const char *markString = "temporallySafe";
+  const char *markString = "nosanitize";
+  // const char *markString = "temporallySafe";
 }
 
 
@@ -96,6 +96,22 @@ llvm::Constant *RuntimeStatMechanism::getFailFunction(void) const {
 uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
   uint64_t Counter = 0;
   for (auto &F : M) {
+    if (F.isDeclaration()) {
+      continue;
+    }
+
+    const char * functionAnnotation = "[missing]";
+
+    if (F.getMetadata("PMDAlocal")) {
+      functionAnnotation = "PMDAlocal";
+    } else if (F.getMetadata("PMDAprecise")) {
+      functionAnnotation = "PMDAprecise";
+    } else if (F.getMetadata("PMDAsummary")) {
+      functionAnnotation = "PMDAsummary";
+    } else if (F.getMetadata("PMDAbad")) {
+      functionAnnotation = "PMDAbad";
+    }
+
     for (auto &BB : F) {
       for (auto &I : BB) {
         const char *Kind = nullptr;
@@ -124,6 +140,8 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
             Name = std::string("unknown location - ");
           }
           Name += Kind;
+          Name += " ";
+          Name += functionAnnotation;
           Name += " - ";
           Name += I.getName();
           StringMap.insert(std::make_pair(&I, StringMapItem(Counter, Name)));
