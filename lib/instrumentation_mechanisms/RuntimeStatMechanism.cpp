@@ -26,6 +26,11 @@ STATISTIC(RTStatNumNoSanStores, "The static # of marked stores");
 STATISTIC(RTStatNumWild, "The static # of unmarked memory operations");
 STATISTIC(RTStatNumNoSan, "The static # of marked memory operations");
 
+STATISTIC(RTStatNumPMDAprecise, "The static # of PMDAprecise memory operations");
+STATISTIC(RTStatNumPMDAsummary, "The static # of PMDAsummary memory operations");
+STATISTIC(RTStatNumPMDAlocal, "The static # of PMDAlocal memory operations");
+STATISTIC(RTStatNumPMDAbad, "The static # of PMDAbad memory operations");
+
 namespace {
   const char *markString = "nosanitize";
   // const char *markString = "temporallySafe";
@@ -63,22 +68,35 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   } else {
     if (isa<LoadInst>(Target.Location) &&
         Target.Location->getMetadata(markString)) {
-      idx = NoSanLoadIdx;
+      idx = 5 * NoSanLoadIdx;
       ++RTStatNumNoSanLoads;
       ++RTStatNumNoSan;
     } else if (isa<StoreInst>(Target.Location) &&
                Target.Location->getMetadata(markString)) {
-      idx = NoSanStoreIdx;
+      idx = 5 * NoSanStoreIdx;
       ++RTStatNumNoSanStores;
       ++RTStatNumNoSan;
     } else if (isa<LoadInst>(Target.Location)) {
-      idx = LoadIdx;
+      idx = 5 * LoadIdx;
       ++RTStatNumNormalLoads;
       ++RTStatNumWild;
     } else if (isa<StoreInst>(Target.Location)) {
-      idx = StoreIdx;
+      idx = 5 * StoreIdx;
       ++RTStatNumNormalStores;
       ++RTStatNumWild;
+    }
+    if (Target.Location->getFunction()->getMetadata("PMDAprecise")) {
+      idx += PMDApreciseIdx;
+      ++RTStatNumPMDAprecise;
+    } else if (Target.Location->getFunction()->getMetadata("PMDAsummary")) {
+      idx += PMDAsummaryIdx;
+      ++RTStatNumPMDAsummary;
+    } else if (Target.Location->getFunction()->getMetadata("PMDAlocal")) {
+      idx += PMDAlocalIdx;
+      ++RTStatNumPMDAlocal;
+    } else if (Target.Location->getFunction()->getMetadata("PMDAbad")) {
+      idx += PMDAbadIdx;
+      ++RTStatNumPMDAbad;
     }
   }
   insertCall(Builder, StatIncFunction, ConstantInt::get(SizeType, idx));
@@ -185,29 +203,43 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
       insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);
     }
   } else {
-    insertCall(Builder, InitFun, ConstantInt::get(SizeType, 5));
+    insertCall(Builder, InitFun, ConstantInt::get(SizeType, 25));
 
-    llvm::Value *Str = insertStringLiteral(M, "others");
-    Str = insertCast(StringType, Str, Builder);
-    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, 0), Str);
+    auto addEntry = [&](uint64_t idx, StringRef text) {
+      llvm::Value *Str = insertStringLiteral(M, text.str().c_str());
+      Str = insertCast(StringType, Str, Builder);
+      insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);
+    };
 
-    Str = insertStringLiteral(M, "unmarked loads");
-    Str = insertCast(StringType, Str, Builder);
-    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, LoadIdx), Str);
+    addEntry(0, "others");
+    addEntry(1, "others1");
+    addEntry(2, "others2");
+    addEntry(3, "others3");
+    addEntry(4, "others4");
 
-    Str = insertStringLiteral(M, "unmarked stores");
-    Str = insertCast(StringType, Str, Builder);
-    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, StoreIdx), Str);
+    addEntry(5 * LoadIdx, "unmarked loads PMDAmissingdata");
+    addEntry(5 * LoadIdx + PMDApreciseIdx, "unmarked loads PMDAprecise");
+    addEntry(5 * LoadIdx + PMDAsummaryIdx, "unmarked loads PMDAsummary");
+    addEntry(5 * LoadIdx + PMDAlocalIdx, "unmarked loads PMDAlocal");
+    addEntry(5 * LoadIdx + PMDAbadIdx, "unmarked loads PMDAbad");
 
-    Str = insertStringLiteral(M, "marked loads");
-    Str = insertCast(StringType, Str, Builder);
-    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanLoadIdx),
-               Str);
+    addEntry(5 * StoreIdx, "unmarked stores PMDAmissingdata");
+    addEntry(5 * StoreIdx + PMDApreciseIdx, "unmarked stores PMDAprecise");
+    addEntry(5 * StoreIdx + PMDAsummaryIdx, "unmarked stores PMDAsummary");
+    addEntry(5 * StoreIdx + PMDAlocalIdx, "unmarked stores PMDAlocal");
+    addEntry(5 * StoreIdx + PMDAbadIdx, "unmarked stores PMDAbad");
 
-    Str = insertStringLiteral(M, "marked stores");
-    Str = insertCast(StringType, Str, Builder);
-    insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, NoSanStoreIdx),
-               Str);
+    addEntry(5 * NoSanLoadIdx, "marked loads PMDAmissingdata");
+    addEntry(5 * NoSanLoadIdx + PMDApreciseIdx, "marked loads PMDAprecise");
+    addEntry(5 * NoSanLoadIdx + PMDAsummaryIdx, "marked loads PMDAsummary");
+    addEntry(5 * NoSanLoadIdx + PMDAlocalIdx, "marked loads PMDAlocal");
+    addEntry(5 * NoSanLoadIdx + PMDAbadIdx, "marked loads PMDAbad");
+
+    addEntry(5 * NoSanStoreIdx, "marked stores PMDAmissingdata");
+    addEntry(5 * NoSanStoreIdx + PMDApreciseIdx, "marked stores PMDAprecise");
+    addEntry(5 * NoSanStoreIdx + PMDAsummaryIdx, "marked stores PMDAsummary");
+    addEntry(5 * NoSanStoreIdx + PMDAlocalIdx, "marked stores PMDAlocal");
+    addEntry(5 * NoSanStoreIdx + PMDAbadIdx, "marked stores PMDAbad");
   }
 
   Builder.CreateRetVoid();

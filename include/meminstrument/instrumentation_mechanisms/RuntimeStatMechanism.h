@@ -82,6 +82,11 @@ private:
   const uint64_t NoSanLoadIdx = 3;
   const uint64_t NoSanStoreIdx = 4;
 
+  const uint64_t PMDApreciseIdx = 1;
+  const uint64_t PMDAsummaryIdx = 2;
+  const uint64_t PMDAlocalIdx = 3;
+  const uint64_t PMDAbadIdx = 4;
+
   bool Verbose = false;
 };
 
