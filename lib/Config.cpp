@@ -23,6 +23,9 @@
 using namespace llvm;
 using namespace meminstrument;
 
+// TODO The overhead for inserting new options could be reduced by using some
+// preprocessor magic...
+
 /// Name of the environment variable to check for configuration input
 #define MI_CONFIG_ENV_VAR "MI_CONFIG"
 

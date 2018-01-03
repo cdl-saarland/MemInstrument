@@ -11,6 +11,21 @@
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
+/// This file implements the configuration mechanism of the meminstrument
+/// instrumentation passes.
+///
+/// All configurable parameters are accessible in the code via a GlobalConfig
+/// object that can be obtained via the static GlobalConfig::get(...) method.
+///
+/// The values that are stored in this object are determined as follows:
+/// They default to the values from one of the here defined child classes of
+/// Config. Which child class is used can be specified via the -mi-config
+/// command line flag or via the MI_CONFIG environment variable (if both are
+/// given, the cli takes precedence over the environment variable).
+///
+/// The default values from the basic configuration can be overridden via
+/// separate command line flags.
+
 namespace meminstrument {
 
 /// The base class for configurations
@@ -94,12 +109,6 @@ public:
 /// On a normal run, only one of these should be created in the first call of
 /// the static GlobalConfig::get() method, following calls just provide the
 /// same GlobalConfig.
-///
-/// Configurations are always based on one of the Classes that derive from
-/// `Config`. This `Config` instance can be chosen via the -mi-config=...
-/// command line flag or via the MI_CONFIG environment variable (the former
-/// takes precedence if both are specified).
-/// The chosen `Config` instance can be adjusted via further command line flags.
 class GlobalConfig {
 public:
   InstrumentationPolicy &getInstrumentationPolicy(void) {
