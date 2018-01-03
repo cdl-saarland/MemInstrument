@@ -351,8 +351,7 @@ bool RTStatConfig::hasUseFilters(void) { return false; }
 bool RTStatConfig::hasUseExternalChecks(void) { return false; }
 bool RTStatConfig::hasPrintWitnessGraph(void) { return false; }
 bool RTStatConfig::hasSimplifyWitnessGraph(void) { return false; }
-bool RTStatConfig::hasInstrumentVerbose(void) { return false; }
-// bool RTStatConfig::hasInstrumentVerbose(void) { return true; }
+bool RTStatConfig::hasInstrumentVerbose(void) { return true; }
 
 const char *RTStatConfig::getName(void) const {
   return "RTStat";

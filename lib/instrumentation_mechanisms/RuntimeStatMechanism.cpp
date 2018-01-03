@@ -31,6 +31,9 @@ STATISTIC(RTStatNumPMDAsummary, "The static # of PMDAsummary memory operations")
 STATISTIC(RTStatNumPMDAlocal, "The static # of PMDAlocal memory operations");
 STATISTIC(RTStatNumPMDAbad, "The static # of PMDAbad memory operations");
 
+// TODO this could (and probably should) be made more parametric in the
+// statistics to gather
+
 namespace {
   const char *markString = "nosanitize";
   // const char *markString = "temporallySafe";
