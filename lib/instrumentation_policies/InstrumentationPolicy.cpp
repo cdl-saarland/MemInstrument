@@ -11,6 +11,7 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 
+#include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
 #include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -24,32 +25,23 @@
 using namespace meminstrument;
 using namespace llvm;
 
-namespace {
+size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
+                                                   llvm::Value *V) {
+  auto *Ty = V->getType();
+  assert(Ty->isPointerTy() && "Only pointer types allowed!");
 
-enum InstrumentationPolicyKind {
-  IP_beforeOutflow,
-};
+  auto *PointeeType = Ty->getPointerElementType();
 
-cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
-    "mi-ipolicy",
-    cl::desc("Choose InstructionPolicy: (default: before-outflow)"),
-    cl::values(clEnumValN(IP_beforeOutflow, "before-outflow",
-                          "only insert dummy calls for instrumentation")),
-    cl::init(IP_beforeOutflow) // default
-);
-
-std::unique_ptr<InstrumentationPolicy> GlobalIM(nullptr);
-} // namespace
-
-InstrumentationPolicy &InstrumentationPolicy::get(const DataLayout &DL) {
-  auto *Res = GlobalIM.get();
-  if (Res == nullptr) {
-    switch (InstrumentationPolicyOpt) {
-    case IP_beforeOutflow:
-      GlobalIM.reset(new BeforeOutflowPolicy(DL));
-      break;
-    }
-    Res = GlobalIM.get();
+  if (PointeeType->isFunctionTy()) {
+    return 0;
   }
-  return *Res;
+
+  if (!PointeeType->isSized()) {
+    errs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";
+    llvm_unreachable("Only pointers to sized types allowed!");
+  }
+
+  size_t Size = DL.getTypeStoreSize(PointeeType);
+
+  return Size;
 }

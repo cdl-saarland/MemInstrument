@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -Xclang -load -Xclang %passlib -emit-llvm -c -S -o %t1.ll %s
+// RUN: export MI_CONFIG=splay; %clang -O1 -Xclang -load -Xclang %passlib -emit-llvm -c -S -o %t1.ll %s
 // RUN: fgrep "splay" %t1.ll
 
 #include <stdlib.h>

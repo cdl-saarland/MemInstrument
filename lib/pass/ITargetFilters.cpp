@@ -6,6 +6,7 @@
 
 #include "meminstrument/pass/ITargetFilters.h"
 
+#include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -26,11 +27,6 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-cl::opt<bool> NoFiltersOpt(
-    "mi-no-filter",
-    cl::desc("Disable all memsafety instrumentation target filters"),
-    cl::init(false));
-
 void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
   const auto &DomTree =
       ParentPass->getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
@@ -65,7 +61,8 @@ void filterByAnnotation(ITargetVector &Vec) {
 } // namespace
 
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
-  if (NoFiltersOpt) {
+  bool UseFilters = GlobalConfig::get(*F.getParent()).hasUseFilters();
+  if (!UseFilters) {
     return;
   }
 

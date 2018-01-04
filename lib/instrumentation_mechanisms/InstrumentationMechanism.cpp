@@ -7,6 +7,7 @@
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 
 #include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 
 #include "llvm/IR/IRBuilder.h"
@@ -18,42 +19,6 @@
 
 using namespace llvm;
 using namespace meminstrument;
-
-namespace {
-
-enum InstrumentationMechanismKind {
-  IM_dummy,
-  IM_splay,
-};
-
-cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
-    "mi-imechanism", cl::desc("Choose InstructionMechanism: (default: dummy)"),
-    cl::values(clEnumValN(IM_dummy, "dummy",
-                          "only insert dummy calls for instrumentation")),
-    cl::values(clEnumValN(IM_splay, "splay",
-                          "use splay tree for instrumentation")),
-    cl::init(IM_splay) // default
-);
-
-std::unique_ptr<InstrumentationMechanism> GlobalIM(nullptr);
-} // namespace
-
-InstrumentationMechanism &InstrumentationMechanism::get(void) {
-  auto *Res = GlobalIM.get();
-  if (Res == nullptr) {
-    switch (InstrumentationMechanismOpt) {
-    case IM_dummy:
-      GlobalIM.reset(new DummyMechanism());
-      break;
-
-    case IM_splay:
-      GlobalIM.reset(new SplayMechanism());
-      break;
-    }
-    Res = GlobalIM.get();
-  }
-  return *Res;
-}
 
 std::unique_ptr<std::vector<Function *>>
 InstrumentationMechanism::registerCtors(

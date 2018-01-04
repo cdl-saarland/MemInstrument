@@ -1,5 +1,5 @@
 // RUN: %clang -emit-llvm -Xclang -disable-O0-optnone -c -S -o %t0.ll %s
-// RUN: %opt %loadlibs -mem2reg -meminstrument %t0.ll -mi-splay-verbose -mi-imechanism=splay -S > %t1.ll
+// RUN: %opt %loadlibs -mem2reg -meminstrument %t0.ll -mi-verbose -mi-config=splay -S > %t1.ll
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2 2> %t3.log
 // RUN: %not fgrep "non-existing" %t3.log

@@ -21,10 +21,15 @@ add_meminstrument_library(meminstrument
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp
+  instrumentation_mechanisms/RuntimeStatMechanism.cpp
   instrumentation_policies/InstrumentationPolicy.cpp
   instrumentation_policies/BeforeOutflowPolicy.cpp
+  instrumentation_policies/AccessOnlyPolicy.cpp
   witness_strategies/WitnessStrategy.cpp
+  witness_strategies/AfterInflowStrategy.cpp
+  witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
+  Config.cpp
 )
 
 # List external library dependencies that need to be linked to your library
@@ -63,6 +68,7 @@ else ()
   add_meminstrument_loadable_module(LLVMmeminstrument
     pass/MemInstrumentPass.cpp
     RegisterPasses.cpp
+    Config.cpp
   )
 
   target_link_libraries(LLVMmeminstrument meminstrument)

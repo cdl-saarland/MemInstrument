@@ -7,7 +7,6 @@
 #include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
 
 #include "llvm/ADT/Statistic.h"
-#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
@@ -24,26 +23,7 @@ STATISTIC(NumIntrinsicsNotHandled,
 using namespace meminstrument;
 using namespace llvm;
 
-size_t BeforeOutflowPolicy::getPointerAccessSize(llvm::Value *V) {
-  auto *Ty = V->getType();
-  assert(Ty->isPointerTy() && "Only pointer types allowed!");
-
-  auto *PointeeType = Ty->getPointerElementType();
-
-  if (PointeeType->isFunctionTy()) {
-    return 0;
-  }
-
-  if (!PointeeType->isSized()) {
-    errs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";
-    llvm_unreachable("Only pointers to sized types allowed!");
-  }
-
-  size_t Size = DL.getTypeStoreSize(PointeeType);
-
-  return Size;
-}
-
+namespace {
 bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
                           llvm::IntrinsicInst *II) {
   switch (II->getIntrinsicID()) {
@@ -75,6 +55,7 @@ bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
     return false;
   }
 }
+} // namespace
 
 void BeforeOutflowPolicy::classifyTargets(
     std::vector<std::shared_ptr<ITarget>> &Destination,
@@ -89,7 +70,8 @@ void BeforeOutflowPolicy::classifyTargets(
     }
 
     Destination.push_back(std::make_shared<ITarget>(
-        Operand, Location, getPointerAccessSize(Operand), /*CheckUpper*/ false,
+        Operand, Location, getPointerAccessSize(DL, Operand),
+        /*CheckUpper*/ false,
         /*CheckLower*/ false, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
     break;
@@ -141,7 +123,7 @@ void BeforeOutflowPolicy::classifyTargets(
       bool isByVal = FunIsNoVarArg && ArgIt->hasByValAttr();
 
       Destination.push_back(std::make_shared<ITarget>(
-          Operand, Location, getPointerAccessSize(Operand),
+          Operand, Location, getPointerAccessSize(DL, Operand),
           /*CheckUpper*/ isByVal, /*CheckLower*/ isByVal,
           /*ExplicitBounds*/ false));
       ++NumITargetsGathered;
@@ -157,7 +139,7 @@ void BeforeOutflowPolicy::classifyTargets(
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(PtrOperand),
+        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
         /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
     break;
@@ -166,7 +148,7 @@ void BeforeOutflowPolicy::classifyTargets(
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
     Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(PtrOperand),
+        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
         /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
 
@@ -176,7 +158,7 @@ void BeforeOutflowPolicy::classifyTargets(
     }
 
     Destination.push_back(std::make_shared<ITarget>(
-        StoreOperand, Location, getPointerAccessSize(StoreOperand),
+        StoreOperand, Location, getPointerAccessSize(DL, StoreOperand),
         /*CheckUpper*/ false, /*CheckLower*/ false, /*ExplicitBounds*/ false));
     ++NumITargetsGathered;
 

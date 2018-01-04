@@ -38,9 +38,9 @@ public:
 
   virtual bool initialize(llvm::Module &M) = 0;
 
-  virtual ~InstrumentationMechanism(void) {}
+  virtual const char *getName(void) const = 0;
 
-  static InstrumentationMechanism &get(void);
+  virtual ~InstrumentationMechanism(void) {}
 
 private:
   /// Base case for the implementation of the insertFunDecl helper function.

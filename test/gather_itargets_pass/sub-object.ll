@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
+; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
 ; RUN: fgrep "<add.ptr, entry::tmp, 4B, ul_>" %t.log
 ; RUN: fgrep "<arrayidx, for.body::[store], 4B, ul_>" %t.log
 ; RUN: fgrep "<tmp, for.end::call1, 4B, ___>" %t.log

@@ -27,9 +27,13 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) = 0;
 
+  virtual const char *getName(void) const = 0;
+
   virtual ~InstrumentationPolicy() {}
 
-  static InstrumentationPolicy &get(const llvm::DataLayout &DL);
+protected:
+  static size_t getPointerAccessSize(const llvm::DataLayout &DL,
+                                     llvm::Value *V);
 };
 
 } // namespace meminstrument
