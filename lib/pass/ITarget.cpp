@@ -85,6 +85,14 @@ ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  Value *AccessSize)
     : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
 
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location)
+    : ITarget(Instrumentee, Location, nullptr, true, true, false) {}
+
+ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+                 bool RequiresExplicitBounds)
+    : ITarget(Instrumentee, Location, nullptr, true, true,
+              RequiresExplicitBounds) {}
+
 bool ITarget::subsumes(const ITarget &other) const {
   return (Instrumentee == other.Instrumentee) &&
          ((HasConstAccessSize && other.HasConstAccessSize) ||

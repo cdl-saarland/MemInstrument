@@ -82,8 +82,15 @@ struct ITarget {
           bool CheckLowerBoundFlag, bool RequiresExplicitBounds);
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           llvm::Value *AccessSize, bool RequiresExplicitBounds);
+
   ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
           llvm::Value *AccessSize);
+
+  ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
+          bool RequiresExplicitBounds); // TODO think about that
+
+  ITarget(llvm::Value *Instrumentee,
+          llvm::Instruction *Location); // TODO think about that
 
   bool subsumes(const ITarget &other) const;
 
