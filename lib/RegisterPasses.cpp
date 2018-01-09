@@ -8,12 +8,16 @@
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
-#if MEMINSTRUMENT_USE_PMDA
-#include "CheckOptimizer/CheckOptimizerPass.h"
-#endif
-
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#if MEMINSTRUMENT_USE_PMDA
+#include "CheckOptimizer/CheckOptimizerPass.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#include "llvm/Transforms/Utils/BreakCriticalEdges.h"
+#include "llvm/Transforms/Utils/UnifyFunctionExitNodes.h"
+#endif
 
 using namespace meminstrument;
 using namespace llvm;
