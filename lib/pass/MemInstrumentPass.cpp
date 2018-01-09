@@ -24,9 +24,7 @@ using namespace llvm;
 
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
-void MemInstrumentPass::releaseMemory(void) {
-  GlobalConfig::release();
-}
+void MemInstrumentPass::releaseMemory(void) { GlobalConfig::release(); }
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 

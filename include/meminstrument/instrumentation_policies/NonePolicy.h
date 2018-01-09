@@ -21,9 +21,7 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) override;
 
-  virtual const char *getName(void) const override {
-    return "None";
-  }
+  virtual const char *getName(void) const override { return "None"; }
 
   NonePolicy(const llvm::DataLayout &DL) : DL(DL) {}
 
@@ -34,4 +32,3 @@ private:
 } // namespace meminstrument
 
 #endif
-

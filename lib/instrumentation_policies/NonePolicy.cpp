@@ -14,7 +14,5 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void NonePolicy::classifyTargets(
-    std::vector<std::shared_ptr<ITarget>> &,
-    llvm::Instruction *) { }
-
+void NonePolicy::classifyTargets(std::vector<std::shared_ptr<ITarget>> &,
+                                 llvm::Instruction *) {}

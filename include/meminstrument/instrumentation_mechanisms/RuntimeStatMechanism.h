@@ -51,16 +51,14 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
-  virtual const char *getName(void) const {
-    return "RuntimeStat";
-  }
+  virtual const char *getName(void) const { return "RuntimeStat"; }
 
-  virtual ~RuntimeStatMechanism(void) { }
+  virtual ~RuntimeStatMechanism(void) {}
 
 private:
-
   struct StringMapItem {
-    StringMapItem(uint64_t Idx, llvm::StringRef Str) : idx(Idx), str(Str.str()) {}
+    StringMapItem(uint64_t Idx, llvm::StringRef Str)
+        : idx(Idx), str(Str.str()) {}
 
     StringMapItem(void) : idx(0), str("") {}
 
@@ -75,7 +73,7 @@ private:
 
   llvm::Constant *StatIncFunction = nullptr;
 
-  llvm::ValueMap<llvm::Instruction*, StringMapItem> StringMap;
+  llvm::ValueMap<llvm::Instruction *, StringMapItem> StringMap;
 
   const uint64_t LoadIdx = 1;
   const uint64_t StoreIdx = 2;

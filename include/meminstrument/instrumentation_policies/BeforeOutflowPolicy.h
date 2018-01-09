@@ -21,9 +21,7 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) override;
 
-  virtual const char *getName(void) const override {
-    return "BeforeOutflow";
-  }
+  virtual const char *getName(void) const override { return "BeforeOutflow"; }
 
   BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}
 

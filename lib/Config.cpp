@@ -70,8 +70,8 @@ cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
                           " inbounds when pointers flow out of functions")),
     cl::values(clEnumValN(IP_accessOnly, "access-only",
                           "check only at loads/stores for dereference")),
-    cl::values(clEnumValN(IP_none, "none",
-                          "do not check anything (except for external checks)")),
+    cl::values(clEnumValN(
+        IP_none, "none", "do not check anything (except for external checks)")),
     cl::cat(MemInstrumentCat), cl::init(IP_default));
 
 enum WitnessStrategyKind {
@@ -156,23 +156,23 @@ Config *createConfigCLI(void) {
   case CK_external_only:
     return new ExternalOnlyConfig();
   case CK_default: {
-      const char *EnvStr = std::getenv(MI_CONFIG_ENV_VAR);
+    const char *EnvStr = std::getenv(MI_CONFIG_ENV_VAR);
 
-      if (EnvStr == nullptr) {
-        return new SplayConfig(); // default Config HERE
-      }
-
-      if (0 == strcmp(EnvStr, "splay")) {
-        return new SplayConfig();
-      } else if (0 == strcmp(EnvStr, "rt_stat")) {
-        return new RTStatConfig();
-      } else if (0 == strcmp(EnvStr, "external_only")) {
-        return new ExternalOnlyConfig();
-      } else {
-        errs() << "Unknown meminstrument config name: `" << EnvStr << "'\n";
-        return new SplayConfig();
-      }
+    if (EnvStr == nullptr) {
+      return new SplayConfig(); // default Config HERE
     }
+
+    if (0 == strcmp(EnvStr, "splay")) {
+      return new SplayConfig();
+    } else if (0 == strcmp(EnvStr, "rt_stat")) {
+      return new RTStatConfig();
+    } else if (0 == strcmp(EnvStr, "external_only")) {
+      return new ExternalOnlyConfig();
+    } else {
+      errs() << "Unknown meminstrument config name: `" << EnvStr << "'\n";
+      return new SplayConfig();
+    }
+  }
   }
   llvm_unreachable("Invalid ConfigKind!");
 }
@@ -229,24 +229,24 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
-GlobalConfig* GlobalCfg = nullptr;
+GlobalConfig *GlobalCfg = nullptr;
 
 const char *getModeName(Config::MIMode M) {
   switch (M) {
-    case Config::MIMode::SETUP:
-      return "Setup";
-    case Config::MIMode::GATHER_ITARGETS:
-      return "GatherITargets";
-    case Config::MIMode::FILTER_ITARGETS:
-      return "FilterITargets";
-    case Config::MIMode::GENERATE_WITNESSES:
-      return "GenerateWitnesses";
-    case Config::MIMode::GENERATE_EXTERNAL_CHECKS:
-      return "GenerateExternalChecks";
-    case Config::MIMode::GENERATE_CHECKS:
-      return "GenerateChecks";
-    default:
-      return "[Unexpected Mode]";
+  case Config::MIMode::SETUP:
+    return "Setup";
+  case Config::MIMode::GATHER_ITARGETS:
+    return "GatherITargets";
+  case Config::MIMode::FILTER_ITARGETS:
+    return "FilterITargets";
+  case Config::MIMode::GENERATE_WITNESSES:
+    return "GenerateWitnesses";
+  case Config::MIMode::GENERATE_EXTERNAL_CHECKS:
+    return "GenerateExternalChecks";
+  case Config::MIMode::GENERATE_CHECKS:
+    return "GenerateChecks";
+  default:
+    return "[Unexpected Mode]";
   }
 }
 
@@ -288,17 +288,13 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
 GlobalConfig &GlobalConfig::get(const llvm::Module &M) {
   if (GlobalCfg == nullptr) {
     GlobalCfg = new GlobalConfig(createConfigCLI(), M);
-    DEBUG(
-      dbgs() << "Creating MemInstrument Config:\n";
-      GlobalCfg->dump(dbgs());
-    );
+    DEBUG(dbgs() << "Creating MemInstrument Config:\n";
+          GlobalCfg->dump(dbgs()););
   }
   return *GlobalCfg;
 }
 
-void GlobalConfig::release(void) {
-  delete GlobalCfg;
-}
+void GlobalConfig::release(void) { delete GlobalCfg; }
 
 void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
   Stream << "{{{ Config: " << _ConfigName << "\n";
@@ -338,9 +334,7 @@ bool SplayConfig::hasPrintWitnessGraph(void) { return false; }
 bool SplayConfig::hasSimplifyWitnessGraph(void) { return true; }
 bool SplayConfig::hasInstrumentVerbose(void) { return false; }
 
-const char *SplayConfig::getName(void) const {
-  return "Splay";
-}
+const char *SplayConfig::getName(void) const { return "Splay"; }
 
 // Implementation of ExternalOnlyConfig
 
@@ -349,7 +343,8 @@ ExternalOnlyConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
   return new BeforeOutflowPolicy(DL);
 }
 
-InstrumentationMechanism *ExternalOnlyConfig::createInstrumentationMechanism(void) {
+InstrumentationMechanism *
+ExternalOnlyConfig::createInstrumentationMechanism(void) {
   return new SplayMechanism();
 }
 
@@ -366,10 +361,7 @@ bool ExternalOnlyConfig::hasPrintWitnessGraph(void) { return false; }
 bool ExternalOnlyConfig::hasSimplifyWitnessGraph(void) { return true; }
 bool ExternalOnlyConfig::hasInstrumentVerbose(void) { return false; }
 
-const char *ExternalOnlyConfig::getName(void) const {
-  return "ExternalOnly";
-}
-
+const char *ExternalOnlyConfig::getName(void) const { return "ExternalOnly"; }
 
 // Implementation of RTStatConfig
 InstrumentationPolicy *
@@ -394,6 +386,4 @@ bool RTStatConfig::hasPrintWitnessGraph(void) { return false; }
 bool RTStatConfig::hasSimplifyWitnessGraph(void) { return false; }
 bool RTStatConfig::hasInstrumentVerbose(void) { return true; }
 
-const char *RTStatConfig::getName(void) const {
-  return "RTStat";
-}
+const char *RTStatConfig::getName(void) const { return "RTStat"; }

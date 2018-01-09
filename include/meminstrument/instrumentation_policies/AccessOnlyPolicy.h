@@ -21,9 +21,7 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) override;
 
-  virtual const char *getName(void) const override {
-    return "AccessOnly";
-  }
+  virtual const char *getName(void) const override { return "AccessOnly"; }
 
   AccessOnlyPolicy(const llvm::DataLayout &DL) : DL(DL) {}
 

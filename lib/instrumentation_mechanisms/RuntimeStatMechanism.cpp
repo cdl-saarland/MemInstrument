@@ -26,8 +26,10 @@ STATISTIC(RTStatNumNoSanStores, "The static # of marked stores");
 STATISTIC(RTStatNumWild, "The static # of unmarked memory operations");
 STATISTIC(RTStatNumNoSan, "The static # of marked memory operations");
 
-STATISTIC(RTStatNumPMDAprecise, "The static # of PMDAprecise memory operations");
-STATISTIC(RTStatNumPMDAsummary, "The static # of PMDAsummary memory operations");
+STATISTIC(RTStatNumPMDAprecise,
+          "The static # of PMDAprecise memory operations");
+STATISTIC(RTStatNumPMDAsummary,
+          "The static # of PMDAsummary memory operations");
 STATISTIC(RTStatNumPMDAlocal, "The static # of PMDAlocal memory operations");
 STATISTIC(RTStatNumPMDAbad, "The static # of PMDAbad memory operations");
 
@@ -35,10 +37,9 @@ STATISTIC(RTStatNumPMDAbad, "The static # of PMDAbad memory operations");
 // statistics to gather
 
 namespace {
-  const char *markString = "nosanitize";
-  // const char *markString = "temporallySafe";
-}
-
+const char *markString = "nosanitize";
+// const char *markString = "temporallySafe";
+} // namespace
 
 using namespace llvm;
 using namespace meminstrument;
@@ -121,7 +122,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
       continue;
     }
 
-    const char * functionAnnotation = "[missing]";
+    const char *functionAnnotation = "[missing]";
 
     if (F.getMetadata("PMDAlocal")) {
       functionAnnotation = "PMDAlocal";
@@ -156,7 +157,9 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
             unsigned Line = Loc->getLine();
             unsigned Column = Loc->getColumn();
             StringRef File = Loc->getFilename();
-            Name = (File + " - l " + std::to_string(Line) + " - c " + std::to_string(Column) + " - ").str();
+            Name = (File + " - l " + std::to_string(Line) + " - c " +
+                    std::to_string(Column) + " - ")
+                       .str();
           } else {
             Name = std::string("unknown location - ");
           }
@@ -200,7 +203,7 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
 
     for (const auto &P : StringMap) {
       uint64_t idx = P.second.idx;
-      std::string& name = P.second.str;
+      std::string &name = P.second.str;
       llvm::Value *Str = insertStringLiteral(M, name);
       Str = insertCast(StringType, Str, Builder);
       insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);

@@ -53,9 +53,7 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
-  virtual const char *getName(void) const {
-    return "Dummy";
-  }
+  virtual const char *getName(void) const { return "Dummy"; }
 
 private:
   llvm::Constant *CreateWitnessFunction = nullptr;

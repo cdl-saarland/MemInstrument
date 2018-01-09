@@ -45,6 +45,5 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
     // llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
     // RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_OptimizerLast,
-    registerMeminstrumentPass);
+    llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
 } // namespace meminstrument
