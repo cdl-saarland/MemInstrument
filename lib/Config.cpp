@@ -346,7 +346,7 @@ const char *SplayConfig::getName(void) const {
 
 InstrumentationPolicy *
 ExternalOnlyConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
-  return new NonePolicy(DL);
+  return new BeforeOutflowPolicy(DL);
 }
 
 InstrumentationMechanism *ExternalOnlyConfig::createInstrumentationMechanism(void) {
@@ -358,7 +358,7 @@ WitnessStrategy *ExternalOnlyConfig::createWitnessStrategy(void) {
 }
 
 Config::MIMode ExternalOnlyConfig::getMIMode(void) {
-  return Config::MIMode::GENERATE_CHECKS;
+  return Config::MIMode::GENERATE_EXTERNAL_CHECKS;
 }
 bool ExternalOnlyConfig::hasUseFilters(void) { return false; }
 bool ExternalOnlyConfig::hasUseExternalChecks(void) { return true; }
