@@ -33,6 +33,10 @@ static RegisterPass<DummyExternalChecksPass>
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
 #if MEMINSTRUMENT_USE_PMDA
+  PM.add(createPromoteMemoryToRegisterPass());
+  PM.add(createCFGSimplificationPass());
+  PM.add(createUnifyFunctionExitNodesPass());
+  PM.add(createBreakCriticalEdgesPass());
   PM.add(new checkoptimizer::CheckOptimizerPass());
 #endif
   PM.add(new MemInstrumentPass());
