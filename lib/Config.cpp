@@ -11,6 +11,7 @@
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
 #include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
+#include "meminstrument/instrumentation_policies/NonePolicy.h"
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 #include "meminstrument/witness_strategies/NoneStrategy.h"
 
@@ -58,6 +59,7 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
 enum InstrumentationPolicyKind {
   IP_beforeOutflow,
   IP_accessOnly,
+  IP_none,
   IP_default,
 };
 
@@ -68,6 +70,8 @@ cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
                           " inbounds when pointers flow out of functions")),
     cl::values(clEnumValN(IP_accessOnly, "access-only",
                           "check only at loads/stores for dereference")),
+    cl::values(clEnumValN(IP_none, "none",
+                          "do not check anything (except for external checks)")),
     cl::cat(MemInstrumentCat), cl::init(IP_default));
 
 enum WitnessStrategyKind {
@@ -104,6 +108,7 @@ cl::opt<Config::MIMode> MIModeOpt(
 enum ConfigKind {
   CK_splay,
   CK_rt_stat,
+  CK_external_only,
   CK_default,
 };
 
@@ -111,6 +116,8 @@ cl::opt<ConfigKind> ConfigKindOpt(
     "mi-config", cl::desc("Choose base configuration"),
     cl::values(clEnumValN(CK_splay, "splay",
                           "splay-tree-based instrumentation")),
+    cl::values(clEnumValN(CK_external_only, "external_only",
+                          "instrumentation that inserts only external checks")),
     cl::values(
         clEnumValN(CK_rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only")),
@@ -146,6 +153,8 @@ Config *createConfigCLI(void) {
     return new SplayConfig();
   case CK_rt_stat:
     return new RTStatConfig();
+  case CK_external_only:
+    return new ExternalOnlyConfig();
   case CK_default: {
       const char *EnvStr = std::getenv(MI_CONFIG_ENV_VAR);
 
@@ -157,6 +166,8 @@ Config *createConfigCLI(void) {
         return new SplayConfig();
       } else if (0 == strcmp(EnvStr, "rt_stat")) {
         return new RTStatConfig();
+      } else if (0 == strcmp(EnvStr, "external_only")) {
+        return new ExternalOnlyConfig();
       } else {
         errs() << "Unknown meminstrument config name: `" << EnvStr << "'\n";
         return new SplayConfig();
@@ -186,6 +197,8 @@ InstrumentationPolicy *createInstrumentationPolicyCLI(const DataLayout &DL) {
     return new BeforeOutflowPolicy(DL);
   case IP_accessOnly:
     return new AccessOnlyPolicy(DL);
+  case IP_none:
+    return new NonePolicy(DL);
   case IP_default:
     return nullptr;
   }
@@ -327,6 +340,34 @@ bool SplayConfig::hasInstrumentVerbose(void) { return false; }
 
 const char *SplayConfig::getName(void) const {
   return "Splay";
+}
+
+// Implementation of ExternalOnlyConfig
+
+InstrumentationPolicy *
+ExternalOnlyConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
+  return new NonePolicy(DL);
+}
+
+InstrumentationMechanism *ExternalOnlyConfig::createInstrumentationMechanism(void) {
+  return new SplayMechanism();
+}
+
+WitnessStrategy *ExternalOnlyConfig::createWitnessStrategy(void) {
+  return new AfterInflowStrategy();
+}
+
+Config::MIMode ExternalOnlyConfig::getMIMode(void) {
+  return Config::MIMode::GENERATE_CHECKS;
+}
+bool ExternalOnlyConfig::hasUseFilters(void) { return false; }
+bool ExternalOnlyConfig::hasUseExternalChecks(void) { return true; }
+bool ExternalOnlyConfig::hasPrintWitnessGraph(void) { return false; }
+bool ExternalOnlyConfig::hasSimplifyWitnessGraph(void) { return true; }
+bool ExternalOnlyConfig::hasInstrumentVerbose(void) { return false; }
+
+const char *ExternalOnlyConfig::getName(void) const {
+  return "ExternalOnly";
 }
 
 

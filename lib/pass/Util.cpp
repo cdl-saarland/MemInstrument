@@ -63,4 +63,24 @@ bool hasNoInstrument(GlobalObject *O) {
 bool hasNoInstrument(Instruction *O) {
   return hasNoInstrumentImpl(O->getMetadata(MEMINSTRUMENT_MD));
 }
+
+size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
+  auto *Ty = V->getType();
+  assert(Ty->isPointerTy() && "Only pointer types allowed!");
+
+  auto *PointeeType = Ty->getPointerElementType();
+
+  if (PointeeType->isFunctionTy()) {
+    return 0;
+  }
+
+  if (!PointeeType->isSized()) {
+    dbgs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";
+    llvm_unreachable("Only pointers to sized types allowed!");
+  }
+
+  size_t Size = DL.getTypeStoreSize(PointeeType);
+
+  return Size;
+}
 } // namespace meminstrument

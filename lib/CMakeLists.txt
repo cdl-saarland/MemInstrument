@@ -25,6 +25,7 @@ add_meminstrument_library(meminstrument
   instrumentation_policies/InstrumentationPolicy.cpp
   instrumentation_policies/BeforeOutflowPolicy.cpp
   instrumentation_policies/AccessOnlyPolicy.cpp
+  instrumentation_policies/NonePolicy.cpp
   witness_strategies/WitnessStrategy.cpp
   witness_strategies/AfterInflowStrategy.cpp
   witness_strategies/NoneStrategy.cpp

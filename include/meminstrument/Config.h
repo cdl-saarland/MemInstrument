@@ -85,6 +85,25 @@ public:
   virtual const char *getName(void) const override;
 };
 
+/// A configuration to perform only instrumentation for external checks.
+class ExternalOnlyConfig : public Config {
+public:
+  virtual ~ExternalOnlyConfig(void) {}
+
+  virtual InstrumentationPolicy *
+  createInstrumentationPolicy(const llvm::DataLayout &D) override;
+  virtual InstrumentationMechanism *
+  createInstrumentationMechanism(void) override;
+  virtual WitnessStrategy *createWitnessStrategy(void) override;
+  virtual MIMode getMIMode(void) override;
+  virtual bool hasUseFilters(void) override;
+  virtual bool hasUseExternalChecks(void) override;
+  virtual bool hasPrintWitnessGraph(void) override;
+  virtual bool hasSimplifyWitnessGraph(void) override;
+  virtual bool hasInstrumentVerbose(void) override;
+  virtual const char *getName(void) const override;
+};
+
 /// A configuration to perform instrumentation for collecting run-time
 /// statistics.
 class RTStatConfig : public Config {

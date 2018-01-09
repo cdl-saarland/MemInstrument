@@ -12,6 +12,7 @@
 #ifndef MEMINSTRUMENT_PASS_UTIL_H
 #define MEMINSTRUMENT_PASS_UTIL_H
 
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/GlobalObject.h"
 
 #include "llvm/Support/Debug.h"
@@ -43,6 +44,9 @@ void setNoInstrument(llvm::Instruction *I);
 bool hasNoInstrument(llvm::GlobalObject *O);
 
 bool hasNoInstrument(llvm::Instruction *I);
+
+size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V);
+
 } // namespace meminstrument
 
 #endif
