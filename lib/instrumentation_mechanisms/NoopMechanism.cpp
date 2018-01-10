@@ -82,17 +82,17 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   llvm::APInt lowerVal = APInt::getNullValue(numbits);
 
   LowerBoundLocation = new GlobalVariable(
-      M, SizeType, /*isConstant*/ false, GlobalValue::ExternalLinkage,
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, lowerVal), "mi_lower_bound_location");
 
   llvm::APInt upperVal = APInt::getAllOnesValue(numbits);
 
   UpperBoundLocation = new GlobalVariable(
-      M, SizeType, /*isConstant*/ false, GlobalValue::ExternalLinkage,
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, upperVal), "mi_upper_bound_location");
 
   CheckResultLocation = new GlobalVariable(
-      M, SizeType, /*isConstant*/ false, GlobalValue::ExternalLinkage,
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
 
   return true;
