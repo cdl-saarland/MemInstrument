@@ -39,12 +39,13 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
 
   auto *Ptr2Int = Builder.CreatePtrToInt(Target.Instrumentee, SizeType);
 
-  auto *Lower = Builder.CreateLoad(LowerBoundLocation, /* isVolatile */true);
+  auto *Lower = Builder.CreateLoad(LowerBoundLocation, /* isVolatile */ true);
   auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
   Value *AccessUpper = nullptr;
   if (Target.HasConstAccessSize) {
-    AccessUpper = Builder.CreateAdd(Ptr2Int, ConstantInt::get(SizeType, Target.AccessSize));
+    AccessUpper = Builder.CreateAdd(
+        Ptr2Int, ConstantInt::get(SizeType, Target.AccessSize));
   } else {
     AccessUpper = Builder.CreateAdd(Ptr2Int, Target.AccessSizeVal);
   }
@@ -56,7 +57,8 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
 
   auto Unreach = SplitBlockAndInsertIfThen(Or, Target.Location, true);
   Builder.SetInsertPoint(Unreach);
-  Builder.CreateStore(ConstantInt::get(SizeType, 1), CheckResultLocation, /* isVolatile */ true);
+  Builder.CreateStore(ConstantInt::get(SizeType, 1), CheckResultLocation,
+                      /* isVolatile */ true);
 
   ++NoopMechanismAnnotated;
 }
@@ -96,22 +98,20 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   return true;
 }
 
-std::shared_ptr<Witness>
-NoopMechanism::insertWitnessPhi(ITarget &) const {
+std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
   return std::shared_ptr<Witness>(nullptr);
 }
 
 void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
-                                                   std::shared_ptr<Witness> &,
-                                                   llvm::BasicBlock *) const {
+                                            std::shared_ptr<Witness> &,
+                                            llvm::BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
 std::shared_ptr<Witness>
 NoopMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
-                                          std::shared_ptr<Witness> &) const {
+                                   std::shared_ptr<Witness> &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
   return std::shared_ptr<Witness>(nullptr);
 }
-

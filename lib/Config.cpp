@@ -51,8 +51,9 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
                           "only insert dummy calls for instrumentation")),
     cl::values(clEnumValN(IM_splay, "splay",
                           "use splay tree for instrumentation")),
-    cl::values(clEnumValN(IM_noop, "noop",
-                          "use noop instrumentation that just adds performance overhead")),
+    cl::values(clEnumValN(
+        IM_noop, "noop",
+        "use noop instrumentation that just adds performance overhead")),
     cl::values(
         clEnumValN(IM_rt_stat, "rt_stat",
                    "only instrument for collecting run-time statistics")),
@@ -399,7 +400,6 @@ bool NoopConfig::hasSimplifyWitnessGraph(void) { return false; }
 bool NoopConfig::hasInstrumentVerbose(void) { return false; }
 
 const char *NoopConfig::getName(void) const { return "Noop"; }
-
 
 // Implementation of RTStatConfig
 InstrumentationPolicy *

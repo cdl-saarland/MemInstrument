@@ -23,9 +23,7 @@ struct NoopWitness : public Witness {
 
   virtual llvm::Value *getUpperBound(void) const override;
 
-  static bool classof(const Witness *W) {
-    return W->getKind() == WK_Noop;
-  }
+  static bool classof(const Witness *W) { return W->getKind() == WK_Noop; }
 };
 
 class NoopMechanism : public InstrumentationMechanism {
@@ -67,4 +65,3 @@ private:
 } // namespace meminstrument
 
 #endif
-

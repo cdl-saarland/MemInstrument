@@ -59,25 +59,27 @@ void filterByAnnotation(ITargetVector &Vec) {
   }
 }
 
-cl::opt<double> RandomFilteringRatioOpt(
-    "mi-random-filter-ratio",
-    cl::desc("ratio of accesses that should not be instrumented, should be between 0 and 1"),
-    cl::init(-1.0) // default
-);
+cl::opt<double>
+    RandomFilteringRatioOpt("mi-random-filter-ratio",
+                            cl::desc("ratio of accesses that should not be "
+                                     "instrumented, should be between 0 and 1"),
+                            cl::init(-1.0) // default
+    );
 
-cl::opt<int> RandomFilteringSeedOpt(
-    "mi-random-filter-seed", cl::desc("random seed for filtering, only relevant if mi-random-filter is present"),
-    cl::init(424242) // default
-);
-
+cl::opt<int>
+    RandomFilteringSeedOpt("mi-random-filter-seed",
+                           cl::desc("random seed for filtering, only relevant "
+                                    "if mi-random-filter is present"),
+                           cl::init(424242) // default
+    );
 
 void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
   ITargetVector cpy = Vec;
-  std::srand (seed);
+  std::srand(seed);
 
   std::random_shuffle(cpy.begin(), cpy.end());
 
-  size_t bound = (size_t)(((double) cpy.size()) * filter_ratio);
+  size_t bound = (size_t)(((double)cpy.size()) * filter_ratio);
 
   for (size_t i = 0; i < bound; ++i) {
     cpy[i]->invalidate();
