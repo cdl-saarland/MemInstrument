@@ -53,7 +53,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec,
     auto *L = IT->Location;
     if (L->getMetadata("checkearly")) {
       auto *A = dyn_cast<Argument>(IT->Instrumentee);
-      if (A && IT->AccessSizeVal == nullptr) {
+      if (A && IT->HasConstAccessSize) {
         // create a new ITarget for the beginning of the function
         auto res = std::make_shared<ITarget>(A, EntryLoc, IT->AccessSize,
                                              /* RequiresExplicitBounds */ true);

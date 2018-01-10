@@ -124,6 +124,26 @@ public:
   virtual const char *getName(void) const override;
 };
 
+/// A configuration to perform noop instrumentation that just adds performance
+/// overheads.
+class NoopConfig : public Config {
+public:
+  virtual ~NoopConfig(void) {}
+
+  virtual InstrumentationPolicy *
+  createInstrumentationPolicy(const llvm::DataLayout &D) override;
+  virtual InstrumentationMechanism *
+  createInstrumentationMechanism(void) override;
+  virtual WitnessStrategy *createWitnessStrategy(void) override;
+  virtual MIMode getMIMode(void) override;
+  virtual bool hasUseFilters(void) override;
+  virtual bool hasUseExternalChecks(void) override;
+  virtual bool hasPrintWitnessGraph(void) override;
+  virtual bool hasSimplifyWitnessGraph(void) override;
+  virtual bool hasInstrumentVerbose(void) override;
+  virtual const char *getName(void) const override;
+};
+
 /// Class for the actual configuration items in use.
 /// On a normal run, only one of these should be created in the first call of
 /// the static GlobalConfig::get() method, following calls just provide the

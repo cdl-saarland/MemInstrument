@@ -14,6 +14,7 @@
 #include "llvm/IR/Instructions.h"
 
 #include <algorithm>
+#include <math.h>
 
 #include "meminstrument/pass/Util.h"
 
@@ -58,6 +59,31 @@ void filterByAnnotation(ITargetVector &Vec) {
   }
 }
 
+cl::opt<double> RandomFilteringRatioOpt(
+    "mi-random-filter-ratio",
+    cl::desc("ratio of accesses that should not be instrumented, should be between 0 and 1"),
+    cl::init(-1.0) // default
+);
+
+cl::opt<int> RandomFilteringSeedOpt(
+    "mi-random-filter-seed", cl::desc("random seed for filtering, only relevant if mi-random-filter is present"),
+    cl::init(424242) // default
+);
+
+
+void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
+  ITargetVector cpy = Vec;
+  std::srand (seed);
+
+  std::random_shuffle(cpy.begin(), cpy.end());
+
+  size_t bound = (size_t)(((double) cpy.size()) * filter_ratio);
+
+  for (size_t i = 0; i < bound; ++i) {
+    cpy[i]->invalidate();
+  }
+}
+
 } // namespace
 
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
@@ -66,9 +92,13 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
     return;
   }
 
-  filterByAnnotation(Vec);
+  if (RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1) {
+    filterByRandom(Vec, RandomFilteringSeedOpt, RandomFilteringRatioOpt);
+  } else {
+    filterByAnnotation(Vec);
 
-  filterByDominance(P, Vec, F);
+    filterByDominance(P, Vec, F);
+  }
 
   DEBUG_ALSO_WITH_TYPE("meminstrument-itargetfilter",
                        dbgs()

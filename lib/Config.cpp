@@ -7,6 +7,7 @@
 #include "meminstrument/Config.h"
 
 #include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/NoopMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
@@ -40,6 +41,7 @@ enum InstrumentationMechanismKind {
   IM_dummy,
   IM_splay,
   IM_rt_stat,
+  IM_noop,
   IM_default,
 };
 
@@ -49,6 +51,8 @@ cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
                           "only insert dummy calls for instrumentation")),
     cl::values(clEnumValN(IM_splay, "splay",
                           "use splay tree for instrumentation")),
+    cl::values(clEnumValN(IM_noop, "noop",
+                          "use noop instrumentation that just adds performance overhead")),
     cl::values(
         clEnumValN(IM_rt_stat, "rt_stat",
                    "only instrument for collecting run-time statistics")),
@@ -109,6 +113,7 @@ enum ConfigKind {
   CK_splay,
   CK_rt_stat,
   CK_external_only,
+  CK_noop,
   CK_default,
 };
 
@@ -121,6 +126,9 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(CK_rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only")),
+    cl::values(
+        clEnumValN(CK_noop, "noop",
+                   "noop instrumentation that just adds runtime overheads")),
     cl::cat(MemInstrumentCat), cl::init(CK_default));
 
 cl::opt<cl::boolOrDefault>
@@ -153,6 +161,8 @@ Config *createConfigCLI(void) {
     return new SplayConfig();
   case CK_rt_stat:
     return new RTStatConfig();
+  case CK_noop:
+    return new NoopConfig();
   case CK_external_only:
     return new ExternalOnlyConfig();
   case CK_default: {
@@ -185,6 +195,8 @@ InstrumentationMechanism *createInstrumentationMechanismCLI(void) {
     return new SplayMechanism();
   case IM_rt_stat:
     return new RuntimeStatMechanism();
+  case IM_noop:
+    return new NoopMechanism();
   case IM_default:
     return nullptr;
   }
@@ -362,6 +374,32 @@ bool ExternalOnlyConfig::hasSimplifyWitnessGraph(void) { return true; }
 bool ExternalOnlyConfig::hasInstrumentVerbose(void) { return false; }
 
 const char *ExternalOnlyConfig::getName(void) const { return "ExternalOnly"; }
+
+// Implementation of NoopConfig
+InstrumentationPolicy *
+NoopConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
+  return new AccessOnlyPolicy(DL);
+}
+
+InstrumentationMechanism *NoopConfig::createInstrumentationMechanism(void) {
+  return new NoopMechanism();
+}
+
+WitnessStrategy *NoopConfig::createWitnessStrategy(void) {
+  return new NoneStrategy();
+}
+
+Config::MIMode NoopConfig::getMIMode(void) {
+  return Config::MIMode::GENERATE_CHECKS;
+}
+bool NoopConfig::hasUseFilters(void) { return true; }
+bool NoopConfig::hasUseExternalChecks(void) { return false; }
+bool NoopConfig::hasPrintWitnessGraph(void) { return false; }
+bool NoopConfig::hasSimplifyWitnessGraph(void) { return false; }
+bool NoopConfig::hasInstrumentVerbose(void) { return false; }
+
+const char *NoopConfig::getName(void) const { return "Noop"; }
+
 
 // Implementation of RTStatConfig
 InstrumentationPolicy *
