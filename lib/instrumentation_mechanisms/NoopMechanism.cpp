@@ -59,6 +59,7 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
   Builder.SetInsertPoint(Unreach);
   Builder.CreateStore(ConstantInt::get(SizeType, 1), CheckResultLocation,
                       /* isVolatile */ true);
+  Builder.CreateCall(getFailFunction());
 
   ++NoopMechanismAnnotated;
 }
@@ -68,8 +69,7 @@ void NoopMechanism::materializeBounds(ITarget &Target) const {
 }
 
 llvm::Constant *NoopMechanism::getFailFunction(void) const {
-  llvm_unreachable("FailFunction calls are not supported by this mechanism!");
-  return nullptr;
+  return FailFunction;
 }
 
 bool NoopMechanism::initialize(llvm::Module &M) {
@@ -94,6 +94,8 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   CheckResultLocation = new GlobalVariable(
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
+
+  FailFunction = M.getOrInsertFunction("abort", Type::getVoidTy(Ctx));
 
   return true;
 }

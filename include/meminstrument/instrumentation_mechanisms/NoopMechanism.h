@@ -54,12 +54,14 @@ public:
   virtual ~NoopMechanism(void) {}
 
 private:
-  llvm::Type *SizeType;
+  llvm::Type *SizeType = nullptr;
 
-  llvm::Value *LowerBoundLocation;
-  llvm::Value *UpperBoundLocation;
+  llvm::Constant *FailFunction = nullptr;
 
-  llvm::Value *CheckResultLocation;
+  llvm::Value *LowerBoundLocation = nullptr;
+  llvm::Value *UpperBoundLocation = nullptr;
+
+  llvm::Value *CheckResultLocation = nullptr;
 };
 
 } // namespace meminstrument
