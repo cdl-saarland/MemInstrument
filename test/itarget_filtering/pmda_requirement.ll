@@ -1,5 +1,5 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only meminstrument-itargetprovider %s -S > /dev/null 2> %t1.log
-; RUN: %opt %loadlibs  -meminstrument -mi-config=splay -mi-mode=filteritargets -debug-only meminstrument-itargetfilter %s -S > /dev/null 2> %t2.log
+; RUN: %opt %loadlibs  -meminstrument -mi-use-extchecks -mi-config=splay -mi-mode=filteritargets -debug-only meminstrument-itargetfilter %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "<arrayidx, entry::[store], 4B, ul_>" %t1.log
 ; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t1.log
 ; RUN: %not fgrep "<arrayidx, entry::[store], 4B, ul_>" %t2.log

@@ -5,6 +5,7 @@
 ; RUN: %clink -ldl -l:libsplay.a -o %t3 %t1.ll
 ; RUN: %not %t3 2> %t4.log
 ; RUN: fgrep "Memory safety violation" %t4.log
+; REQUIRES: no_pmda
 
 define i32 @main() {
 test_bb:

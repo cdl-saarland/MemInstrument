@@ -4,6 +4,7 @@
 ; RUN: fgrep "generating external checks with pass" %t2.log
 ; RUN: %clink -ldl -l:libsplay.a -o %t3 %t1.ll
 ; RUN: %t3
+; REQUIRES: no_pmda
 
 define i32 @main() {
 test_bb:

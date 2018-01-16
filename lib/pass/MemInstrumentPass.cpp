@@ -5,6 +5,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/pass/MemInstrumentPass.h"
+#include "meminstrument/Definitions.h"
 
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
@@ -15,11 +16,16 @@
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 
-#include "CheckOptimizer/CheckOptimizerPass.h"
-
 #include "llvm/IR/Dominators.h"
 
 #include "meminstrument/pass/Util.h"
+
+#if MEMINSTRUMENT_USE_PMDA
+#include "CheckOptimizer/CheckOptimizerPass.h"
+#define EXTERNAL_PASS checkoptimizer::CheckOptimizerPass
+#else
+#define EXTERNAL_PASS DummyExternalChecksPass
+#endif
 
 using namespace meminstrument;
 using namespace llvm;
@@ -76,7 +82,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     filterITargets(this, Targets, F);
 
-    auto &ECP = getAnalysis<checkoptimizer::CheckOptimizerPass>();
+    auto &ECP = getAnalysis<EXTERNAL_PASS>();
     if (CFG.hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
@@ -88,6 +94,13 @@ bool MemInstrumentPass::runOnModule(Module &M) {
           for (auto &Target
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
+
+    DEBUG_ALSO_WITH_TYPE(
+        "meminstrument-itargetfilter",
+        dbgs() << "remaining instrumentation targets after filter:"
+               << "\n";
+        for (auto &Target
+             : Targets) { dbgs() << "  " << *Target << "\n"; });
 
     if (Mode == Config::MIMode::FILTER_ITARGETS)
       continue;
@@ -119,7 +132,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<checkoptimizer::CheckOptimizerPass>();
+  AU.addRequired<EXTERNAL_PASS>();
 }
 
 char MemInstrumentPass::ID = 0;

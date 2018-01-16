@@ -28,11 +28,13 @@ static RegisterPass<MemInstrumentPass>
                               false,  // CFGOnly
                               false); // isAnalysis
 
+#if !MEMINSTRUMENT_USE_PMDA
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",
                                     "Dummy External Checks",
                                     false, // CFGOnly
                                     true); // isAnalysis
+#endif
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
