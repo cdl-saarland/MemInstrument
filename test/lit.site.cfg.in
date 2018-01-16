@@ -20,7 +20,7 @@ if '@MEMINSTRUMENT_USE_PMDA@' in ['1', 'ON']:
 else:
     config.available_features.add("no_pmda")
 
-config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMmeminstrument.so' + ' -load ' + config.llvm_lib_dir + '/LLVMcheckoptimizer.so'))
+config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMmeminstrument.so'))
 
 # Let the main config do the real work.
 lit_config.load_config(config, "@LLVM_SOURCE_DIR@/projects/meminstrument/test/lit.cfg")

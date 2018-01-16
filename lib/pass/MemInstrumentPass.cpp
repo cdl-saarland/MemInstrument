@@ -15,6 +15,8 @@
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 
+#include "CheckOptimizer/CheckOptimizerPass.h"
+
 #include "llvm/IR/Dominators.h"
 
 #include "meminstrument/pass/Util.h"
@@ -74,7 +76,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     filterITargets(this, Targets, F);
 
-    auto &ECP = getAnalysis<DummyExternalChecksPass>();
+    auto &ECP = getAnalysis<checkoptimizer::CheckOptimizerPass>();
     if (CFG.hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
@@ -117,7 +119,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<DummyExternalChecksPass>();
+  AU.addRequired<checkoptimizer::CheckOptimizerPass>();
 }
 
 char MemInstrumentPass::ID = 0;
