@@ -1,6 +1,6 @@
 ; RUN: %opt %loadlibs -meminstrument %s -mi-config=noop -mi-random-filter-ratio=0.4 -mi-random-filter-seed=424344 -S > %t1.ll
 ; RUN: egrep "store volatile .* @mi_check_result_location" %t1.ll | wc -l | grep 6
-; RUN: clang -O3 -c -S -o %t2.s %t1.ll
+; RUN: %clang -O3 -c -S -o %t2.s %t1.ll
 ; RUN: egrep "\<ja\>" %t2.s | wc -l | grep 12
 
 declare void @foo(i32)
