@@ -82,6 +82,13 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     filterITargets(this, Targets, F);
 
+    DEBUG_ALSO_WITH_TYPE(
+        "meminstrument-itargetfilter",
+        dbgs() << "remaining instrumentation targets after filter:"
+               << "\n";
+        for (auto &Target
+             : Targets) { dbgs() << "  " << *Target << "\n"; });
+
     auto &ECP = getAnalysis<EXTERNAL_PASS>();
     if (CFG.hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
@@ -94,13 +101,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
           for (auto &Target
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
-
-    DEBUG_ALSO_WITH_TYPE(
-        "meminstrument-itargetfilter",
-        dbgs() << "remaining instrumentation targets after filter:"
-               << "\n";
-        for (auto &Target
-             : Targets) { dbgs() << "  " << *Target << "\n"; });
 
     if (Mode == Config::MIMode::FILTER_ITARGETS)
       continue;
