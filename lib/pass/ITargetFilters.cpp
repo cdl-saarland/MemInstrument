@@ -99,8 +99,9 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   filterByDominance(P, Vec, F);
 }
 
-void meminstrument::filterITargetsRandomly(std::map<llvm::Function *, ITargetVector> TargetMap) {
-  if (! (RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
+void meminstrument::filterITargetsRandomly(
+    std::map<llvm::Function *, ITargetVector> TargetMap) {
+  if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
   }
   ITargetVector cpy;

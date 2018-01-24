@@ -88,7 +88,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                << "\n";
         for (auto &Target
              : Targets) { dbgs() << "  " << *Target << "\n"; });
-
   }
 
   filterITargetsRandomly(TargetMap);
