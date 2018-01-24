@@ -393,7 +393,7 @@ WitnessStrategy *NoopConfig::createWitnessStrategy(void) {
 Config::MIMode NoopConfig::getMIMode(void) {
   return Config::MIMode::GENERATE_CHECKS;
 }
-bool NoopConfig::hasUseFilters(void) { return true; }
+bool NoopConfig::hasUseFilters(void) { return false; }
 bool NoopConfig::hasUseExternalChecks(void) { return false; }
 bool NoopConfig::hasPrintWitnessGraph(void) { return false; }
 bool NoopConfig::hasSimplifyWitnessGraph(void) { return false; }
