@@ -58,14 +58,14 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   if (Mode == Config::MIMode::SETUP)
     return true;
 
-  ITargetVector Targets;
+  std::map<llvm::Function *, ITargetVector> TargetMap;
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F)) {
       continue;
     }
 
-    Targets.clear();
+    auto &Targets = TargetMap[&F];
 
     DEBUG(dbgs() << "MemInstrumentPass: processing function `"
                  << F.getName().str() << "`\n";);
@@ -88,6 +88,17 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                << "\n";
         for (auto &Target
              : Targets) { dbgs() << "  " << *Target << "\n"; });
+
+  }
+
+  filterITargetsRandomly(TargetMap);
+
+  for (auto &F : M) {
+    if (F.empty() || hasNoInstrument(&F)) {
+      continue;
+    }
+
+    auto &Targets = TargetMap[&F];
 
     auto &ECP = getAnalysis<EXTERNAL_PASS>();
     if (CFG.hasUseExternalChecks()) {

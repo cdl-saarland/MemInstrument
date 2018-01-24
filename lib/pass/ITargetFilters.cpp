@@ -73,18 +73,18 @@ cl::opt<int>
                            cl::init(424242) // default
     );
 
-void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
-  ITargetVector cpy = Vec;
-  std::srand(seed);
-
-  std::random_shuffle(cpy.begin(), cpy.end());
-
-  size_t bound = (size_t)(((double)cpy.size()) * filter_ratio);
-
-  for (size_t i = 0; i < bound; ++i) {
-    cpy[i]->invalidate();
-  }
-}
+// void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
+//   ITargetVector cpy = Vec;
+//   std::srand(seed);
+//
+//   std::random_shuffle(cpy.begin(), cpy.end());
+//
+//   size_t bound = (size_t)(((double)cpy.size()) * filter_ratio);
+//
+//   for (size_t i = 0; i < bound; ++i) {
+//     cpy[i]->invalidate();
+//   }
+// }
 
 } // namespace
 
@@ -94,11 +94,26 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
     return;
   }
 
-  if (RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1) {
-    filterByRandom(Vec, RandomFilteringSeedOpt, RandomFilteringRatioOpt);
-  } else {
-    filterByAnnotation(Vec);
+  filterByAnnotation(Vec);
 
-    filterByDominance(P, Vec, F);
+  filterByDominance(P, Vec, F);
+}
+
+void meminstrument::filterITargetsRandomly(std::map<llvm::Function *, ITargetVector> TargetMap) {
+  if (! (RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
+    return;
+  }
+  ITargetVector cpy;
+  for (const auto &p : TargetMap) {
+    cpy.insert(cpy.end(), p.second.begin(), p.second.end());
+  }
+  std::srand(RandomFilteringSeedOpt);
+
+  std::random_shuffle(cpy.begin(), cpy.end());
+
+  size_t bound = (size_t)(((double)cpy.size()) * RandomFilteringRatioOpt);
+
+  for (size_t i = 0; i < bound; ++i) {
+    cpy[i]->invalidate();
   }
 }
