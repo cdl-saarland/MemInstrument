@@ -16,7 +16,7 @@ namespace meminstrument {
 
 void filterITargets(llvm::Pass *P, ITargetVector &Vec, llvm::Function &F);
 
-void filterITargetsRandomly(
+void filterITargetsRandomly(llvm::Pass *ParentPass,
     std::map<llvm::Function *, ITargetVector> TargetMap);
 
 } // namespace meminstrument

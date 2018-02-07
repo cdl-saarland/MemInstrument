@@ -9,11 +9,15 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
+#include "meminstrument/perf_data.h"
+
 #include "llvm/ADT/Statistic.h"
+// #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
 #include <algorithm>
+#include <string>
 #include <math.h>
 
 #include "meminstrument/pass/Util.h"
@@ -68,10 +72,25 @@ cl::opt<double>
 
 cl::opt<int>
     RandomFilteringSeedOpt("mi-random-filter-seed",
-                           cl::desc("random seed for filtering, only relevant "
-                                    "if mi-random-filter is present"),
+                           cl::desc("random seed for filtering"),
                            cl::init(424242) // default
     );
+
+enum FilterOrdering {
+  FO_random,
+  FO_hottest,
+  FO_coolest,
+};
+
+cl::opt<FilterOrdering>
+    FilterOrderingOpt("mi-filter-ordering",
+                      cl::desc("strategy for filtering arbitrary checks"),
+                      cl::values(clEnumValN(FO_random, "random", "filter checks randomly")),
+                      cl::values(clEnumValN(FO_hottest, "hottest", "filter hottest checks")),
+                      cl::values(clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
+                      cl::init(FO_random) // default
+    );
+
 
 // void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
 //   ITargetVector cpy = Vec;
@@ -86,6 +105,34 @@ cl::opt<int>
 //   }
 // }
 
+// void filterByLoopDepth(Pass *ParentPass, ITargetVector &Vec, Function &F, unsigned removeFromInnermost, unsigned removeFromOutermost) {
+//   const auto &LI = ParentPass->getAnalysis<LoopInfo>(F);
+//
+//   // remove checks from the `removeFromOutermost` outermost loop levels
+//   // and from the `removeFromInnermost` innermost loop levels
+//   // if both values are 0, this is a no-op
+//
+//   unsigned MaxLoopDepth = 0;
+//
+//   for (auto &i : Vec) {
+//     BasicBlock *BB = i->Location->getParent()
+//     unsigned depth = LI.getLoopDepth(BB);
+//     if (depth > MaxLoopDepth) {
+//       MaxLoopDepth = depth;
+//     }
+//   }
+//
+//   for (auto &i : Vec) {
+//     BasicBlock *BB = i->Location->getParent()
+//     unsigned depth = LI.getLoopDepth(BB);
+//     if (depth < removeFromOutermost) {
+//       i->invalidate();
+//     }
+//   }
+// }
+
+
+
 } // namespace
 
 void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
@@ -99,7 +146,20 @@ void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
   filterByDominance(P, Vec, F);
 }
 
-void meminstrument::filterITargetsRandomly(
+uint64_t extractAccessId(Instruction *I) {
+  if (auto *N = I->getMetadata("mi_access_id")) {
+    assert(N->getNumOperands() == 1);
+
+    assert(isa<MDString>(N->getOperand(0)));
+    auto *Str = cast<MDString>(N->getOperand(0));
+    return std::stoi(Str->getString());
+  } else {
+    assert(false && "Missing access id metadata!");
+    return 0;
+  }
+}
+
+void meminstrument::filterITargetsRandomly(Pass *ParentPass,
     std::map<llvm::Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
@@ -111,6 +171,25 @@ void meminstrument::filterITargetsRandomly(
   std::srand(RandomFilteringSeedOpt);
 
   std::random_shuffle(cpy.begin(), cpy.end());
+
+  if (FilterOrderingOpt != FO_random)
+  std::stable_sort(cpy.begin(), cpy.end(), [&](const std::shared_ptr<ITarget> &a, const std::shared_ptr<ITarget> &b){
+      Function *funA = a->Location->getParent()->getParent();
+      Function *funB = b->Location->getParent()->getParent();
+      Module *mod = funA->getParent();
+      assert(mod == funB->getParent());
+
+      const char* funAname = funA->getName().str().c_str();
+      const char* funBname = funB->getName().str().c_str();
+      const char* modname = mod->getName().str().c_str();
+
+      uint64_t idxA = extractAccessId(a->Location);
+      uint64_t idxB = extractAccessId(b->Location);
+
+      unsigned heatA = getHotnessIndex(modname, funAname, idxA);
+      unsigned heatB = getHotnessIndex(modname, funBname, idxB);
+      return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB) : (heatA > heatB);
+      });
 
   size_t bound = (size_t)(((double)cpy.size()) * RandomFilteringRatioOpt);
 

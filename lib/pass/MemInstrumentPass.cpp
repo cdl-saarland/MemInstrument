@@ -16,6 +16,7 @@
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 
+// #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Dominators.h"
 
 #include "meminstrument/pass/Util.h"
@@ -34,6 +35,28 @@ MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 void MemInstrumentPass::releaseMemory(void) { GlobalConfig::release(); }
 
+namespace {
+
+void labelAccesses(Module &M) {
+  // This heavily relies on clang and llvm behaving deterministically
+  // (which may or may not be the case)
+  auto &Ctx = M.getContext();
+  for (auto &F : M) {
+    uint64_t idx = 0;
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (isa<StoreInst>(&I) || isa<LoadInst>(&I)) {
+          MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, std::to_string(idx++)));
+          I.setMetadata("mi_access_id", N);
+        }
+      }
+    }
+
+  }
+}
+
+}
+
 bool MemInstrumentPass::runOnModule(Module &M) {
 
   if (M.getName().endswith("tools/timeit.c")) {
@@ -42,6 +65,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                  << "`\n";);
     return false;
   }
+
+  labelAccesses(M);
 
   auto &CFG = GlobalConfig::get(M);
 
@@ -90,7 +115,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
              : Targets) { dbgs() << "  " << *Target << "\n"; });
   }
 
-  filterITargetsRandomly(TargetMap);
+  filterITargetsRandomly(this, TargetMap);
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F)) {
@@ -142,6 +167,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
+
+  // AU.addRequired<LoopInfoWrapperPass>(); // TODO put into #if?
+
   AU.addRequired<EXTERNAL_PASS>();
 }
 

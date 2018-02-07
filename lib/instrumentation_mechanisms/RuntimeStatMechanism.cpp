@@ -153,21 +153,36 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
 
         if (Kind != nullptr) {
           std::string Name;
-          if (DILocation *Loc = I.getDebugLoc()) {
-            unsigned Line = Loc->getLine();
-            unsigned Column = Loc->getColumn();
-            StringRef File = Loc->getFilename();
-            Name = (File + " - l " + std::to_string(Line) + " - c " +
-                    std::to_string(Column) + " - ")
-                       .str();
+
+          if (auto *N = I.getMetadata("mi_access_id")) {
+            // if we added labels to accesses, we should use them
+            assert(N->getNumOperands() == 1);
+
+            assert(isa<MDString>(N->getOperand(0)));
+            auto *Str = cast<MDString>(N->getOperand(0));
+            Name += M.getName();
+            Name += ",";
+            Name += F.getName();
+            Name += ",";
+            Name += Str->getString();
           } else {
-            Name = std::string("unknown location - ");
+            if (DILocation *Loc = I.getDebugLoc()) {
+              unsigned Line = Loc->getLine();
+              unsigned Column = Loc->getColumn();
+              StringRef File = Loc->getFilename();
+              Name = (File + " - l " + std::to_string(Line) + " - c " +
+                      std::to_string(Column) + " - ")
+                         .str();
+            } else {
+              Name = std::string("unknown location - ");
+            }
+            Name += Kind;
+            Name += " ";
+            Name += functionAnnotation;
+            Name += " - ";
+            Name += I.getName();
           }
-          Name += Kind;
-          Name += " ";
-          Name += functionAnnotation;
-          Name += " - ";
-          Name += I.getName();
+
           StringMap.insert(std::make_pair(&I, StringMapItem(Counter, Name)));
           Counter++;
         }
