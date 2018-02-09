@@ -172,24 +172,28 @@ void meminstrument::filterITargetsRandomly(Pass *ParentPass,
 
   std::random_shuffle(cpy.begin(), cpy.end());
 
-  if (FilterOrderingOpt != FO_random)
-  std::stable_sort(cpy.begin(), cpy.end(), [&](const std::shared_ptr<ITarget> &a, const std::shared_ptr<ITarget> &b){
-      Function *funA = a->Location->getParent()->getParent();
-      Function *funB = b->Location->getParent()->getParent();
-      Module *mod = funA->getParent();
-      assert(mod == funB->getParent());
+  if (FilterOrderingOpt != FO_random) {
+    std::stable_sort(cpy.begin(), cpy.end(), [&](const std::shared_ptr<ITarget> &a, const std::shared_ptr<ITarget> &b){
+        Function *funA = a->Location->getParent()->getParent();
+        Function *funB = b->Location->getParent()->getParent();
+        Module *mod = funA->getParent();
+        assert(mod == funB->getParent());
 
-      const char* funAname = funA->getName().str().c_str();
-      const char* funBname = funB->getName().str().c_str();
-      const char* modname = mod->getName().str().c_str();
+        auto funAname = funA->getName().str();
+        auto funBname = funB->getName().str();
+        auto modname = mod->getName().str();
 
-      uint64_t idxA = extractAccessId(a->Location);
-      uint64_t idxB = extractAccessId(b->Location);
+        // errs() << "Module name 1: '" << modname << "'\n";
+        // errs() << "Module name 2: '" << mod->getName().str().c_str() << "'\n";
 
-      unsigned heatA = getHotnessIndex(modname, funAname, idxA);
-      unsigned heatB = getHotnessIndex(modname, funBname, idxB);
-      return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB) : (heatA > heatB);
-      });
+        uint64_t idxA = extractAccessId(a->Location);
+        uint64_t idxB = extractAccessId(b->Location);
+
+        unsigned heatA = getHotnessIndex(modname, funAname, idxA);
+        unsigned heatB = getHotnessIndex(modname, funBname, idxB);
+        return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB) : (heatA < heatB);
+        });
+  }
 
   size_t bound = (size_t)(((double)cpy.size()) * RandomFilteringRatioOpt);
 
