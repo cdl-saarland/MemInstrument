@@ -103,7 +103,8 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
       ++RTStatNumPMDAbad;
     }
   }
-  insertCall(Builder, StatIncFunction, ConstantInt::get(SizeType, idx));
+  auto* tableID = Builder.CreateLoad(StatTableID, "stat_table_id");
+  insertCall(Builder, StatIncFunction, tableID, ConstantInt::get(SizeType, idx));
 }
 
 void RuntimeStatMechanism::materializeBounds(ITarget &Target) const {
@@ -185,11 +186,19 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
   auto *StringType = Type::getInt8PtrTy(Ctx);
   auto *VoidTy = Type::getVoidTy(Ctx);
 
-  StatIncFunction = insertFunDecl(M, "__mi_stat_inc", VoidTy, SizeType);
+  StatIncFunction = insertFunDecl(M, "__mi_stat_inc", VoidTy, SizeType, SizeType);
+
+  StatTableID = new GlobalVariable(M,
+                                   SizeType,
+                                   false,
+                                   GlobalValue::InternalLinkage,
+                                   Constant::getNullValue(SizeType),
+                                   "MI_StatID");
+
   llvm::Constant *InitFun =
-      insertFunDecl(M, "__mi_stat_init", VoidTy, SizeType);
+      insertFunDecl(M, "__mi_stat_init", SizeType, SizeType);
   llvm::Constant *InitEntryFun =
-      insertFunDecl(M, "__mi_stat_init_entry", VoidTy, SizeType, StringType);
+      insertFunDecl(M, "__mi_stat_init_entry", VoidTy, SizeType, SizeType, StringType);
 
   auto Fun =
       registerCtors(M, std::make_pair<StringRef, int>("__mi_stat_setup", 0));
@@ -199,22 +208,25 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
 
   if (Verbose) {
     uint64_t Count = populateStringMap(M);
-    insertCall(Builder, InitFun, ConstantInt::get(SizeType, Count));
+    auto* call = insertCall(Builder, InitFun, ConstantInt::get(SizeType, Count));
+
+    // store call result to global variable StatTableID
+    Builder.CreateStore(call, StatTableID);
 
     for (const auto &P : StringMap) {
       uint64_t idx = P.second.idx;
       std::string &name = P.second.str;
       llvm::Value *Str = insertStringLiteral(M, name);
       Str = insertCast(StringType, Str, Builder);
-      insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);
+      insertCall(Builder, InitEntryFun, call, ConstantInt::get(SizeType, idx), Str);
     }
   } else {
-    insertCall(Builder, InitFun, ConstantInt::get(SizeType, 25));
+    auto* call = insertCall(Builder, InitFun, ConstantInt::get(SizeType, 25));
 
     auto addEntry = [&](uint64_t idx, StringRef text) {
       llvm::Value *Str = insertStringLiteral(M, text.str().c_str());
       Str = insertCast(StringType, Str, Builder);
-      insertCall(Builder, InitEntryFun, ConstantInt::get(SizeType, idx), Str);
+      insertCall(Builder, InitEntryFun, call, ConstantInt::get(SizeType, idx), Str);
     };
 
     addEntry(0, "others");

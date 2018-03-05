@@ -73,6 +73,8 @@ private:
 
   llvm::Constant *StatIncFunction = nullptr;
 
+  llvm::Constant *StatTableID = nullptr;
+
   llvm::ValueMap<llvm::Instruction *, StringMapItem> StringMap;
 
   const uint64_t LoadIdx = 1;
