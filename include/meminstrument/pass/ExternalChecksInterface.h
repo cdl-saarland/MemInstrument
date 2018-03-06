@@ -79,6 +79,8 @@ public:
   /// method to make use them here.
   virtual void materializeExternalChecksForFunction(ITargetVector &Vec,
                                                     llvm::Function &F) = 0;
+
+  virtual ~ExternalChecksInterface(void);
 };
 } // namespace meminstrument
 

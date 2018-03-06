@@ -18,6 +18,7 @@ add_meminstrument_library(meminstrument
   pass/Util.cpp
   pass/WitnessGraph.cpp
   pass/DummyExternalChecksPass.cpp
+  pass/ExternalChecksInterface.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp

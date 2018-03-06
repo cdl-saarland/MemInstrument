@@ -51,7 +51,7 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
-  virtual const char *getName(void) const { return "RuntimeStat"; }
+  virtual const char *getName(void) const override { return "RuntimeStat"; }
 
   virtual ~RuntimeStatMechanism(void) {}
 
@@ -69,7 +69,6 @@ private:
   uint64_t populateStringMap(llvm::Module &M);
 
   llvm::Type *SizeType;
-  llvm::GlobalVariable *StatArray = nullptr;
 
   llvm::Constant *StatIncFunction = nullptr;
 
