@@ -54,7 +54,7 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
-  virtual const char *getName(void) const { return "Splay"; }
+  virtual const char *getName(void) const override { return "Splay"; }
 
 private:
   llvm::Constant *GlobalAllocFunction = nullptr;

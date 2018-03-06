@@ -23,10 +23,7 @@ public:
 
   virtual const char *getName(void) const override { return "None"; }
 
-  NonePolicy(const llvm::DataLayout &DL) : DL(DL) {}
-
-private:
-  const llvm::DataLayout &DL;
+  NonePolicy(const llvm::DataLayout &) {}
 };
 
 } // namespace meminstrument

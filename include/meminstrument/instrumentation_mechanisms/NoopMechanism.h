@@ -49,7 +49,7 @@ public:
 
   virtual bool initialize(llvm::Module &M) override;
 
-  virtual const char *getName(void) const { return "Noop"; }
+  virtual const char *getName(void) const override { return "Noop"; }
 
   virtual ~NoopMechanism(void) {}
 
