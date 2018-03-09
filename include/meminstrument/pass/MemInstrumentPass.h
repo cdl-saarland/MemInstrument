@@ -25,8 +25,7 @@ public:
   virtual bool runOnModule(llvm::Module &M) override;
   virtual void releaseMemory(void) override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
-  // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
-  // override;
+  virtual void print(llvm::raw_ostream &O, const llvm::Module *) const override;
 };
 
 } // namespace meminstrument

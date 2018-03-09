@@ -145,4 +145,9 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<EXTERNAL_PASS>();
 }
 
+
+void MemInstrumentPass::print(llvm::raw_ostream &O, const llvm::Module *M) const {
+  O << "MemInstrumentPass for module '" << M->getName() << "'\n";
+}
+
 char MemInstrumentPass::ID = 0;
