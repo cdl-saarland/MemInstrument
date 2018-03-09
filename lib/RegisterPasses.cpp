@@ -15,8 +15,6 @@
 #include "CheckOptimizer/CheckOptimizerPass.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
-#include "llvm/Transforms/Utils/BreakCriticalEdges.h"
-#include "llvm/Transforms/Utils/UnifyFunctionExitNodes.h"
 #endif
 
 using namespace meminstrument;
@@ -41,15 +39,12 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 #if MEMINSTRUMENT_USE_PMDA
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
-  PM.add(createUnifyFunctionExitNodesPass());
-  PM.add(createBreakCriticalEdgesPass());
   PM.add(new checkoptimizer::CheckOptimizerPass());
 #endif
   PM.add(new MemInstrumentPass());
 }
 
 static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
-    // llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
-    // RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
+    llvm::PassManagerBuilder::EP_ModuleOptimizerEarly, registerMeminstrumentPass);
+    // llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
 } // namespace meminstrument
