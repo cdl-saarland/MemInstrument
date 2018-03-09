@@ -70,6 +70,7 @@ else ()
   # Specify the files clang needs for the pass manager
   add_meminstrument_loadable_module(LLVMmeminstrument
     pass/MemInstrumentPass.cpp
+    pass/ExternalChecksInterface.cpp
     RegisterPasses.cpp
     Config.cpp
   )
