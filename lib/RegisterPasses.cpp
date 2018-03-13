@@ -26,25 +26,26 @@ static RegisterPass<MemInstrumentPass>
                               false,  // CFGOnly
                               false); // isAnalysis
 
-#if !MEMINSTRUMENT_USE_PMDA
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",
                                     "Dummy External Checks",
                                     false, // CFGOnly
                                     true); // isAnalysis
-#endif
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
 #if MEMINSTRUMENT_USE_PMDA
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
-  PM.add(new checkoptimizer::CheckOptimizerPass());
 #endif
   PM.add(new MemInstrumentPass());
 }
 
+#if MEMINSTRUMENT_USE_PMDA
 static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
     llvm::PassManagerBuilder::EP_ModuleOptimizerEarly, registerMeminstrumentPass);
-    // llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
+#else
+static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
+    llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
+#endif
 } // namespace meminstrument

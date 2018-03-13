@@ -47,6 +47,7 @@ private:
   static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
                                             llvm::Module &M,
                                             llvm::StringRef Name,
+                                            llvm::AttributeList AList,
                                             llvm::Type *RetTy);
 
   /// Recursive case for the implementation of the insertFunDecl helper
@@ -54,10 +55,10 @@ private:
   template <typename... Args>
   static llvm::Constant *
   insertFunDecl_impl(std::vector<llvm::Type *> &Vec, llvm::Module &M,
-                     llvm::StringRef Name, llvm::Type *RetTy, llvm::Type *Ty,
+                     llvm::StringRef Name, llvm::AttributeList AList, llvm::Type *RetTy, llvm::Type *Ty,
                      Args... args) {
     Vec.push_back(Ty);
-    return insertFunDecl_impl(Vec, M, Name, RetTy, args...);
+    return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
 
   /// Base case for the implementation of the insertCall helper function.
@@ -89,7 +90,17 @@ protected:
   static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
                                        llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
-    return insertFunDecl_impl(Vec, M, Name, RetTy, args...);
+    // create an empty AttributeList
+    llvm::ArrayRef<std::pair<unsigned, llvm::AttributeSet>> ar;
+    llvm::AttributeList AList = llvm::AttributeList::get(M.getContext(), ar);
+    return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
+  }
+
+  template <typename... Args>
+  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name, llvm::AttributeList AList,
+                                       llvm::Type *RetTy, Args... args) {
+    std::vector<llvm::Type *> Vec;
+    return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
 
   /// Inserts a call to a function and marks it for no instrumentation.

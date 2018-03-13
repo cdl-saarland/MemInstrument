@@ -156,7 +156,9 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
       insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
   AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
                                 PtrArgType, SizeType);
-  FailFunction = insertFunDecl(M, "__splay_fail_simple", VoidTy);
+
+  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  FailFunction = insertFunDecl(M, "__splay_fail_simple", NoReturnAttr, VoidTy);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
