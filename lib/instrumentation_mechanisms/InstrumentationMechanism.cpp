@@ -111,9 +111,9 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
 
 llvm::Constant *InstrumentationMechanism::insertFunDecl_impl(
     std::vector<llvm::Type *> &Vec, llvm::Module &M, llvm::StringRef Name,
-    llvm::Type *RetTy) {
+    llvm::AttributeList AList, llvm::Type *RetTy) {
   auto *FunTy = FunctionType::get(RetTy, Vec, /*isVarArg*/ false);
-  auto *Res = M.getOrInsertFunction(Name, FunTy);
+  auto *Res = M.getOrInsertFunction(Name, FunTy, AList);
   setNoInstrument(Res);
   return Res;
 }
