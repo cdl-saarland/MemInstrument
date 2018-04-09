@@ -148,9 +148,9 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   }
 
   GetLowerBoundFunction =
-      insertFunDecl(M, "__splay_get_lower", SizeType, WitnessType);
+      insertFunDecl(M, "__splay_get_lower", PtrArgType, WitnessType);
   GetUpperBoundFunction =
-      insertFunDecl(M, "__splay_get_upper", SizeType, WitnessType);
+      insertFunDecl(M, "__splay_get_upper", PtrArgType, WitnessType);
 
   GlobalAllocFunction =
       insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);

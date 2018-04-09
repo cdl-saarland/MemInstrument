@@ -84,12 +84,14 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(
 
     auto *Ptr2Int = Builder.CreatePtrToInt(IT->Instrumentee, I64Ty);
 
-    auto *Lower = IT->BoundWitness->getLowerBound();
+    auto *LowerPtr = IT->BoundWitness->getLowerBound();
+    auto *Lower = Builder.CreatePtrToInt(LowerPtr, I64Ty);
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
     auto *Sum =
         Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->AccessSize));
-    auto *Upper = IT->BoundWitness->getUpperBound();
+    auto *UpperPtr = IT->BoundWitness->getUpperBound();
+    auto *Upper = Builder.CreatePtrToInt(UpperPtr, I64Ty);
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);
 
     auto *Or = Builder.CreateOr(CmpLower, CmpUpper);
