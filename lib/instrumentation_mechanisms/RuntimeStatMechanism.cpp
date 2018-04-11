@@ -60,9 +60,7 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   uint64_t idx = 0;
   if (Verbose) {
     const auto &It = StringMap.find(Target.Location);
-    if (It == StringMap.end()) {
-      llvm_unreachable("RT instrumentation required for unknown instruction!");
-    }
+    assert(It != StringMap.end() && "RT instrumentation required for unknown instruction!");
     if (Target.Location->getMetadata(markString)) {
       ++RTStatNumNoSan;
     } else {
