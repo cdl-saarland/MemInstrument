@@ -323,6 +323,14 @@ void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
   Stream << "}}}\n\n";
 }
 
+void GlobalConfig::noteError(void) {
+  ++_numErrors;
+}
+
+bool GlobalConfig::hasErrors(void) const {
+  return _numErrors != 0;
+}
+
 // Implementation of SplayConfig
 
 InstrumentationPolicy *

@@ -189,6 +189,14 @@ public:
     delete _WS;
   }
 
+  void noteError(void);
+
+  bool hasErrors(void) const;
+
+  GlobalConfig(const GlobalConfig &) = delete;
+
+  GlobalConfig& operator=(const GlobalConfig &) = delete;
+
 private:
   GlobalConfig(Config *Cfg, const llvm::Module &M);
 
@@ -203,6 +211,8 @@ private:
   bool _PrintWitnessGraph = false;
   bool _SimplifyWitnessGraph = false;
   bool _InstrumentVerbose = false;
+
+  uint64_t _numErrors = 0;
 
   const char *_ConfigName;
 };
