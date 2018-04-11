@@ -26,6 +26,12 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
 
+STATISTIC(NumUnsupportedConstExprs, "The # of unsupported constant expressions "
+                                    "encountered");
+
+STATISTIC(NumUnsupportedConstVals, "The # of unsupported constant values other "
+                                    "than constant expressions encountered");
+
 void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
   if (!C->getType()->isPointerTy()) {
     llvm_unreachable("getPointerOperands() called for non-pointer constant!");
@@ -55,6 +61,7 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
     default:
+      ++NumUnsupportedConstExprs;
       errs() << "Unsupported constant expression:\n" << *CE << "\n\n";
       llvm_unreachable("Unsupported constant expression!");
     }
@@ -62,6 +69,7 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
     return;
   }
 
+  ++NumUnsupportedConstVals;
   errs() << "Unsupported constant value:\n" << *C << "\n\n";
   llvm_unreachable("Unsupported constant value!");
 }
