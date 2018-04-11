@@ -33,9 +33,7 @@ STATISTIC(NumUnsupportedConstVals, "The # of unsupported constant values other "
                                     "than constant expressions encountered");
 
 void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
-  if (!C->getType()->isPointerTy()) {
-    llvm_unreachable("getPointerOperands() called for non-pointer constant!");
-  }
+  assert(C->getType()->isPointerTy() && "getPointerOperands() called for non-pointer constant!");
 
   if (auto *GV = dyn_cast<GlobalValue>(C)) {
     Results.push_back(GV);
