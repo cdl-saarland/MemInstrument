@@ -50,11 +50,6 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
     case Instruction::GetElementPtr:
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
-    case Instruction::Select:
-      getPointerOperands(Results, CE->getOperand(1)); // true operand
-      getPointerOperands(Results, CE->getOperand(2)); // false operand
-      llvm_unreachable("Select constant expression!");
-      break;
     case Instruction::BitCast:
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
