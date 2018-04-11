@@ -30,6 +30,9 @@ public:
   virtual const char *getName(void) const = 0;
 
   virtual ~InstrumentationPolicy() {}
+
+protected:
+  size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V);
 };
 
 } // namespace meminstrument
