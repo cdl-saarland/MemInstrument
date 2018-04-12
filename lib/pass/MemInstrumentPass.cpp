@@ -55,7 +55,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   auto &IM = CFG->getInstrumentationMechanism();
   IM.initialize(M);
 
-  if (Mode == MIMode::SETUP)
+  if (Mode == MIMode::SETUP || CFG->hasErrors())
     return true;
 
   std::map<llvm::Function *, ITargetVector> TargetMap;
@@ -74,7 +74,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     gatherITargets(*CFG, Targets, F);
 
-    if (Mode == MIMode::GATHER_ITARGETS)
+    if (Mode == MIMode::GATHER_ITARGETS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
@@ -112,14 +112,14 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
 
-    if (Mode == MIMode::FILTER_ITARGETS)
+    if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating Witnesses\n";);
 
     generateWitnesses(*CFG, Targets, F);
 
-    if (Mode == MIMode::GENERATE_WITNESSES)
+    if (Mode == MIMode::GENERATE_WITNESSES || CFG->hasErrors())
       continue;
 
     if (CFG->hasUseExternalChecks()) {
@@ -129,7 +129,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       ECP.materializeExternalChecksForFunction(*CFG, Targets, F);
     }
 
-    if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS)
+    if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);

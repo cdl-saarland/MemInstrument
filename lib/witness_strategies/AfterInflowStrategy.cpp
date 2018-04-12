@@ -6,6 +6,8 @@
 
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 
+#include "meminstrument/Config.h"
+
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DataLayout.h"
@@ -26,13 +28,18 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
 
-STATISTIC(NumUnsupportedConstExprs, "The # of unsupported constant expressions "
-                                    "encountered");
+STATISTIC(NumUnsupportedConstExprs, "unsupported constant expressions");
 
-STATISTIC(NumUnsupportedConstVals, "The # of unsupported constant values other "
-                                   "than constant expressions encountered");
+STATISTIC(NumUnsupportedConstVals, "unsupported constant values other than"
+                                   " constant expressions");
 
-void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
+STATISTIC(NumUnsupportedInsns, "unsupported instructions");
+
+STATISTIC(NumUnsupportedValOps, "unsupported value operands");
+
+} // namespace
+
+void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) const {
   assert(C->getType()->isPointerTy() &&
          "getPointerOperands() called for non-pointer constant!");
 
@@ -56,18 +63,19 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
       break;
     default:
       ++NumUnsupportedConstExprs;
-      errs() << "Unsupported constant expression:\n" << *CE << "\n\n";
-      llvm_unreachable("Unsupported constant expression!");
+      DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
+      _CFG.noteError();
+      return;
     }
 
     return;
   }
 
   ++NumUnsupportedConstVals;
-  errs() << "Unsupported constant value:\n" << *C << "\n\n";
-  llvm_unreachable("Unsupported constant value!");
+  DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
+  _CFG.noteError();
+  return;
 }
-} // namespace
 
 void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   if (Node->HasAllRequirements) {
@@ -150,8 +158,10 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::ShuffleVector:
       ++NumPtrVectorInstructions; // fallthrough
     default:
-      errs() << "Unsupported instruction:\n" << *I << "\n\n";
-      llvm_unreachable("Unsupported instruction!");
+      ++NumUnsupportedInsns;
+      DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
+      _CFG.noteError();
+      return;
     }
   }
 
@@ -174,8 +184,10 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
-  errs() << "Unsupported value operand:\n" << *Target->Instrumentee << "\n\n";
-  llvm_unreachable("Unsupported value operand!");
+  ++NumUnsupportedValOps;
+  DEBUG(dbgs() << "Unsupported value operand:\n" << *Target->Instrumentee << "\n\n";);
+  _CFG.noteError();
+  return;
 }
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,

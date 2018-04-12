@@ -29,6 +29,10 @@ public:
                              WitnessGraphNode *Node) const override;
 
   virtual const char *getName(void) const override { return "AfterInflow"; }
+
+private:
+  void getPointerOperands(std::vector<llvm::Value *> &Results, llvm::Constant *C) const;
+
 };
 
 } // namespace meminstrument

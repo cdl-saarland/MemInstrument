@@ -22,6 +22,8 @@
 
 #include "meminstrument/pass/Util.h"
 
+STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
+
 using namespace meminstrument;
 using namespace llvm;
 
@@ -37,8 +39,10 @@ size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
   }
 
   if (!PointeeType->isSized()) {
-    dbgs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";
-    llvm_unreachable("Only pointers to sized types allowed!");
+    ++NumUnsizedTypes;
+    DEBUG(dbgs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";);
+    _CFG.noteError();
+    return 1;
   }
 
   size_t Size = DL.getTypeStoreSize(PointeeType);
