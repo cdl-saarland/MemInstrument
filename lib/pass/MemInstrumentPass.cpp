@@ -32,7 +32,7 @@ using namespace llvm;
 
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
-void MemInstrumentPass::releaseMemory(void) { }
+void MemInstrumentPass::releaseMemory(void) {}
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
@@ -145,8 +145,8 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<EXTERNAL_PASS>();
 }
 
-
-void MemInstrumentPass::print(llvm::raw_ostream &O, const llvm::Module *M) const {
+void MemInstrumentPass::print(llvm::raw_ostream &O,
+                              const llvm::Module *M) const {
   O << "MemInstrumentPass for module '" << M->getName() << "'\n";
 }
 

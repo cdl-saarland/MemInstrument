@@ -95,8 +95,10 @@ bool NoopMechanism::initialize(llvm::Module &M) {
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
-  FailFunction = M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx));
+  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
+      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  FailFunction =
+      M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx));
 
   return true;
 }

@@ -42,10 +42,12 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 }
 
 #if MEMINSTRUMENT_USE_PMDA
-static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_ModuleOptimizerEarly, registerMeminstrumentPass);
+static llvm::RegisterStandardPasses
+    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
+                              registerMeminstrumentPass);
 #else
-static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
+static llvm::RegisterStandardPasses
+    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
+                              registerMeminstrumentPass);
 #endif
 } // namespace meminstrument

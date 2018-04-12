@@ -44,13 +44,12 @@ public:
 
   virtual ~InstrumentationMechanism(void) {}
 
-  InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) { }
+  InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) {}
 
 protected:
   GlobalConfig &_CFG;
 
 private:
-
   /// Base case for the implementation of the insertFunDecl helper function.
   static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
                                             llvm::Module &M,
@@ -63,8 +62,8 @@ private:
   template <typename... Args>
   static llvm::Constant *
   insertFunDecl_impl(std::vector<llvm::Type *> &Vec, llvm::Module &M,
-                     llvm::StringRef Name, llvm::AttributeList AList, llvm::Type *RetTy, llvm::Type *Ty,
-                     Args... args) {
+                     llvm::StringRef Name, llvm::AttributeList AList,
+                     llvm::Type *RetTy, llvm::Type *Ty, Args... args) {
     Vec.push_back(Ty);
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
@@ -105,7 +104,8 @@ protected:
   }
 
   template <typename... Args>
-  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name, llvm::AttributeList AList,
+  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
+                                       llvm::AttributeList AList,
                                        llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);

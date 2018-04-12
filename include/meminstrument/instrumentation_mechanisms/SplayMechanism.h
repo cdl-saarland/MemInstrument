@@ -35,7 +35,7 @@ struct SplayWitness : public Witness {
 
 class SplayMechanism : public InstrumentationMechanism {
 public:
-  SplayMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) { }
+  SplayMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
 
   virtual void insertWitness(ITarget &Target) const override;
 

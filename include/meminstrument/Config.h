@@ -39,7 +39,6 @@ enum class MIMode {
   DEFAULT,
 };
 
-
 /// Class for the actual configuration items in use.
 /// On a normal run, only one of these should be created via a call to the
 /// static GlobalConfig::get() method.
@@ -88,7 +87,7 @@ public:
 
   GlobalConfig(const GlobalConfig &) = delete;
 
-  GlobalConfig& operator=(const GlobalConfig &) = delete;
+  GlobalConfig &operator=(const GlobalConfig &) = delete;
 
 private:
   GlobalConfig(Config *Cfg, const llvm::Module &M);

@@ -88,7 +88,8 @@ cl::opt<int>
 
 } // namespace
 
-void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P, ITargetVector &Vec, Function &F) {
+void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
+                                   ITargetVector &Vec, Function &F) {
   bool UseFilters = CFG.hasUseFilters();
   if (!UseFilters) {
     return;
@@ -99,8 +100,8 @@ void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P, ITargetVector &Ve
   filterByDominance(P, Vec, F);
 }
 
-void meminstrument::filterITargetsRandomly(GlobalConfig &CFG,
-    std::map<llvm::Function *, ITargetVector> TargetMap) {
+void meminstrument::filterITargetsRandomly(
+    GlobalConfig &CFG, std::map<llvm::Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
   }

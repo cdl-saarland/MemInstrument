@@ -28,7 +28,7 @@ struct NoopWitness : public Witness {
 
 class NoopMechanism : public InstrumentationMechanism {
 public:
-  NoopMechanism(GlobalConfig &CFG): InstrumentationMechanism(CFG) {}
+  NoopMechanism(GlobalConfig &CFG) : InstrumentationMechanism(CFG) {}
 
   virtual void insertWitness(ITarget &Target) const override;
 

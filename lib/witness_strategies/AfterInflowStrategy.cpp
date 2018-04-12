@@ -30,10 +30,11 @@ STATISTIC(NumUnsupportedConstExprs, "The # of unsupported constant expressions "
                                     "encountered");
 
 STATISTIC(NumUnsupportedConstVals, "The # of unsupported constant values other "
-                                    "than constant expressions encountered");
+                                   "than constant expressions encountered");
 
 void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
-  assert(C->getType()->isPointerTy() && "getPointerOperands() called for non-pointer constant!");
+  assert(C->getType()->isPointerTy() &&
+         "getPointerOperands() called for non-pointer constant!");
 
   if (auto *GV = dyn_cast<GlobalValue>(C)) {
     Results.push_back(GV);
@@ -347,7 +348,6 @@ void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
       N->clearRequirements();
       N->addRequirement(Req);
     }
-
   });
   WG.removeDeadNodes();
 

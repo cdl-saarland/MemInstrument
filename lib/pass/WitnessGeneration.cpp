@@ -23,7 +23,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec, Function &F) {
+void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
+                                      Function &F) {
   const auto &WS = CFG.getWitnessStrategy();
   auto &IM = CFG.getInstrumentationMechanism();
 

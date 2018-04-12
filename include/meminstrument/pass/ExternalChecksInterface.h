@@ -7,8 +7,8 @@
 #ifndef MEMINSTRUMENT_PASS_EXTERNALCHECKSINTERFACE_H
 #define MEMINSTRUMENT_PASS_EXTERNALCHECKSINTERFACE_H
 
-#include "meminstrument/pass/ITarget.h"
 #include "meminstrument/Config.h"
+#include "meminstrument/pass/ITarget.h"
 #include "llvm/IR/Function.h"
 
 namespace meminstrument {

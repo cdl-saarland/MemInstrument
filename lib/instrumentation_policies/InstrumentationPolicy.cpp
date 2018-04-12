@@ -25,7 +25,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
+size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
+                                                   llvm::Value *V) {
   auto *Ty = V->getType();
   assert(Ty->isPointerTy() && "Only pointer types allowed!");
 

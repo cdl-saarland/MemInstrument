@@ -91,7 +91,8 @@ bool DummyMechanism::initialize(llvm::Module &M) {
   GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
                                         SizeType, WitnessType);
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
+      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", NoReturnAttr, VoidTy);
 
   return true;

@@ -63,23 +63,22 @@ enum class IMKind {
   default_val,
 };
 
-cl::opt<IMKind> IMOpt(
-    "mi-imechanism", cl::desc("Override InstructionMechanism:"),
-    cl::values(clEnumValN(IMKind::dummy, "dummy",
-                          "only insert dummy calls for instrumentation")),
-    cl::values(clEnumValN(IMKind::splay, "splay",
-                          "use splay tree for instrumentation")),
-    cl::values(clEnumValN(
-        IMKind::noop, "noop",
-        "use noop instrumentation that just adds performance overhead")),
-    cl::values(
-        clEnumValN(IMKind::rt_stat, "rt_stat",
-                   "only instrument for collecting run-time statistics")),
-    cl::cat(MemInstrumentCat),
-    cl::init(IMKind::default_val)
-);
+cl::opt<IMKind>
+    IMOpt("mi-imechanism", cl::desc("Override InstructionMechanism:"),
+          cl::values(clEnumValN(IMKind::dummy, "dummy",
+                                "only insert dummy calls for instrumentation")),
+          cl::values(clEnumValN(IMKind::splay, "splay",
+                                "use splay tree for instrumentation")),
+          cl::values(clEnumValN(
+              IMKind::noop, "noop",
+              "use noop instrumentation that just adds performance overhead")),
+          cl::values(
+              clEnumValN(IMKind::rt_stat, "rt_stat",
+                         "only instrument for collecting run-time statistics")),
+          cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
 
-InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg, IMKind k) {
+InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
+                                                         IMKind k) {
   switch (k) {
   case IMKind::dummy:
     return new DummyMechanism(cfg);
@@ -109,11 +108,13 @@ cl::opt<IPKind> IPOpt(
                           " inbounds when pointers flow out of functions")),
     cl::values(clEnumValN(IPKind::accessOnly, "access-only",
                           "check only at loads/stores for dereference")),
-    cl::values(clEnumValN(
-        IPKind::none, "none", "do not check anything (except for external checks)")),
+    cl::values(
+        clEnumValN(IPKind::none, "none",
+                   "do not check anything (except for external checks)")),
     cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
 
-InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k, const DataLayout &DL) {
+InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k,
+                                                   const DataLayout &DL) {
   switch (k) {
   case IPKind::beforeOutflow:
     return new BeforeOutflowPolicy(cfg, DL);
@@ -174,16 +175,14 @@ const char *getModeName(MIMode M) {
 cl::opt<MIMode> MIModeOpt(
     "mi-mode",
     cl::desc("Override until which stage instrumentation should be performed:"),
-    cl::values(clEnumValN(MIMode::SETUP, "setup",
-                          "only until setup is done")),
+    cl::values(clEnumValN(MIMode::SETUP, "setup", "only until setup is done")),
     cl::values(clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
                           "only until ITarget gathering is done")),
     cl::values(clEnumValN(MIMode::FILTER_ITARGETS, "filteritargets",
                           "only until ITarget filtering is done")),
     cl::values(clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
                           "only until witness generation is done")),
-    cl::values(clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS,
-                          "genextchecks",
+    cl::values(clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS, "genextchecks",
                           "only until external check generation is done")),
     cl::values(clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",
                           "the full pipeline")),
@@ -227,7 +226,7 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
 
 } // namespace
 
-namespace meminstrument{
+namespace meminstrument {
 
 /// The base class for configurations
 class Config {
@@ -254,10 +253,18 @@ class SplayConfig : public Config {
 public:
   virtual ~SplayConfig(void) {}
 
-  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::beforeOutflow; }
-  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::splay; }
-  virtual WSKind getWitnessStrategy(void) const override { return WSKind::after_inflow; }
-  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual IPKind getInstrumentationPolicy(void) const override {
+    return IPKind::beforeOutflow;
+  }
+  virtual IMKind getInstrumentationMechanism(void) const override {
+    return IMKind::splay;
+  }
+  virtual WSKind getWitnessStrategy(void) const override {
+    return WSKind::after_inflow;
+  }
+  virtual MIMode getMIMode(void) const override {
+    return MIMode::GENERATE_CHECKS;
+  }
   virtual bool hasUseFilters(void) const override { return true; }
   virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
@@ -271,12 +278,13 @@ class ExternalOnlyConfig : public SplayConfig {
 public:
   virtual ~ExternalOnlyConfig(void) {}
 
-  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_EXTERNAL_CHECKS; }
+  virtual MIMode getMIMode(void) const override {
+    return MIMode::GENERATE_EXTERNAL_CHECKS;
+  }
   virtual bool hasUseFilters(void) const override { return false; }
   virtual bool hasUseExternalChecks(void) const override { return true; }
   virtual const char *getName(void) const override { return "ExternalOnly"; }
 };
-
 
 /// A configuration to perform instrumentation for collecting run-time
 /// statistics.
@@ -284,10 +292,18 @@ class RTStatConfig : public Config {
 public:
   virtual ~RTStatConfig(void) {}
 
-  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::accessOnly; }
-  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::rt_stat; }
-  virtual WSKind getWitnessStrategy(void) const override { return WSKind::none; }
-  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual IPKind getInstrumentationPolicy(void) const override {
+    return IPKind::accessOnly;
+  }
+  virtual IMKind getInstrumentationMechanism(void) const override {
+    return IMKind::rt_stat;
+  }
+  virtual WSKind getWitnessStrategy(void) const override {
+    return WSKind::none;
+  }
+  virtual MIMode getMIMode(void) const override {
+    return MIMode::GENERATE_CHECKS;
+  }
   virtual bool hasUseFilters(void) const override { return false; }
   virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
@@ -302,10 +318,18 @@ class NoopConfig : public Config {
 public:
   virtual ~NoopConfig(void) {}
 
-  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::accessOnly; }
-  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::noop; }
-  virtual WSKind getWitnessStrategy(void) const override { return WSKind::none; }
-  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual IPKind getInstrumentationPolicy(void) const override {
+    return IPKind::accessOnly;
+  }
+  virtual IMKind getInstrumentationMechanism(void) const override {
+    return IMKind::noop;
+  }
+  virtual WSKind getWitnessStrategy(void) const override {
+    return WSKind::none;
+  }
+  virtual MIMode getMIMode(void) const override {
+    return MIMode::GENERATE_CHECKS;
+  }
   virtual bool hasUseFilters(void) const override { return false; }
   virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
@@ -330,7 +354,7 @@ Config *Config::create(ConfigKind k) {
   llvm_unreachable("Invalid ConfigKind!");
 }
 
-}
+} // namespace meminstrument
 
 GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
 
@@ -342,7 +366,6 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   const DataLayout &DL = M.getDataLayout();
   IPKind ipk = X_OR_DEFAULT(IPKind, IPOpt, Cfg->getInstrumentationPolicy());
   _IP = createInstrumentationPolicy(*this, ipk, DL);
-
 
   WSKind wsk = X_OR_DEFAULT(WSKind, WSOpt, Cfg->getWitnessStrategy());
   _WS = createWitnessStrategy(*this, wsk);
@@ -371,9 +394,9 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
 }
 
 std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {
-  auto GlobalCfg = std::unique_ptr<GlobalConfig>(new GlobalConfig(Config::create(ConfigKindOpt), M));
-  DEBUG(dbgs() << "Creating MemInstrument Config:\n";
-        GlobalCfg->dump(dbgs()););
+  auto GlobalCfg = std::unique_ptr<GlobalConfig>(
+      new GlobalConfig(Config::create(ConfigKindOpt), M));
+  DEBUG(dbgs() << "Creating MemInstrument Config:\n"; GlobalCfg->dump(dbgs()););
   return GlobalCfg;
 }
 
@@ -391,11 +414,6 @@ void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
   Stream << "}}}\n\n";
 }
 
-void GlobalConfig::noteError(void) {
-  ++_numErrors;
-}
+void GlobalConfig::noteError(void) { ++_numErrors; }
 
-bool GlobalConfig::hasErrors(void) const {
-  return _numErrors != 0;
-}
-
+bool GlobalConfig::hasErrors(void) const { return _numErrors != 0; }
