@@ -40,7 +40,8 @@ size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
 
   if (!PointeeType->isSized()) {
     ++NumUnsizedTypes;
-    DEBUG(dbgs() << "Found pointer to unsized type `" << *PointeeType << "'!\n";);
+    DEBUG(dbgs() << "Found pointer to unsized type `" << *PointeeType
+                 << "'!\n";);
     _CFG.noteError();
     return 1;
   }

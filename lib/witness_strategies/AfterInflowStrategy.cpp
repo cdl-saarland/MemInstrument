@@ -39,7 +39,8 @@ STATISTIC(NumUnsupportedValOps, "unsupported value operands");
 
 } // namespace
 
-void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) const {
+void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
+                                             llvm::Constant *C) const {
   assert(C->getType()->isPointerTy() &&
          "getPointerOperands() called for non-pointer constant!");
 
@@ -185,7 +186,8 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   }
 
   ++NumUnsupportedValOps;
-  DEBUG(dbgs() << "Unsupported value operand:\n" << *Target->Instrumentee << "\n\n";);
+  DEBUG(dbgs() << "Unsupported value operand:\n"
+               << *Target->Instrumentee << "\n\n";);
   _CFG.noteError();
   return;
 }
