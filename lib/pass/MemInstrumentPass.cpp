@@ -43,7 +43,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     return false;
   }
 
-  auto CFG = GlobalConfig::get(M);
+  auto CFG = GlobalConfig::create(M);
 
   MIMode Mode = CFG->getMIMode();
 

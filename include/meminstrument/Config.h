@@ -11,19 +11,17 @@
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
-/// TODO Out of date!
 /// This file implements the configuration mechanism of the meminstrument
 /// instrumentation passes.
 ///
-/// All configurable parameters are accessible in the code via a GlobalConfig
-/// object that can be obtained via the static GlobalConfig::get(...) method.
+/// Configurable parameters are accessible in the code via a GlobalConfig
+/// object that can be obtained via the static GlobalConfig::create(...) method.
+/// Only one of these should be created and passed to the relevant places.
 ///
 /// The values that are stored in this object are determined as follows:
 /// They default to the values from one of the here defined child classes of
 /// Config. Which child class is used can be specified via the -mi-config
-/// command line flag or via the MI_CONFIG environment variable (if both are
-/// given, the cli takes precedence over the environment variable).
-///
+/// command line flag.
 /// The default values from the basic configuration can be overridden via
 /// separate command line flags.
 
@@ -42,11 +40,9 @@ enum class MIMode {
 };
 
 
-/// TODO Out of date!
 /// Class for the actual configuration items in use.
-/// On a normal run, only one of these should be created in the first call of
-/// the static GlobalConfig::get() method, following calls just provide the
-/// same GlobalConfig.
+/// On a normal run, only one of these should be created via a call to the
+/// static GlobalConfig::get() method.
 class GlobalConfig {
 public:
   InstrumentationPolicy &getInstrumentationPolicy(void) {
@@ -76,7 +72,7 @@ public:
 
   bool hasInstrumentVerbose(void) { return _InstrumentVerbose; }
 
-  static std::unique_ptr<GlobalConfig> get(const llvm::Module &M);
+  static std::unique_ptr<GlobalConfig> create(const llvm::Module &M);
 
   void dump(llvm::raw_ostream &Stream) const;
 

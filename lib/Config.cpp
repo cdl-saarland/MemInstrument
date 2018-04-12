@@ -370,7 +370,7 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   delete Cfg;
 }
 
-std::unique_ptr<GlobalConfig> GlobalConfig::get(const llvm::Module &M) {
+std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {
   auto GlobalCfg = std::unique_ptr<GlobalConfig>(new GlobalConfig(Config::create(ConfigKindOpt), M));
   DEBUG(dbgs() << "Creating MemInstrument Config:\n";
         GlobalCfg->dump(dbgs()););
