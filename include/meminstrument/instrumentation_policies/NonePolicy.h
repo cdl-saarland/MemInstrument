@@ -9,6 +9,7 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
@@ -23,7 +24,7 @@ public:
 
   virtual const char *getName(void) const override { return "None"; }
 
-  NonePolicy(const llvm::DataLayout &) {}
+  NonePolicy(GlobalConfig &cfg, const llvm::DataLayout &) : InstrumentationPolicy(cfg) {}
 };
 
 } // namespace meminstrument

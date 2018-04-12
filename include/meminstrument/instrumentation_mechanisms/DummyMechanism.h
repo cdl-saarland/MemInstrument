@@ -9,6 +9,7 @@
 
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LLVMContext.h"
@@ -32,6 +33,8 @@ struct DummyWitness : public Witness {
 
 class DummyMechanism : public InstrumentationMechanism {
 public:
+  DummyMechanism(GlobalConfig &CFG): InstrumentationMechanism(CFG) {}
+
   virtual void insertWitness(ITarget &Target) const override;
 
   virtual void insertCheck(ITarget &Target) const override;

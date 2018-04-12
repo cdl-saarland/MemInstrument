@@ -177,7 +177,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
 }
 
 bool RuntimeStatMechanism::initialize(llvm::Module &M) {
-  Verbose = GlobalConfig::get(M).hasInstrumentVerbose();
+  Verbose = _CFG.hasInstrumentVerbose();
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);

@@ -51,7 +51,7 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
 void SplayMechanism::insertCheck(ITarget &Target) const {
 
   Module *M = Target.Location->getModule();
-  bool Verbose = GlobalConfig::get(*M).hasInstrumentVerbose();
+  bool Verbose = _CFG.hasInstrumentVerbose();
 
   IRBuilder<> Builder(Target.Location);
 
@@ -130,7 +130,7 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto *VoidTy = Type::getVoidTy(Ctx);
   auto *StringTy = Type::getInt8PtrTy(Ctx);
 
-  bool Verbose = GlobalConfig::get(M).hasInstrumentVerbose();
+  bool Verbose = _CFG.hasInstrumentVerbose();
 
   if (Verbose) {
     CheckInboundsFunction =

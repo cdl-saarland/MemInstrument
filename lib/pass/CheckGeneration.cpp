@@ -16,8 +16,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void meminstrument::generateChecks(ITargetVector &Vec, llvm::Function &F) {
-  auto &IM = GlobalConfig::get(*F.getParent()).getInstrumentationMechanism();
+void meminstrument::generateChecks(GlobalConfig &CFG, ITargetVector &Vec, llvm::Function &F) {
+  auto &IM = CFG.getInstrumentationMechanism();
 
   for (auto &T : Vec) {
     if (T->isValid()) {

@@ -11,6 +11,7 @@
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
+/// TODO Out of date!
 /// This file implements the configuration mechanism of the meminstrument
 /// instrumentation passes.
 ///
@@ -28,122 +29,20 @@
 
 namespace meminstrument {
 
-/// The base class for configurations
-class Config {
-public:
-  enum class MIMode {
-    SETUP,
-    GATHER_ITARGETS,
-    FILTER_ITARGETS,
-    GENERATE_WITNESSES,
-    GENERATE_EXTERNAL_CHECKS,
-    GENERATE_CHECKS,
-    DEFAULT,
-  };
+class Config;
 
-  virtual ~Config(void) {}
-
-  virtual InstrumentationPolicy *
-  createInstrumentationPolicy(const llvm::DataLayout &DL) = 0;
-
-  virtual InstrumentationMechanism *createInstrumentationMechanism(void) = 0;
-
-  virtual WitnessStrategy *createWitnessStrategy(void) = 0;
-
-  virtual MIMode getMIMode(void) = 0;
-
-  virtual bool hasUseFilters(void) = 0;
-
-  virtual bool hasUseExternalChecks(void) = 0;
-
-  virtual bool hasPrintWitnessGraph(void) = 0;
-
-  virtual bool hasSimplifyWitnessGraph(void) = 0;
-
-  virtual bool hasInstrumentVerbose(void) = 0;
-
-  virtual const char *getName(void) const = 0;
+enum class MIMode {
+  SETUP,
+  GATHER_ITARGETS,
+  FILTER_ITARGETS,
+  GENERATE_WITNESSES,
+  GENERATE_EXTERNAL_CHECKS,
+  GENERATE_CHECKS,
+  DEFAULT,
 };
 
-/// A configuration to perform splay-tree-based instrumentation.
-/// Includes all internal filters and simplifications.
-class SplayConfig : public Config {
-public:
-  virtual ~SplayConfig(void) {}
 
-  virtual InstrumentationPolicy *
-  createInstrumentationPolicy(const llvm::DataLayout &D) override;
-  virtual InstrumentationMechanism *
-  createInstrumentationMechanism(void) override;
-  virtual WitnessStrategy *createWitnessStrategy(void) override;
-  virtual MIMode getMIMode(void) override;
-  virtual bool hasUseFilters(void) override;
-  virtual bool hasUseExternalChecks(void) override;
-  virtual bool hasPrintWitnessGraph(void) override;
-  virtual bool hasSimplifyWitnessGraph(void) override;
-  virtual bool hasInstrumentVerbose(void) override;
-  virtual const char *getName(void) const override;
-};
-
-/// A configuration to perform only instrumentation for external checks.
-class ExternalOnlyConfig : public Config {
-public:
-  virtual ~ExternalOnlyConfig(void) {}
-
-  virtual InstrumentationPolicy *
-  createInstrumentationPolicy(const llvm::DataLayout &D) override;
-  virtual InstrumentationMechanism *
-  createInstrumentationMechanism(void) override;
-  virtual WitnessStrategy *createWitnessStrategy(void) override;
-  virtual MIMode getMIMode(void) override;
-  virtual bool hasUseFilters(void) override;
-  virtual bool hasUseExternalChecks(void) override;
-  virtual bool hasPrintWitnessGraph(void) override;
-  virtual bool hasSimplifyWitnessGraph(void) override;
-  virtual bool hasInstrumentVerbose(void) override;
-  virtual const char *getName(void) const override;
-};
-
-/// A configuration to perform instrumentation for collecting run-time
-/// statistics.
-class RTStatConfig : public Config {
-public:
-  virtual ~RTStatConfig(void) {}
-
-  virtual InstrumentationPolicy *
-  createInstrumentationPolicy(const llvm::DataLayout &D) override;
-  virtual InstrumentationMechanism *
-  createInstrumentationMechanism(void) override;
-  virtual WitnessStrategy *createWitnessStrategy(void) override;
-  virtual MIMode getMIMode(void) override;
-  virtual bool hasUseFilters(void) override;
-  virtual bool hasUseExternalChecks(void) override;
-  virtual bool hasPrintWitnessGraph(void) override;
-  virtual bool hasSimplifyWitnessGraph(void) override;
-  virtual bool hasInstrumentVerbose(void) override;
-  virtual const char *getName(void) const override;
-};
-
-/// A configuration to perform noop instrumentation that just adds performance
-/// overheads.
-class NoopConfig : public Config {
-public:
-  virtual ~NoopConfig(void) {}
-
-  virtual InstrumentationPolicy *
-  createInstrumentationPolicy(const llvm::DataLayout &D) override;
-  virtual InstrumentationMechanism *
-  createInstrumentationMechanism(void) override;
-  virtual WitnessStrategy *createWitnessStrategy(void) override;
-  virtual MIMode getMIMode(void) override;
-  virtual bool hasUseFilters(void) override;
-  virtual bool hasUseExternalChecks(void) override;
-  virtual bool hasPrintWitnessGraph(void) override;
-  virtual bool hasSimplifyWitnessGraph(void) override;
-  virtual bool hasInstrumentVerbose(void) override;
-  virtual const char *getName(void) const override;
-};
-
+/// TODO Out of date!
 /// Class for the actual configuration items in use.
 /// On a normal run, only one of these should be created in the first call of
 /// the static GlobalConfig::get() method, following calls just provide the
@@ -165,7 +64,7 @@ public:
     return *_WS;
   }
 
-  Config::MIMode getMIMode(void) { return _MIMode; }
+  MIMode getMIMode(void) { return _MIMode; }
 
   bool hasUseFilters(void) { return _UseFilters; }
 
@@ -177,9 +76,7 @@ public:
 
   bool hasInstrumentVerbose(void) { return _InstrumentVerbose; }
 
-  static GlobalConfig &get(const llvm::Module &M);
-
-  static void release(void);
+  static std::unique_ptr<GlobalConfig> get(const llvm::Module &M);
 
   void dump(llvm::raw_ostream &Stream) const;
 
@@ -204,7 +101,7 @@ private:
   InstrumentationPolicy *_IP = nullptr;
   WitnessStrategy *_WS = nullptr;
 
-  Config::MIMode _MIMode = Config::MIMode::DEFAULT;
+  MIMode _MIMode = MIMode::DEFAULT;
 
   bool _UseFilters = false;
   bool _UseExternalChecks = false;

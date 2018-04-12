@@ -8,12 +8,13 @@
 #define MEMINSTRUMENT_PASS_ITARGETGATHERING_H
 
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/IR/Function.h"
 
 namespace meminstrument {
 
-void gatherITargets(ITargetVector &Destination, llvm::Function &F);
+void gatherITargets(GlobalConfig &CFG, ITargetVector &Destination, llvm::Function &F);
 }
 
 #endif

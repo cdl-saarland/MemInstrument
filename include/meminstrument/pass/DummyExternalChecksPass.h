@@ -37,10 +37,12 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
-  virtual void updateITargetsForFunction(ITargetVector &Vec,
+  virtual void updateITargetsForFunction(GlobalConfig &CFG,
+      ITargetVector &Vec,
                                          llvm::Function &F) override;
 
-  virtual void materializeExternalChecksForFunction(ITargetVector &Vec,
+  virtual void materializeExternalChecksForFunction(GlobalConfig &CFG,
+      ITargetVector &Vec,
                                                     llvm::Function &F) override;
 
 private:

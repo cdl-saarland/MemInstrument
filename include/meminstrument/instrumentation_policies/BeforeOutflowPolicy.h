@@ -9,6 +9,7 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
@@ -23,7 +24,7 @@ public:
 
   virtual const char *getName(void) const override { return "BeforeOutflow"; }
 
-  BeforeOutflowPolicy(const llvm::DataLayout &DL) : DL(DL) {}
+  BeforeOutflowPolicy(GlobalConfig &cfg, const llvm::DataLayout &DL) : InstrumentationPolicy(cfg), DL(DL) {}
 
 private:
   const llvm::DataLayout &DL;

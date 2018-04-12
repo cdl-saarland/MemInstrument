@@ -22,14 +22,10 @@
 
 #include "meminstrument/pass/Util.h"
 
+#define DEFAULT_CONFIG SplayConfig
+
 using namespace llvm;
 using namespace meminstrument;
-
-// TODO The overhead for inserting new options could be reduced by using some
-// preprocessor magic...
-
-/// Name of the environment variable to check for configuration input
-#define MI_CONFIG_ENV_VAR "MI_CONFIG"
 
 namespace {
 
@@ -37,100 +33,161 @@ cl::OptionCategory
     MemInstrumentCat("MemInstrument Options",
                      "configure the memory safety instrumentation");
 
-enum InstrumentationMechanismKind {
-  IM_dummy,
-  IM_splay,
-  IM_rt_stat,
-  IM_noop,
-  IM_default,
-};
-
-cl::opt<InstrumentationMechanismKind> InstrumentationMechanismOpt(
-    "mi-imechanism", cl::desc("Override InstructionMechanism:"),
-    cl::values(clEnumValN(IM_dummy, "dummy",
-                          "only insert dummy calls for instrumentation")),
-    cl::values(clEnumValN(IM_splay, "splay",
-                          "use splay tree for instrumentation")),
-    cl::values(clEnumValN(
-        IM_noop, "noop",
-        "use noop instrumentation that just adds performance overhead")),
-    cl::values(
-        clEnumValN(IM_rt_stat, "rt_stat",
-                   "only instrument for collecting run-time statistics")),
-    cl::cat(MemInstrumentCat),
-    cl::init(IM_default) // default
-);
-
-enum InstrumentationPolicyKind {
-  IP_beforeOutflow,
-  IP_accessOnly,
-  IP_none,
-  IP_default,
-};
-
-cl::opt<InstrumentationPolicyKind> InstrumentationPolicyOpt(
-    "mi-ipolicy", cl::desc("Override InstructionPolicy:"),
-    cl::values(clEnumValN(IP_beforeOutflow, "before-outflow",
-                          "check for dereference at loads/stores and for being"
-                          " inbounds when pointers flow out of functions")),
-    cl::values(clEnumValN(IP_accessOnly, "access-only",
-                          "check only at loads/stores for dereference")),
-    cl::values(clEnumValN(
-        IP_none, "none", "do not check anything (except for external checks)")),
-    cl::cat(MemInstrumentCat), cl::init(IP_default));
-
-enum WitnessStrategyKind {
-  WS_after_inflow,
-  WS_none,
-  WS_default,
-};
-
-cl::opt<WitnessStrategyKind> WitnessStrategyOpt(
-    "mi-wstrategy", cl::desc("Override WitnessStrategy:"),
-    cl::values(clEnumValN(WS_after_inflow, "after-inflow",
-                          "place witnesses after inflow of the base value")),
-    cl::values(clEnumValN(WS_none, "none", "place no witnesses")),
-    cl::cat(MemInstrumentCat), cl::init(WS_default));
-
-cl::opt<Config::MIMode> MIModeOpt(
-    "mi-mode",
-    cl::desc("Override until which stage instrumentation should be performed:"),
-    cl::values(clEnumValN(Config::MIMode::SETUP, "setup",
-                          "only until setup is done")),
-    cl::values(clEnumValN(Config::MIMode::GATHER_ITARGETS, "gatheritargets",
-                          "only until ITarget gathering is done")),
-    cl::values(clEnumValN(Config::MIMode::FILTER_ITARGETS, "filteritargets",
-                          "only until ITarget filtering is done")),
-    cl::values(clEnumValN(Config::MIMode::GENERATE_WITNESSES, "genwitnesses",
-                          "only until witness generation is done")),
-    cl::values(clEnumValN(Config::MIMode::GENERATE_EXTERNAL_CHECKS,
-                          "genextchecks",
-                          "only until external check generation is done")),
-    cl::values(clEnumValN(Config::MIMode::GENERATE_CHECKS, "genchecks",
-                          "the full pipeline")),
-    cl::cat(MemInstrumentCat), cl::init(Config::MIMode::DEFAULT));
-
-enum ConfigKind {
-  CK_splay,
-  CK_rt_stat,
-  CK_external_only,
-  CK_noop,
-  CK_default,
+enum class ConfigKind {
+  splay,
+  rt_stat,
+  external_only,
+  noop,
+  default_val,
 };
 
 cl::opt<ConfigKind> ConfigKindOpt(
     "mi-config", cl::desc("Choose base configuration"),
-    cl::values(clEnumValN(CK_splay, "splay",
+    cl::values(clEnumValN(ConfigKind::splay, "splay",
                           "splay-tree-based instrumentation")),
-    cl::values(clEnumValN(CK_external_only, "external_only",
+    cl::values(clEnumValN(ConfigKind::external_only, "external_only",
                           "instrumentation that inserts only external checks")),
     cl::values(
-        clEnumValN(CK_rt_stat, "rt_stat",
+        clEnumValN(ConfigKind::rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only")),
     cl::values(
-        clEnumValN(CK_noop, "noop",
+        clEnumValN(ConfigKind::noop, "noop",
                    "noop instrumentation that just adds runtime overheads")),
-    cl::cat(MemInstrumentCat), cl::init(CK_default));
+    cl::cat(MemInstrumentCat), cl::init(ConfigKind::default_val));
+
+enum class IMKind {
+  dummy,
+  splay,
+  rt_stat,
+  noop,
+  default_val,
+};
+
+cl::opt<IMKind> IMOpt(
+    "mi-imechanism", cl::desc("Override InstructionMechanism:"),
+    cl::values(clEnumValN(IMKind::dummy, "dummy",
+                          "only insert dummy calls for instrumentation")),
+    cl::values(clEnumValN(IMKind::splay, "splay",
+                          "use splay tree for instrumentation")),
+    cl::values(clEnumValN(
+        IMKind::noop, "noop",
+        "use noop instrumentation that just adds performance overhead")),
+    cl::values(
+        clEnumValN(IMKind::rt_stat, "rt_stat",
+                   "only instrument for collecting run-time statistics")),
+    cl::cat(MemInstrumentCat),
+    cl::init(IMKind::default_val)
+);
+
+InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg, IMKind k) {
+  switch (k) {
+  case IMKind::dummy:
+    return new DummyMechanism(cfg);
+  case IMKind::splay:
+    return new SplayMechanism(cfg);
+  case IMKind::rt_stat:
+    return new RuntimeStatMechanism(cfg);
+  case IMKind::noop:
+    return new NoopMechanism(cfg);
+  case IMKind::default_val:
+    return nullptr;
+  }
+  llvm_unreachable("Invalid InstrumentationMechanism!");
+}
+
+enum class IPKind {
+  beforeOutflow,
+  accessOnly,
+  none,
+  default_val,
+};
+
+cl::opt<IPKind> IPOpt(
+    "mi-ipolicy", cl::desc("Override InstructionPolicy:"),
+    cl::values(clEnumValN(IPKind::beforeOutflow, "before-outflow",
+                          "check for dereference at loads/stores and for being"
+                          " inbounds when pointers flow out of functions")),
+    cl::values(clEnumValN(IPKind::accessOnly, "access-only",
+                          "check only at loads/stores for dereference")),
+    cl::values(clEnumValN(
+        IPKind::none, "none", "do not check anything (except for external checks)")),
+    cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
+
+InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k, const DataLayout &DL) {
+  switch (k) {
+  case IPKind::beforeOutflow:
+    return new BeforeOutflowPolicy(cfg, DL);
+  case IPKind::accessOnly:
+    return new AccessOnlyPolicy(cfg, DL);
+  case IPKind::none:
+    return new NonePolicy(cfg, DL);
+  case IPKind::default_val:
+    return nullptr;
+  }
+  llvm_unreachable("Invalid InstrumentationPolicy!");
+}
+
+enum class WSKind {
+  after_inflow,
+  none,
+  default_val,
+};
+
+cl::opt<WSKind> WSOpt(
+    "mi-wstrategy", cl::desc("Override WitnessStrategy:"),
+    cl::values(clEnumValN(WSKind::after_inflow, "after-inflow",
+                          "place witnesses after inflow of the base value")),
+    cl::values(clEnumValN(WSKind::none, "none", "place no witnesses")),
+    cl::cat(MemInstrumentCat), cl::init(WSKind::default_val));
+
+WitnessStrategy *createWitnessStrategy(GlobalConfig &cfg, WSKind k) {
+  switch (k) {
+  case WSKind::after_inflow:
+    return new AfterInflowStrategy(cfg);
+  case WSKind::none:
+    return new NoneStrategy(cfg);
+  case WSKind::default_val:
+    return nullptr;
+  }
+  llvm_unreachable("Invalid WitnessStrategy!");
+}
+
+const char *getModeName(MIMode M) {
+  switch (M) {
+  case MIMode::SETUP:
+    return "Setup";
+  case MIMode::GATHER_ITARGETS:
+    return "GatherITargets";
+  case MIMode::FILTER_ITARGETS:
+    return "FilterITargets";
+  case MIMode::GENERATE_WITNESSES:
+    return "GenerateWitnesses";
+  case MIMode::GENERATE_EXTERNAL_CHECKS:
+    return "GenerateExternalChecks";
+  case MIMode::GENERATE_CHECKS:
+    return "GenerateChecks";
+  default:
+    return "[Unexpected Mode]";
+  }
+}
+
+cl::opt<MIMode> MIModeOpt(
+    "mi-mode",
+    cl::desc("Override until which stage instrumentation should be performed:"),
+    cl::values(clEnumValN(MIMode::SETUP, "setup",
+                          "only until setup is done")),
+    cl::values(clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
+                          "only until ITarget gathering is done")),
+    cl::values(clEnumValN(MIMode::FILTER_ITARGETS, "filteritargets",
+                          "only until ITarget filtering is done")),
+    cl::values(clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
+                          "only until witness generation is done")),
+    cl::values(clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS,
+                          "genextchecks",
+                          "only until external check generation is done")),
+    cl::values(clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",
+                          "the full pipeline")),
+    cl::cat(MemInstrumentCat), cl::init(MIMode::DEFAULT));
 
 cl::opt<cl::boolOrDefault>
     UseFiltersOpt("mi-use-filters",
@@ -156,80 +213,6 @@ cl::opt<cl::boolOrDefault>
     InstrumentVerboseOpt("mi-verbose", cl::desc("Use verbose check functions"),
                          cl::cat(MemInstrumentCat));
 
-Config *createConfigCLI(void) {
-  switch (ConfigKindOpt) {
-  case CK_splay:
-    return new SplayConfig();
-  case CK_rt_stat:
-    return new RTStatConfig();
-  case CK_noop:
-    return new NoopConfig();
-  case CK_external_only:
-    return new ExternalOnlyConfig();
-  case CK_default: {
-    const char *EnvStr = std::getenv(MI_CONFIG_ENV_VAR);
-
-    if (EnvStr == nullptr) {
-      return new SplayConfig(); // default Config HERE
-    }
-
-    if (0 == strcmp(EnvStr, "splay")) {
-      return new SplayConfig();
-    } else if (0 == strcmp(EnvStr, "rt_stat")) {
-      return new RTStatConfig();
-    } else if (0 == strcmp(EnvStr, "external_only")) {
-      return new ExternalOnlyConfig();
-    } else {
-      errs() << "Unknown meminstrument config name: `" << EnvStr << "'\n";
-      return new SplayConfig();
-    }
-  }
-  }
-  llvm_unreachable("Invalid ConfigKind!");
-}
-
-InstrumentationMechanism *createInstrumentationMechanismCLI(void) {
-  switch (InstrumentationMechanismOpt) {
-  case IM_dummy:
-    return new DummyMechanism();
-  case IM_splay:
-    return new SplayMechanism();
-  case IM_rt_stat:
-    return new RuntimeStatMechanism();
-  case IM_noop:
-    return new NoopMechanism();
-  case IM_default:
-    return nullptr;
-  }
-  llvm_unreachable("Invalid InstrumentationMechanism!");
-}
-
-InstrumentationPolicy *createInstrumentationPolicyCLI(const DataLayout &DL) {
-  switch (InstrumentationPolicyOpt) {
-  case IP_beforeOutflow:
-    return new BeforeOutflowPolicy(DL);
-  case IP_accessOnly:
-    return new AccessOnlyPolicy(DL);
-  case IP_none:
-    return new NonePolicy(DL);
-  case IP_default:
-    return nullptr;
-  }
-  llvm_unreachable("Invalid InstrumentationPolicy!");
-}
-
-WitnessStrategy *createWitnessStrategyCLI(void) {
-  switch (WitnessStrategyOpt) {
-  case WS_after_inflow:
-    return new AfterInflowStrategy();
-  case WS_none:
-    return new NoneStrategy();
-  case WS_default:
-    return nullptr;
-  }
-  llvm_unreachable("Invalid WitnessStrategy!");
-}
-
 bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   switch (val) {
   case cl::BOU_UNSET:
@@ -242,42 +225,131 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
-GlobalConfig *GlobalCfg = nullptr;
+} // namespace
 
-const char *getModeName(Config::MIMode M) {
-  switch (M) {
-  case Config::MIMode::SETUP:
-    return "Setup";
-  case Config::MIMode::GATHER_ITARGETS:
-    return "GatherITargets";
-  case Config::MIMode::FILTER_ITARGETS:
-    return "FilterITargets";
-  case Config::MIMode::GENERATE_WITNESSES:
-    return "GenerateWitnesses";
-  case Config::MIMode::GENERATE_EXTERNAL_CHECKS:
-    return "GenerateExternalChecks";
-  case Config::MIMode::GENERATE_CHECKS:
-    return "GenerateChecks";
-  default:
-    return "[Unexpected Mode]";
+namespace meminstrument{
+
+/// The base class for configurations
+class Config {
+public:
+  virtual ~Config(void) {}
+
+  virtual IPKind getInstrumentationPolicy(void) const = 0;
+  virtual IMKind getInstrumentationMechanism(void) const = 0;
+  virtual WSKind getWitnessStrategy(void) const = 0;
+  virtual MIMode getMIMode(void) const = 0;
+  virtual bool hasUseFilters(void) const = 0;
+  virtual bool hasUseExternalChecks(void) const = 0;
+  virtual bool hasPrintWitnessGraph(void) const = 0;
+  virtual bool hasSimplifyWitnessGraph(void) const = 0;
+  virtual bool hasInstrumentVerbose(void) const = 0;
+  virtual const char *getName(void) const = 0;
+
+  static Config *create(ConfigKind k);
+};
+
+/// A configuration to perform splay-tree-based instrumentation.
+/// Includes all internal filters and simplifications.
+class SplayConfig : public Config {
+public:
+  virtual ~SplayConfig(void) {}
+
+  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::beforeOutflow; }
+  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::splay; }
+  virtual WSKind getWitnessStrategy(void) const override { return WSKind::after_inflow; }
+  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual bool hasUseFilters(void) const override { return true; }
+  virtual bool hasUseExternalChecks(void) const override { return false; }
+  virtual bool hasPrintWitnessGraph(void) const override { return false; }
+  virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
+  virtual bool hasInstrumentVerbose(void) const override { return false; }
+  virtual const char *getName(void) const override { return "Splay"; }
+};
+
+/// A configuration to perform only instrumentation for external checks.
+class ExternalOnlyConfig : public SplayConfig {
+public:
+  virtual ~ExternalOnlyConfig(void) {}
+
+  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_EXTERNAL_CHECKS; }
+  virtual bool hasUseFilters(void) const override { return false; }
+  virtual bool hasUseExternalChecks(void) const override { return true; }
+  virtual const char *getName(void) const override { return "ExternalOnly"; }
+};
+
+
+/// A configuration to perform instrumentation for collecting run-time
+/// statistics.
+class RTStatConfig : public Config {
+public:
+  virtual ~RTStatConfig(void) {}
+
+  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::accessOnly; }
+  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::rt_stat; }
+  virtual WSKind getWitnessStrategy(void) const override { return WSKind::none; }
+  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual bool hasUseFilters(void) const override { return false; }
+  virtual bool hasUseExternalChecks(void) const override { return false; }
+  virtual bool hasPrintWitnessGraph(void) const override { return false; }
+  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
+  virtual bool hasInstrumentVerbose(void) const override { return true; }
+  virtual const char *getName(void) const override { return "RTStat"; }
+};
+
+/// A configuration to perform noop instrumentation that just adds performance
+/// overheads.
+class NoopConfig : public Config {
+public:
+  virtual ~NoopConfig(void) {}
+
+  virtual IPKind getInstrumentationPolicy(void) const override { return IPKind::accessOnly; }
+  virtual IMKind getInstrumentationMechanism(void) const override { return IMKind::noop; }
+  virtual WSKind getWitnessStrategy(void) const override { return WSKind::none; }
+  virtual MIMode getMIMode(void) const override { return MIMode::GENERATE_CHECKS; }
+  virtual bool hasUseFilters(void) const override { return false; }
+  virtual bool hasUseExternalChecks(void) const override { return false; }
+  virtual bool hasPrintWitnessGraph(void) const override { return false; }
+  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
+  virtual bool hasInstrumentVerbose(void) const override { return false; }
+  virtual const char *getName(void) const override { return "Noop"; }
+};
+
+Config *Config::create(ConfigKind k) {
+  switch (k) {
+  case ConfigKind::splay:
+    return new SplayConfig();
+  case ConfigKind::rt_stat:
+    return new RTStatConfig();
+  case ConfigKind::noop:
+    return new NoopConfig();
+  case ConfigKind::external_only:
+    return new ExternalOnlyConfig();
+  case ConfigKind::default_val:
+    return new DEFAULT_CONFIG();
   }
+  llvm_unreachable("Invalid ConfigKind!");
 }
 
-} // namespace
+}
 
 GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
 
-  InstrumentationMechanism *IM = createInstrumentationMechanismCLI();
-  _IM = IM ? IM : Cfg->createInstrumentationMechanism();
+#define X_OR_DEFAULT(TYPE, X, Y) (((X) != TYPE::default_val) ? (X) : (Y))
+
+  IMKind imk = X_OR_DEFAULT(IMKind, IMOpt, Cfg->getInstrumentationMechanism());
+  _IM = createInstrumentationMechanism(*this, imk);
 
   const DataLayout &DL = M.getDataLayout();
-  InstrumentationPolicy *IP = createInstrumentationPolicyCLI(DL);
-  _IP = IP ? IP : Cfg->createInstrumentationPolicy(DL);
+  IPKind ipk = X_OR_DEFAULT(IPKind, IPOpt, Cfg->getInstrumentationPolicy());
+  _IP = createInstrumentationPolicy(*this, ipk, DL);
 
-  WitnessStrategy *WS = createWitnessStrategyCLI();
-  _WS = WS ? WS : Cfg->createWitnessStrategy();
 
-  if (MIModeOpt != Config::MIMode::DEFAULT) {
+  WSKind wsk = X_OR_DEFAULT(WSKind, WSOpt, Cfg->getWitnessStrategy());
+  _WS = createWitnessStrategy(*this, wsk);
+
+#undef X_OR_DEFAULT
+
+  if (MIModeOpt != MIMode::DEFAULT) {
     _MIMode = MIModeOpt;
   } else {
     _MIMode = Cfg->getMIMode();
@@ -298,16 +370,12 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   delete Cfg;
 }
 
-GlobalConfig &GlobalConfig::get(const llvm::Module &M) {
-  if (GlobalCfg == nullptr) {
-    GlobalCfg = new GlobalConfig(createConfigCLI(), M);
-    DEBUG(dbgs() << "Creating MemInstrument Config:\n";
-          GlobalCfg->dump(dbgs()););
-  }
-  return *GlobalCfg;
+std::unique_ptr<GlobalConfig> GlobalConfig::get(const llvm::Module &M) {
+  auto GlobalCfg = std::unique_ptr<GlobalConfig>(new GlobalConfig(Config::create(ConfigKindOpt), M));
+  DEBUG(dbgs() << "Creating MemInstrument Config:\n";
+        GlobalCfg->dump(dbgs()););
+  return GlobalCfg;
 }
-
-void GlobalConfig::release(void) { delete GlobalCfg; }
 
 void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
   Stream << "{{{ Config: " << _ConfigName << "\n";
@@ -331,105 +399,3 @@ bool GlobalConfig::hasErrors(void) const {
   return _numErrors != 0;
 }
 
-// Implementation of SplayConfig
-
-InstrumentationPolicy *
-SplayConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
-  return new BeforeOutflowPolicy(DL);
-}
-
-InstrumentationMechanism *SplayConfig::createInstrumentationMechanism(void) {
-  return new SplayMechanism();
-}
-
-WitnessStrategy *SplayConfig::createWitnessStrategy(void) {
-  return new AfterInflowStrategy();
-}
-
-Config::MIMode SplayConfig::getMIMode(void) {
-  return Config::MIMode::GENERATE_CHECKS;
-}
-bool SplayConfig::hasUseFilters(void) { return true; }
-bool SplayConfig::hasUseExternalChecks(void) { return false; }
-bool SplayConfig::hasPrintWitnessGraph(void) { return false; }
-bool SplayConfig::hasSimplifyWitnessGraph(void) { return true; }
-bool SplayConfig::hasInstrumentVerbose(void) { return false; }
-
-const char *SplayConfig::getName(void) const { return "Splay"; }
-
-// Implementation of ExternalOnlyConfig
-
-InstrumentationPolicy *
-ExternalOnlyConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
-  return new BeforeOutflowPolicy(DL);
-}
-
-InstrumentationMechanism *
-ExternalOnlyConfig::createInstrumentationMechanism(void) {
-  return new SplayMechanism();
-}
-
-WitnessStrategy *ExternalOnlyConfig::createWitnessStrategy(void) {
-  return new AfterInflowStrategy();
-}
-
-Config::MIMode ExternalOnlyConfig::getMIMode(void) {
-  return Config::MIMode::GENERATE_EXTERNAL_CHECKS;
-}
-bool ExternalOnlyConfig::hasUseFilters(void) { return false; }
-bool ExternalOnlyConfig::hasUseExternalChecks(void) { return true; }
-bool ExternalOnlyConfig::hasPrintWitnessGraph(void) { return false; }
-bool ExternalOnlyConfig::hasSimplifyWitnessGraph(void) { return true; }
-bool ExternalOnlyConfig::hasInstrumentVerbose(void) { return false; }
-
-const char *ExternalOnlyConfig::getName(void) const { return "ExternalOnly"; }
-
-// Implementation of NoopConfig
-InstrumentationPolicy *
-NoopConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
-  return new AccessOnlyPolicy(DL);
-}
-
-InstrumentationMechanism *NoopConfig::createInstrumentationMechanism(void) {
-  return new NoopMechanism();
-}
-
-WitnessStrategy *NoopConfig::createWitnessStrategy(void) {
-  return new NoneStrategy();
-}
-
-Config::MIMode NoopConfig::getMIMode(void) {
-  return Config::MIMode::GENERATE_CHECKS;
-}
-bool NoopConfig::hasUseFilters(void) { return false; }
-bool NoopConfig::hasUseExternalChecks(void) { return false; }
-bool NoopConfig::hasPrintWitnessGraph(void) { return false; }
-bool NoopConfig::hasSimplifyWitnessGraph(void) { return false; }
-bool NoopConfig::hasInstrumentVerbose(void) { return false; }
-
-const char *NoopConfig::getName(void) const { return "Noop"; }
-
-// Implementation of RTStatConfig
-InstrumentationPolicy *
-RTStatConfig::createInstrumentationPolicy(const llvm::DataLayout &DL) {
-  return new AccessOnlyPolicy(DL);
-}
-
-InstrumentationMechanism *RTStatConfig::createInstrumentationMechanism(void) {
-  return new RuntimeStatMechanism();
-}
-
-WitnessStrategy *RTStatConfig::createWitnessStrategy(void) {
-  return new NoneStrategy();
-}
-
-Config::MIMode RTStatConfig::getMIMode(void) {
-  return Config::MIMode::GENERATE_CHECKS;
-}
-bool RTStatConfig::hasUseFilters(void) { return false; }
-bool RTStatConfig::hasUseExternalChecks(void) { return false; }
-bool RTStatConfig::hasPrintWitnessGraph(void) { return false; }
-bool RTStatConfig::hasSimplifyWitnessGraph(void) { return false; }
-bool RTStatConfig::hasInstrumentVerbose(void) { return true; }
-
-const char *RTStatConfig::getName(void) const { return "RTStat"; }

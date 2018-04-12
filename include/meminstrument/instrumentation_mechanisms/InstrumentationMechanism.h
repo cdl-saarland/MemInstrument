@@ -16,6 +16,8 @@
 
 namespace meminstrument {
 
+class GlobalConfig;
+
 class InstrumentationMechanism {
 public:
   virtual void insertWitness(ITarget &Target) const = 0;
@@ -42,7 +44,13 @@ public:
 
   virtual ~InstrumentationMechanism(void) {}
 
+  InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) { }
+
+protected:
+  GlobalConfig &_CFG;
+
 private:
+
   /// Base case for the implementation of the insertFunDecl helper function.
   static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
                                             llvm::Module &M,

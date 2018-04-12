@@ -16,12 +16,16 @@
 
 namespace meminstrument {
 
+struct GlobalConfig;
+
 struct WitnessGraphNode;
 
 class WitnessGraph;
 
 class WitnessStrategy {
 public:
+  WitnessStrategy(GlobalConfig &cfg) : _CFG(cfg) {}
+
   virtual ~WitnessStrategy(void) {}
 
   virtual void addRequired(WitnessGraphNode *Node) const = 0;
@@ -42,6 +46,8 @@ protected:
   static WitnessGraphNode *getInternalNode(WitnessGraph &WG,
                                            llvm::Value *Instrumentee,
                                            llvm::Instruction *Location);
+
+  GlobalConfig &_CFG;
 };
 } // namespace meminstrument
 

@@ -15,8 +15,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void meminstrument::gatherITargets(ITargetVector &Destination, Function &F) {
-  auto &IP = GlobalConfig::get(*F.getParent()).getInstrumentationPolicy();
+void meminstrument::gatherITargets(GlobalConfig &CFG, ITargetVector &Destination, Function &F) {
+  auto &IP = CFG.getInstrumentationPolicy();
 
   for (auto &BB : F) {
     for (auto &I : BB) {

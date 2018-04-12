@@ -15,13 +15,14 @@
 #define MEMINSTRUMENT_PASS_WITNESSGENERATION_H
 
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 
 namespace meminstrument {
 
-void generateWitnesses(ITargetVector &Vec, llvm::Function &F);
+void generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec, llvm::Function &F);
 }
 
 #endif

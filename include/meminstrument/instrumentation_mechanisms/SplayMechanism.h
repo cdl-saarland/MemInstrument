@@ -16,6 +16,8 @@
 
 namespace meminstrument {
 
+class GlobalConfig;
+
 struct SplayWitness : public Witness {
   llvm::Value *WitnessValue;
 
@@ -33,6 +35,8 @@ struct SplayWitness : public Witness {
 
 class SplayMechanism : public InstrumentationMechanism {
 public:
+  SplayMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) { }
+
   virtual void insertWitness(ITarget &Target) const override;
 
   virtual void insertCheck(ITarget &Target) const override;

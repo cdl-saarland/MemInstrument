@@ -11,10 +11,11 @@
 #include "llvm/Pass.h"
 
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/Config.h"
 
 namespace meminstrument {
 
-void generateChecks(ITargetVector &Vec, llvm::Function &F);
+void generateChecks(GlobalConfig &CFG, ITargetVector &Vec, llvm::Function &F);
 }
 
 #endif

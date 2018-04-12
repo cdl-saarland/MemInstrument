@@ -19,6 +19,8 @@ namespace meminstrument {
 
 class AfterInflowStrategy : public WitnessStrategy {
 public:
+  AfterInflowStrategy(GlobalConfig &cfg) : WitnessStrategy(cfg) { }
+
   virtual void addRequired(WitnessGraphNode *Node) const override;
 
   virtual void simplifyWitnessGraph(WitnessGraph &WG) const override;
