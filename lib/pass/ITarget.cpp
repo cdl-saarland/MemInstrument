@@ -26,6 +26,106 @@ bool flagSubsumes(const ITarget &i1, const ITarget &i2) {
 }
 } // namespace
 
+
+bool ITarget::is(Kind k) const {
+  return this->getKind() == k;
+}
+
+Kind ITarget::getKind(void) const {
+  return _Kind;
+}
+
+llvm::Value *ITarget::getInstrumentee(void) const {
+  assert(isValid());
+  return _Instrumentee;
+}
+
+llvm::Instruction *ITarget::getLocation(void) const {
+  assert(isValid());
+  return _Location;
+}
+
+size_t ITarget::getAccessSize(void) const {
+  assert(isValid());
+  assert(is(Kind::Check));
+  return _AccessSize;
+}
+
+llvm::Value *ITarget::getAccessSizeVal(void) const {
+  assert(isValid());
+  assert(is(Kind::VarSizeCheck));
+  return _AccessSizeVal;
+}
+
+bool ITarget::hasUpperBoundFlag(void) const {
+  assert(isValid());
+  return _CheckUpperBoundFlag;
+}
+
+bool ITarget::hasLowerBoundFlag(void) const {
+  assert(isValid());
+  return _CheckLowerBoundFlag;
+}
+
+bool ITarget::hasTemporalFlag(void) const {
+  assert(isValid());
+  return _CheckTemporalFlag;
+}
+
+bool ITarget::requiresExplicitBounds(void) const {
+  assert(isValid());
+  return _RequiresExplicitBounds;
+}
+
+bool ITarget::hasBoundWitness(void) const {
+  assert(isValid());
+  return _BoundWitness.get() != nullptr;
+}
+
+Witness &ITarget::getBoundWitness(void) {
+  assert(isValid());
+  assert(hasBoundWitness());
+  return *_BoundWitness;
+}
+
+bool ITarget::isValid(void) const {
+  return not _Invalidated;
+}
+
+void ITarget::invalidate(void) {
+  _Invalidated = true;
+}
+
+
+bool ITarget::subsumes(const ITarget &other) const {
+  assert(false); // TODO ?
+  return false;
+}
+
+bool ITarget::joinFlags(const ITarget &other) {
+  assert(false); // TODO ?
+  return false;
+}
+
+static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
+  ITarget *R = new ITarget(Kind::Bounds);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_RequiresExplicitBounds = true;
+  return std::shared_ptr<ITarget>(R);
+}
+
+static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* Location);
+
+static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size);
+
+static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size);
+
+static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other);
+
+
+
+
 ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
                  size_t AccessSize, bool CheckUpperBoundFlag,
                  bool CheckLowerBoundFlag, bool CheckTemporalFlag,
