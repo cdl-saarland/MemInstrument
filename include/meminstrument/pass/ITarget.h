@@ -27,6 +27,8 @@
 
 namespace meminstrument {
 
+class ITarget;
+
 typedef std::shared_ptr<ITarget> ITargetPtr;
 
 typedef std::vector<ITargetPtr> ITargetVector;
@@ -71,6 +73,7 @@ public:
 
   Witness &getBoundWitness(void);
 
+  void setBoundWitness(std::shared_ptr<Witness> BoundWitness);
 
   /// indicator whether the ITarget has been invalidated and should therefore
   /// not be realized.
@@ -97,7 +100,9 @@ public:
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
 private:
-  ITarget(Kind k) : _Kind(k), _BoundWitness(std::shared_ptr(nullptr)) {}
+  ITarget(Kind k) : _Kind(k), _BoundWitness(std::shared_ptr<Witness>(nullptr)) {}
+
+  const Kind _Kind;
 
   bool _CheckUpperBoundFlag = false;
 
@@ -114,7 +119,8 @@ private:
   size_t _AccessSize = 0;
   llvm::Value *_AccessSizeVal = nullptr;
 
-  const Kind _Kind;
+
+  void PrintLocation(llvm::raw_ostream &Stream) const;
 };
 
 

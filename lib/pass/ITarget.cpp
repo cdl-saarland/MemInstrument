@@ -88,6 +88,10 @@ Witness &ITarget::getBoundWitness(void) {
   return *_BoundWitness;
 }
 
+void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
+  _BoundWitness = BoundWitness;
+}
+
 bool ITarget::isValid(void) const {
   return not _Invalidated;
 }
@@ -115,104 +119,62 @@ static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Value* Loc
   return std::shared_ptr<ITarget>(R);
 }
 
-static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* Location);
-
-static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size);
-
-static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size);
-
-static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other);
-
-
-
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
-                 bool RequiresExplicitBounds)
-    : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
-      HasConstAccessSize(true), AccessSizeVal(nullptr),
-      CheckUpperBoundFlag(CheckUpperBoundFlag),
-      CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
-  assert(Instrumentee);
-  assert(Location);
+static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
+  ITarget *R = new ITarget(Kind::Invariant);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  return std::shared_ptr<ITarget>(R);
 }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
-              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, true, true,
-              RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize)
-    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
-                 bool RequiresExplicitBounds)
-    : Instrumentee(Instrumentee), Location(Location), AccessSize(0),
-      HasConstAccessSize(false), AccessSizeVal(AccessSize),
-      CheckUpperBoundFlag(CheckUpperBoundFlag),
-      CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
-  assert(Instrumentee);
-  assert(Location);
-  assert(AccessSize);
+static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size) {
+  ITarget *R = new ITarget(Kind::Check);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_AccessSize = Size;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
+  return std::shared_ptr<ITarget>(R);
 }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
-              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, true, true,
-              RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize)
-    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location)
-    : ITarget(Instrumentee, Location, nullptr, true, true, false) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, nullptr, true, true,
-              RequiresExplicitBounds) {}
-
-bool ITarget::subsumes(const ITarget &other) const {
-  return (Instrumentee == other.Instrumentee) &&
-         ((HasConstAccessSize && other.HasConstAccessSize) ||
-          AccessSizeVal == other.AccessSizeVal) &&
-         (AccessSize >= other.AccessSize) && flagSubsumes(*this, other);
+static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size) {
+  ITarget *R = new ITarget(Kind::VarSizeCheck);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_AccessSizeVal = Size;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
+  return std::shared_ptr<ITarget>(R);
 }
 
-bool ITarget::joinFlags(const ITarget &other) {
-  bool Changed = !flagSubsumes(*this, other);
-
-  // AccessSize = std::max(AccessSize, other.AccessSize);
-  CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
-  CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
-  CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
-  RequiresExplicitBounds =
-      RequiresExplicitBounds || other.RequiresExplicitBounds;
-  return Changed;
+static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other) {
+  ITarget *R = new ITarget(Kind::Intermediate);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_CheckUpperBoundFlag = other._CheckUpperBoundFlag;
+  R->_CheckLowerBoundFlag = other._CheckLowerBoundFlag;
+  R->_CheckTemporalFlag = other._CheckTemporalFlag;
+  //TODO explicit bounds?
+  return std::shared_ptr<ITarget>(R);
 }
 
-bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }
+// bool ITarget::subsumes(const ITarget &other) const {
+//   return (Instrumentee == other.Instrumentee) &&
+//          ((HasConstAccessSize && other.HasConstAccessSize) ||
+//           AccessSizeVal == other.AccessSizeVal) &&
+//          (AccessSize >= other.AccessSize) && flagSubsumes(*this, other);
+// }
+//
+// bool ITarget::joinFlags(const ITarget &other) {
+//   bool Changed = !flagSubsumes(*this, other);
+//
+//   // AccessSize = std::max(AccessSize, other.AccessSize);
+//   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
+//   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
+//   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
+//   RequiresExplicitBounds =
+//       RequiresExplicitBounds || other.RequiresExplicitBounds;
+//   return Changed;
+// }
 
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
   std::string LocName = this->Location->getName().str();
@@ -253,29 +215,25 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
     return Stream;
   }
 
-  Stream << "<" << IT.Instrumentee->getName() << ", ";
+  Stream << '<';
+  switch (IT._Kind) {
+    case Bounds:
+      Stream << "bounds"
+      break;
+    case Check:
+      Stream << "dereference check with constant size " << IT.getAccessSize();
+      break;
+    case VarSizeCheck:
+      Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
+      break;
+    case Intermediate:
+      Stream << "intermediate target";
+    case Invariant:
+      Stream << "invariant check";
+  }
+  Stream << " for " << IT.getInstrumentee()->getName(); << " at ";
   IT.printLocation(Stream);
-  Stream << ", ";
-  if (IT.HasConstAccessSize) {
-    Stream << IT.AccessSize << "B, ";
-  } else {
-    Stream << "xB, ";
-  }
-  if (IT.CheckUpperBoundFlag) {
-    Stream << "u";
-  } else {
-    Stream << "_";
-  }
-  if (IT.CheckLowerBoundFlag) {
-    Stream << "l";
-  } else {
-    Stream << "_";
-  }
-  if (IT.CheckTemporalFlag) {
-    Stream << "t";
-  } else {
-    Stream << "_";
-  }
-  Stream << ">";
+  Stream << '>';
+
   return Stream;
 }
