@@ -28,6 +28,10 @@ public:
 
   virtual llvm::Constant *getFailFunction(void) const = 0;
 
+  virtual llvm::Constant *getVerboseFailFunction(void) const {
+    llvm_unreachable("Not supported!");
+  }
+
   virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) const = 0;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
@@ -45,6 +49,9 @@ public:
   virtual ~InstrumentationMechanism(void) {}
 
   InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) {}
+
+  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
+                                                   llvm::StringRef Str);
 
 protected:
   GlobalConfig &_CFG;
@@ -88,8 +95,6 @@ protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
                 llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
-  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
-                                                   llvm::StringRef Str);
 
   /// Inserts a function declaration into a Module and marks it for no
   /// instrumentation.

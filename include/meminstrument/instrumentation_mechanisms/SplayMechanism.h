@@ -45,6 +45,8 @@ public:
 
   virtual llvm::Constant *getFailFunction(void) const override;
 
+  virtual llvm::Constant *getVerboseFailFunction(void) const override;
+
   virtual std::shared_ptr<Witness>
   insertWitnessPhi(ITarget &Target) const override;
 
@@ -68,6 +70,7 @@ private:
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
   llvm::Constant *FailFunction = nullptr;
+  llvm::Constant *VerboseFailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

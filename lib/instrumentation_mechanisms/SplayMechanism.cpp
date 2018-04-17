@@ -125,6 +125,10 @@ llvm::Constant *SplayMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 
+llvm::Constant *SplayMechanism::getVerboseFailFunction(void) const {
+  return VerboseFailFunction;
+}
+
 void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
@@ -160,6 +164,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__splay_fail_simple", NoReturnAttr, VoidTy);
+
+  VerboseFailFunction = insertFunDecl(M, "__splay_fail_simple_with_msg", NoReturnAttr, VoidTy, PtrArgType);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
