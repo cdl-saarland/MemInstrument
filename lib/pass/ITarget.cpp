@@ -35,6 +35,10 @@ Kind ITarget::getKind(void) const {
   return _Kind;
 }
 
+bool ITarget::isCheck() const {
+  return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck);
+}
+
 llvm::Value *ITarget::getInstrumentee(void) const {
   assert(isValid());
   return _Instrumentee;
@@ -47,7 +51,7 @@ llvm::Instruction *ITarget::getLocation(void) const {
 
 size_t ITarget::getAccessSize(void) const {
   assert(isValid());
-  assert(is(Kind::Check));
+  assert(is(Kind::ConstSizeCheck));
   return _AccessSize;
 }
 
@@ -102,13 +106,51 @@ void ITarget::invalidate(void) {
 
 
 bool ITarget::subsumes(const ITarget &other) const {
-  assert(false); // TODO ?
+  assert(isValid());
+  assert(other.isValid());
+
+  if (getInstrumentee() != other.getInstrumentee())
+    return false;
+
+  switch (getKind()) {
+    case Kind::ConstSizeCheck:
+      return (other.getKind() == Kind::ConstSizeCheck) &&
+        (getAccessSize() >= other.getAccessSize());
+
+    case Kind::VarSizeCheck:
+      return (other.getKind() == Kind::VarSizeCheck) &&
+        (getAccessSizeVal() == other.getAccessSizeVal());
+
+    case Kind::Invariant:
+      switch (other.getKind()) {
+        case Kind::ConstSizeCheck:
+        case Kind::VarSizeCheck:
+        case Kind::Invariant:
+          return true;
+      }
+  }
   return false;
 }
 
 bool ITarget::joinFlags(const ITarget &other) {
-  assert(false); // TODO ?
-  return false;
+  assert(isValid());
+  assert(other.isValid());
+  assert(is(Kind::Intermediate))
+  bool Changed = false;
+
+#define MERGE_FLAG(X) \
+  if (X != other.X) { \
+    X = X || other.X \
+    Changed = true; \
+  }
+
+  MERGE_FLAG(_CheckUpperBoundFlag);
+  MERGE_FLAG(_CheckLowerBoundFlag);
+  MERGE_FLAG(_CheckTemporalFlag);
+  MERGE_FLAG(_RequiresExplicitBounds);
+#undef MERGE_FLAG
+
+  return Changed;
 }
 
 static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
@@ -127,7 +169,7 @@ static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* 
 }
 
 static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size) {
-  ITarget *R = new ITarget(Kind::Check);
+  ITarget *R = new ITarget(Kind::ConstSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   R->_AccessSize = Size;
@@ -146,6 +188,12 @@ static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Valu
   return std::shared_ptr<ITarget>(R);
 }
 
+static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
+  ITarget *R = new ITarget(Kind::Intermediate);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  return std::shared_ptr<ITarget>(R);
+}
 static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other) {
   ITarget *R = new ITarget(Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
@@ -156,25 +204,6 @@ static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Valu
   //TODO explicit bounds?
   return std::shared_ptr<ITarget>(R);
 }
-
-// bool ITarget::subsumes(const ITarget &other) const {
-//   return (Instrumentee == other.Instrumentee) &&
-//          ((HasConstAccessSize && other.HasConstAccessSize) ||
-//           AccessSizeVal == other.AccessSizeVal) &&
-//          (AccessSize >= other.AccessSize) && flagSubsumes(*this, other);
-// }
-//
-// bool ITarget::joinFlags(const ITarget &other) {
-//   bool Changed = !flagSubsumes(*this, other);
-//
-//   // AccessSize = std::max(AccessSize, other.AccessSize);
-//   CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
-//   CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
-//   CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
-//   RequiresExplicitBounds =
-//       RequiresExplicitBounds || other.RequiresExplicitBounds;
-//   return Changed;
-// }
 
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
   std::string LocName = this->Location->getName().str();
@@ -217,18 +246,18 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
 
   Stream << '<';
   switch (IT._Kind) {
-    case Bounds:
+    case Kind::Bounds:
       Stream << "bounds"
       break;
-    case Check:
+    case Kind::ConstSizeCheck:
       Stream << "dereference check with constant size " << IT.getAccessSize();
       break;
-    case VarSizeCheck:
+    case Kind::VarSizeCheck:
       Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
       break;
-    case Intermediate:
+    case Kind::Intermediate:
       Stream << "intermediate target";
-    case Invariant:
+    case Kind::Invariant:
       Stream << "invariant check";
   }
   Stream << " for " << IT.getInstrumentee()->getName(); << " at ";

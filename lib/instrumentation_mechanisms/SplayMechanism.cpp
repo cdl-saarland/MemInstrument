@@ -43,26 +43,27 @@ SplayWitness::SplayWitness(llvm::Value *WitnessValue)
 
 void SplayMechanism::insertWitness(ITarget &Target) const {
   auto *CastVal =
-      insertCast(WitnessType, Target.Instrumentee, Target.Location, "_witness");
-  Target.BoundWitness = std::make_shared<SplayWitness>(CastVal);
+      insertCast(WitnessType, Target.getInstrumentee(), Target.getLocation(), "_witness");
+  Target.setBoundWitness(std::make_shared<SplayWitness>(CastVal));
   ++SplayNumWitnessLookups;
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
+  assert(Target.isCheck())
 
-  Module *M = Target.Location->getModule();
+  Module *M = Target.getLocation()->getModule();
   bool Verbose = _CFG.hasInstrumentVerbose();
 
-  IRBuilder<> Builder(Target.Location);
+  IRBuilder<> Builder(Target.getLocation());
 
-  auto *Witness = cast<SplayWitness>(Target.BoundWitness.get());
+  auto *Witness = cast<SplayWitness>(Target.getBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
-  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
+  auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
   Value *NameVal = nullptr;
   if (Verbose) {
     std::string Name;
-    if (DILocation *Loc = Target.Location->getDebugLoc()) {
+    if (DILocation *Loc = Target.getLocation()->getDebugLoc()) {
       unsigned Line = Loc->getLine();
       StringRef File = Loc->getFilename();
       Name = (File + ": " + std::to_string(Line)).str();
@@ -70,13 +71,12 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
       Name = "unknown location";
     }
 
-    // auto Name = Target.Location->getFunction()->getName() +
-    //             "::" + Target.Instrumentee->getName();
     auto *Str = insertStringLiteral(*M, Name);
     NameVal = insertCast(PtrArgType, Str, Builder);
   }
 
-  if (Target.CheckUpperBoundFlag || Target.CheckLowerBoundFlag) {
+  // TODO HERE!
+  if (Target.hasUpperBoundFlag() || Target.hasLowerBoundFlag()) {
     auto *Size = Target.HasConstAccessSize
                      ? ConstantInt::get(SizeType, Target.AccessSize)
                      : Target.AccessSizeVal;

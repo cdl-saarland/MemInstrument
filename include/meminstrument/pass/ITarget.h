@@ -37,7 +37,7 @@ class ITarget {
 public:
   enum class Kind {
     Bounds,
-    Check,
+    ConstSizeCheck,
     VarSizeCheck,
     Intermediate,
     Invariant,
@@ -46,6 +46,9 @@ public:
   bool is(Kind k) const;
 
   Kind getKind(void) const;
+
+  /// returns true iff the target is a (const or var size) check
+  bool isCheck() const;
 
   /// value that should be checked by the instrumentation
   llvm::Value *getInstrumentee(void) const;
@@ -94,6 +97,8 @@ public:
   static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size);
 
   static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size);
+
+  static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location);
 
   static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other);
 

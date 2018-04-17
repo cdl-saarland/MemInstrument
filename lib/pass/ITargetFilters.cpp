@@ -37,7 +37,7 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
       if (i1 == i2 || !i1->isValid() || !i2->isValid())
         continue;
 
-      if (i1->subsumes(*i2) && DomTree.dominates(i1->Location, i2->Location)) {
+      if (i1->subsumes(*i2) && DomTree.dominates(i1->getLocation(), i2->getLocation())) {
         i2->invalidate();
         ++NumITargetsSubsumed;
       }
@@ -47,12 +47,8 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
 
 void filterByAnnotation(ITargetVector &Vec) {
   for (auto &IT : Vec) {
-    auto *L = IT->Location;
-    auto *V = IT->Instrumentee;
-    bool res = L->getMetadata("nosanitize") &&
-               ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
-                (isa<StoreInst>(L) && (V == L->getOperand(1))));
-    if (res) {
+    auto *L = IT->getLocation();
+    if (L->getMetadata("nosanitize") && (IT.isCheck())) {
       ++NumITargetsNoSanitize;
       IT->invalidate();
     }
@@ -72,19 +68,6 @@ cl::opt<int>
                                     "if mi-random-filter is present"),
                            cl::init(424242) // default
     );
-
-// void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
-//   ITargetVector cpy = Vec;
-//   std::srand(seed);
-//
-//   std::random_shuffle(cpy.begin(), cpy.end());
-//
-//   size_t bound = (size_t)(((double)cpy.size()) * filter_ratio);
-//
-//   for (size_t i = 0; i < bound; ++i) {
-//     cpy[i]->invalidate();
-//   }
-// }
 
 } // namespace
 

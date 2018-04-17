@@ -84,13 +84,13 @@ private:
 /// nodes (i.e. nodes with no requirements).
 class WitnessGraph {
 public:
-  void insertRequiredTarget(std::shared_ptr<ITarget> T);
+  void insertRequiredTarget(ITargetPtr T);
 
-  WitnessGraphNode *getInternalNodeOrNull(std::shared_ptr<ITarget> T);
+  WitnessGraphNode *getInternalNodeOrNull(ITargetPtr T);
 
-  WitnessGraphNode *getInternalNode(std::shared_ptr<ITarget> T);
+  WitnessGraphNode *getInternalNode(ITargetPtr T);
 
-  WitnessGraphNode *createNewInternalNode(std::shared_ptr<ITarget> T);
+  WitnessGraphNode *createNewInternalNode(ITargetPtr T);
 
   void removeDeadNodes(void);
 

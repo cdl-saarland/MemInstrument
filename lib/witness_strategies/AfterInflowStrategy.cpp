@@ -88,7 +88,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   auto &WG = Node->Graph;
 
   auto &Target = Node->Target;
-  if (auto *I = dyn_cast<Instruction>(Target->Instrumentee)) {
+  if (auto *I = dyn_cast<Instruction>(Target->getInstrumentee())) {
     switch (I->getOpcode()) {
     case Instruction::Alloca:
     case Instruction::Call:
@@ -166,19 +166,19 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     }
   }
 
-  if (isa<Argument>(Target->Instrumentee)) {
+  if (isa<Argument>(Target->getInstrumentee())) {
     // Generate witnesses for arguments right when we need them. This might be
     // inefficient.
     return;
   }
 
-  if (auto *C = dyn_cast<Constant>(Target->Instrumentee)) {
+  if (auto *C = dyn_cast<Constant>(Target->getInstrumentee())) {
     std::vector<Value *> Pointers;
     getPointerOperands(Pointers, C);
     for (auto *V : Pointers) {
       // Generate witnesses for globals and constants right when we need them.
       // This might be inefficient.
-      requireSource(Node, V, Target->Location);
+      requireSource(Node, V, Target->getLocation());
       // TODO this location might be sub-optimal
       // TODO do we really want to have witnesses for constant null pointers?
     }
@@ -187,7 +187,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
   ++NumUnsupportedValOps;
   DEBUG(dbgs() << "Unsupported value operand:\n"
-               << *Target->Instrumentee << "\n\n";);
+               << *Target->getInstrumentee() << "\n\n";);
   _CFG.noteError();
   return;
 }
@@ -202,7 +202,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   if (Node->getRequiredNodes().size() == 0) {
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
-    IM.insertWitness(*(Node->Target));
+    IM.insertWitness(*(Node->getTarget()));
     return;
   }
 
@@ -210,11 +210,11 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     // We just use the witness of the single requirement, nothing to combine.
     auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
-    Node->Target->BoundWitness = Requirement->Target->BoundWitness;
+    Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
     return;
   }
 
-  auto *Instrumentee = Node->Target->Instrumentee;
+  auto *Instrumentee = Node->Target->getInstrumentee();
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
     // Insert new phis that use the witnesses of the operands of the
     // instrumentee. This has to happen in two separate steps to break loops.
@@ -228,7 +228,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     for (auto *ReqNode : Node->getRequiredNodes()) {
       createWitness(IM, ReqNode);
       auto *BB = Phi->getIncomingBlock(i);
-      IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->BoundWitness, BB);
+      IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->get(BoundWitness), BB);
       i++;
     }
     return;
@@ -244,8 +244,8 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     }
 
     IM.insertWitnessSelect(*(Node->Target),
-                           Node->getRequiredNodes()[0]->Target->BoundWitness,
-                           Node->getRequiredNodes()[1]->Target->BoundWitness);
+                           Node->getRequiredNodes()[0]->Target->getBoundWitness(),
+                           Node->getRequiredNodes()[1]->Target->getBoundWitness());
 
     return;
   }
@@ -305,7 +305,7 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
   Seen.insert(N);
 
-  if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->Location)) {
+  if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->getLocation())) {
     if (!GEP->hasAllZeroIndices()) {
       return false;
     }

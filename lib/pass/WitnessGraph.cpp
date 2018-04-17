@@ -34,7 +34,7 @@ void WitnessGraphNode::clearRequirements(void) {
 WitnessGraphNode::~WitnessGraphNode(void) { clearRequirements(); }
 
 WitnessGraphNode *
-WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
+WitnessGraph::getInternalNode(ITargetPtr Target) {
   // see whether we already have a node for Target
   if (auto *Node = getInternalNodeOrNull(Target)) {
     return Node;
@@ -44,10 +44,10 @@ WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
 }
 
 WitnessGraphNode *
-WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
+WitnessGraph::createNewInternalNode(ITargetPtr Target) {
   assert(getInternalNodeOrNull(Target) == nullptr &&
          "Internal node already exists!");
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
   auto *NewNode = new WitnessGraphNode(*this, Target);
   InternalNodes.insert(std::make_pair(Key, NewNode));
 
@@ -55,8 +55,8 @@ WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
 }
 
 WitnessGraphNode *
-WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+WitnessGraph::getInternalNodeOrNull(ITargetPtr Target) {
+  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
   auto It = InternalNodes.find(Key);
   if (It != InternalNodes.end()) {
     auto *Node = It->getSecond();
@@ -65,7 +65,7 @@ WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
   return nullptr;
 }
 
-void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
+void WitnessGraph::insertRequiredTarget(ITargetPtr T) {
   auto *Res = new WitnessGraphNode(*this, T);
   ExternalNodes.push_back(Res);
   Strategy.addRequired(Res);
