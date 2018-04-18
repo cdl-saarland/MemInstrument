@@ -194,7 +194,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
                                         WitnessGraphNode *Node) const {
-  if (Node->Target->hasWitness()) {
+  if (Node->Target->hasBoundWitness()) {
     // We already handled this node.
     return;
   }
@@ -202,7 +202,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   if (Node->getRequiredNodes().size() == 0) {
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
-    IM.insertWitness(*(Node->getTarget()));
+    IM.insertWitness(*(Node->Target));
     return;
   }
 
@@ -228,7 +228,8 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     for (auto *ReqNode : Node->getRequiredNodes()) {
       createWitness(IM, ReqNode);
       auto *BB = Phi->getIncomingBlock(i);
-      IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->get(BoundWitness), BB);
+      auto bw = ReqNode->Target->getBoundWitness();
+      IM.addIncomingWitnessToPhi(PhiWitness, bw, BB);
       i++;
     }
     return;
@@ -243,9 +244,9 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
       createWitness(IM, ReqNode);
     }
 
-    IM.insertWitnessSelect(*(Node->Target),
-                           Node->getRequiredNodes()[0]->Target->getBoundWitness(),
-                           Node->getRequiredNodes()[1]->Target->getBoundWitness());
+    auto bm0 = Node->getRequiredNodes()[0]->Target->getBoundWitness();
+    auto bm1 = Node->getRequiredNodes()[1]->Target->getBoundWitness();
+    IM.insertWitnessSelect(*(Node->Target), bm0, bm1);
 
     return;
   }
@@ -329,7 +330,7 @@ void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   // for out-flowing pointers (as we assume the values to be valid anyway).
   for (auto *External : WG.getExternalNodes()) {
     auto &T = External->Target;
-    if (T->isValid() && !(T->CheckUpperBoundFlag || T->CheckLowerBoundFlag)) {
+    if (T->isValid() && T->is(ITarget::Kind::Invariant)) {
       std::set<WitnessGraphNode *> Seen;
       if (didNotChangeSinceWitness(Seen, External)) {
         External->Target->invalidate();

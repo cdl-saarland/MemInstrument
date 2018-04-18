@@ -19,8 +19,7 @@ namespace meminstrument {
 
 class AccessOnlyPolicy : public InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
-                               llvm::Instruction *Loc) override;
+  virtual void classifyTargets(ITargetVector &Dest, llvm::Instruction *Loc) override;
 
   virtual const char *getName(void) const override { return "AccessOnly"; }
 

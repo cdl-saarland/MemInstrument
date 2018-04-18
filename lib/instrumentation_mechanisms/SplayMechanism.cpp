@@ -49,7 +49,8 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
-  assert(Target.isCheck())
+  assert(Target.isValid());
+  assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
 
   Module *M = Target.getLocation()->getModule();
   bool Verbose = _CFG.hasInstrumentVerbose();
@@ -75,11 +76,10 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     NameVal = insertCast(PtrArgType, Str, Builder);
   }
 
-  // TODO HERE!
-  if (Target.hasUpperBoundFlag() || Target.hasLowerBoundFlag()) {
-    auto *Size = Target.HasConstAccessSize
-                     ? ConstantInt::get(SizeType, Target.AccessSize)
-                     : Target.AccessSizeVal;
+  if (Target.isCheck()) {
+    auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
+                     ? ConstantInt::get(SizeType, Target.getAccessSize())
+                     : Target.getAccessSizeVal();
     if (Verbose) {
       insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size,
                  NameVal);
@@ -88,6 +88,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     }
     ++SplayNumDereferenceChecks;
   } else {
+    assert(Target.is(ITarget::Kind::Invariant));
     if (Verbose) {
       insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal, NameVal);
     } else {
@@ -98,22 +99,22 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 }
 
 void SplayMechanism::materializeBounds(ITarget &Target) const {
-  assert(Target.RequiresExplicitBounds);
   assert(Target.isValid());
+  assert(Target.requiresExplicitBounds());
 
-  IRBuilder<> Builder(Target.Location);
+  IRBuilder<> Builder(Target.getLocation());
 
-  auto *Witness = cast<SplayWitness>(Target.BoundWitness.get());
+  auto *Witness = cast<SplayWitness>(Target.getBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
 
-  if (Target.CheckUpperBoundFlag) {
-    auto Name = Target.Instrumentee->getName() + "_upper";
+  if (Target.hasUpperBoundFlag()) {
+    auto Name = Target.getInstrumentee()->getName() + "_upper";
     auto *UpperVal =
         insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
     Witness->UpperBound = UpperVal;
   }
-  if (Target.CheckLowerBoundFlag) {
-    auto Name = Target.Instrumentee->getName() + "_lower";
+  if (Target.hasLowerBoundFlag()) {
+    auto Name = Target.getInstrumentee()->getName() + "_lower";
     auto *LowerVal =
         insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
     Witness->LowerBound = LowerVal;
@@ -275,7 +276,8 @@ bool SplayMechanism::initialize(llvm::Module &M) {
 
 std::shared_ptr<Witness>
 SplayMechanism::insertWitnessPhi(ITarget &Target) const {
-  auto *Phi = cast<PHINode>(Target.Instrumentee);
+  assert(Target.isValid());
+  auto *Phi = cast<PHINode>(Target.getInstrumentee());
 
   IRBuilder<> builder(Phi);
 
@@ -283,9 +285,9 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *NewPhi =
       builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
-  Target.BoundWitness = std::make_shared<SplayWitness>(NewPhi);
+  Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi));
   ++SplayNumWitnessPhis;
-  return Target.BoundWitness;
+  return Target.getBoundWitness();
 }
 
 void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
@@ -301,7 +303,8 @@ void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
 std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
     ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
     std::shared_ptr<Witness> &FalseWitness) const {
-  auto *Sel = cast<SelectInst>(Target.Instrumentee);
+  assert(Target.isValid());
+  auto *Sel = cast<SelectInst>(Target.getInstrumentee());
 
   IRBuilder<> builder(Sel);
 
@@ -312,7 +315,7 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   auto *NewSel =
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
-  Target.BoundWitness = std::make_shared<SplayWitness>(NewSel);
+  Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel));
   ++SplayNumWitnessSelects;
-  return std::make_shared<SplayWitness>(NewSel);
+  return Target.getBoundWitness();
 }

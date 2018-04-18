@@ -14,24 +14,18 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void AccessOnlyPolicy::classifyTargets(
-    std::vector<std::shared_ptr<ITarget>> &Destination,
-    llvm::Instruction *Location) {
+void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination, llvm::Instruction *Location) {
   switch (Location->getOpcode()) {
   case Instruction::Load: {
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    Destination.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
     break;
   }
   case Instruction::Store: {
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    Destination.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
     break;
   }
 

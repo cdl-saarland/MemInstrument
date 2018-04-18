@@ -47,20 +47,15 @@ void DummyExternalChecksPass::updateITargetsForFunction(GlobalConfig &,
   auto *EntryLoc = F.getEntryBlock().getFirstNonPHI();
 
   for (auto &IT : Vec) {
-    if (!(IT->isValid() && IT->CheckUpperBoundFlag &&
-          IT->CheckLowerBoundFlag)) {
+    if (!IT->isValid() || !IT->is(ITarget::Kind::ConstSizeCheck)) {
       continue;
     }
-    auto *L = IT->Location;
+    auto *L = IT->getLocation();
     if (L->getMetadata("checkearly")) {
-      auto *A = dyn_cast<Argument>(IT->Instrumentee);
-      if (A && IT->HasConstAccessSize) {
+      if (auto *A = dyn_cast<Argument>(IT->getInstrumentee())) {
         // create a new ITarget for the beginning of the function
-        auto res = std::make_shared<ITarget>(A, EntryLoc, IT->AccessSize,
-                                             /* RequiresExplicitBounds */ true);
-        // make sure it checks for the same criteria
-        res->joinFlags(*IT);
-        // also remember it for later
+        auto res = ITarget::createBoundsTarget(A, EntryLoc);
+        // remember it for later
         CurrentWL.push_back(res);
         // invalidate the initial ITarget so that no checks are generated for it
         IT->invalidate();
@@ -81,23 +76,23 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(
   auto *I64Ty = Type::getInt64Ty(Ctx);
 
   for (auto &IT : CurrentWL) {
-    IRBuilder<> Builder(IT->Location);
+    IRBuilder<> Builder(IT->getLocation());
 
-    auto *Ptr2Int = Builder.CreatePtrToInt(IT->Instrumentee, I64Ty);
+    auto *Ptr2Int = Builder.CreatePtrToInt(IT->getInstrumentee(), I64Ty);
 
-    auto *LowerPtr = IT->BoundWitness->getLowerBound();
+    auto *LowerPtr = IT->getBoundWitness()->getLowerBound();
     auto *Lower = Builder.CreatePtrToInt(LowerPtr, I64Ty);
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
     auto *Sum =
-        Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->AccessSize));
-    auto *UpperPtr = IT->BoundWitness->getUpperBound();
+        Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->getAccessSize()));
+    auto *UpperPtr = IT->getBoundWitness()->getUpperBound();
     auto *Upper = Builder.CreatePtrToInt(UpperPtr, I64Ty);
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);
 
     auto *Or = Builder.CreateOr(CmpLower, CmpUpper);
 
-    auto Unreach = SplitBlockAndInsertIfThen(Or, IT->Location, true);
+    auto Unreach = SplitBlockAndInsertIfThen(Or, IT->getLocation(), true);
     Builder.SetInsertPoint(Unreach);
     Builder.CreateCall(IM.getFailFunction());
     IT->invalidate();

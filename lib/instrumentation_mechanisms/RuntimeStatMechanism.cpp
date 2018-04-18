@@ -51,53 +51,56 @@ llvm::Value *RuntimeStatWitness::getUpperBound(void) const { return nullptr; }
 RuntimeStatWitness::RuntimeStatWitness(void) : Witness(WK_RuntimeStat) {}
 
 void RuntimeStatMechanism::insertWitness(ITarget &Target) const {
-  Target.BoundWitness = std::make_shared<RuntimeStatWitness>();
+  assert(Target.isValid());
+  Target.setBoundWitness(std::make_shared<RuntimeStatWitness>());
 }
 
 void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
-  IRBuilder<> Builder(Target.Location);
+  assert(Target.isValid());
+  assert(Target.isCheck());
+  IRBuilder<> Builder(Target.getLocation());
 
   uint64_t idx = 0;
   if (Verbose) {
-    const auto &It = StringMap.find(Target.Location);
+    const auto &It = StringMap.find(Target.getLocation());
     assert(It != StringMap.end() &&
            "RT instrumentation required for unknown instruction!");
-    if (Target.Location->getMetadata(markString)) {
+    if (Target.getLocation()->getMetadata(markString)) {
       ++RTStatNumNoSan;
     } else {
       ++RTStatNumWild;
     }
     idx = It->second.idx;
   } else {
-    if (isa<LoadInst>(Target.Location) &&
-        Target.Location->getMetadata(markString)) {
+    if (isa<LoadInst>(Target.getLocation()) &&
+        Target.getLocation()->getMetadata(markString)) {
       idx = 5 * NoSanLoadIdx;
       ++RTStatNumNoSanLoads;
       ++RTStatNumNoSan;
-    } else if (isa<StoreInst>(Target.Location) &&
-               Target.Location->getMetadata(markString)) {
+    } else if (isa<StoreInst>(Target.getLocation()) &&
+               Target.getLocation()->getMetadata(markString)) {
       idx = 5 * NoSanStoreIdx;
       ++RTStatNumNoSanStores;
       ++RTStatNumNoSan;
-    } else if (isa<LoadInst>(Target.Location)) {
+    } else if (isa<LoadInst>(Target.getLocation())) {
       idx = 5 * LoadIdx;
       ++RTStatNumNormalLoads;
       ++RTStatNumWild;
-    } else if (isa<StoreInst>(Target.Location)) {
+    } else if (isa<StoreInst>(Target.getLocation())) {
       idx = 5 * StoreIdx;
       ++RTStatNumNormalStores;
       ++RTStatNumWild;
     }
-    if (Target.Location->getFunction()->getMetadata("PMDAprecise")) {
+    if (Target.getLocation()->getFunction()->getMetadata("PMDAprecise")) {
       idx += PMDApreciseIdx;
       ++RTStatNumPMDAprecise;
-    } else if (Target.Location->getFunction()->getMetadata("PMDAsummary")) {
+    } else if (Target.getLocation()->getFunction()->getMetadata("PMDAsummary")) {
       idx += PMDAsummaryIdx;
       ++RTStatNumPMDAsummary;
-    } else if (Target.Location->getFunction()->getMetadata("PMDAlocal")) {
+    } else if (Target.getLocation()->getFunction()->getMetadata("PMDAlocal")) {
       idx += PMDAlocalIdx;
       ++RTStatNumPMDAlocal;
-    } else if (Target.Location->getFunction()->getMetadata("PMDAbad")) {
+    } else if (Target.getLocation()->getFunction()->getMetadata("PMDAbad")) {
       idx += PMDAbadIdx;
       ++RTStatNumPMDAbad;
     }

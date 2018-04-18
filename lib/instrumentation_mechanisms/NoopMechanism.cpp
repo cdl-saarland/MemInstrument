@@ -29,25 +29,28 @@ llvm::Value *NoopWitness::getUpperBound(void) const { return nullptr; }
 NoopWitness::NoopWitness(void) : Witness(WK_Noop) {}
 
 void NoopMechanism::insertWitness(ITarget &Target) const {
-  Target.BoundWitness = std::make_shared<NoopWitness>();
+  assert(Target.isValid());
+  Target.setBoundWitness(std::make_shared<NoopWitness>());
 }
 
 void NoopMechanism::insertCheck(ITarget &Target) const {
-  IRBuilder<> Builder(Target.Location);
+  assert(Target.isValid());
+  assert(Target.isCheck());
+  IRBuilder<> Builder(Target.getLocation());
 
   // TODO more efficient checks might be conceivable (e.g. with just one cmp)
 
-  auto *Ptr2Int = Builder.CreatePtrToInt(Target.Instrumentee, SizeType);
+  auto *Ptr2Int = Builder.CreatePtrToInt(Target.getInstrumentee(), SizeType);
 
   auto *Lower = Builder.CreateLoad(LowerBoundLocation, /* isVolatile */ true);
   auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
   Value *AccessUpper = nullptr;
-  if (Target.HasConstAccessSize) {
+  if (Target.is(ITarget::Kind::ConstSizeCheck)) {
     AccessUpper = Builder.CreateAdd(
-        Ptr2Int, ConstantInt::get(SizeType, Target.AccessSize));
+        Ptr2Int, ConstantInt::get(SizeType, Target.getAccessSize()));
   } else {
-    AccessUpper = Builder.CreateAdd(Ptr2Int, Target.AccessSizeVal);
+    AccessUpper = Builder.CreateAdd(Ptr2Int, Target.getAccessSizeVal());
   }
 
   auto *Upper = Builder.CreateLoad(UpperBoundLocation, /* isVolatile */ true);
@@ -55,7 +58,7 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
 
   auto *Or = Builder.CreateOr(CmpLower, CmpUpper);
 
-  auto Unreach = SplitBlockAndInsertIfThen(Or, Target.Location, true);
+  auto Unreach = SplitBlockAndInsertIfThen(Or, Target.getLocation(), true);
   Builder.SetInsertPoint(Unreach);
   Builder.CreateStore(ConstantInt::get(SizeType, 1), CheckResultLocation,
                       /* isVolatile */ true);

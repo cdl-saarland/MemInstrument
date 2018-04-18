@@ -32,15 +32,15 @@ bool handleInstrinsicInst(ITargetVector &Dest, llvm::IntrinsicInst *II) {
     auto *Len = MT->getLength();
     auto *Src = MT->getSource();
     auto *Dst = MT->getDest();
-    Dest.push_back(ITarget::createSpacialCheckTarget(Src, II, Len));
-    Dest.push_back(ITarget::createSpacialCheckTarget(Dst, II, Len));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Src, II, Len));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   case Intrinsic::memset: {
     auto *MS = cast<MemSetInst>(II);
     auto *Len = MS->getLength();
     auto *Dst = MS->getDest();
-    Dest.push_back(ITarget::createSpacialCheckTarget(Dst, II, Len));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   default:
@@ -78,7 +78,7 @@ void BeforeOutflowPolicy::classifyTargets(
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
-      Dest.push_back(ITarget::createCheckTarget(I->getCalledValue(), Location, 1));
+      Dest.push_back(ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
       ++NumITargetsGathered;
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
@@ -108,7 +108,7 @@ void BeforeOutflowPolicy::classifyTargets(
       }
 
       if (FunIsNoVarArg && ArgIt->hasByValAttr()) {
-        Dest.push_back(ITarget::createCheckTarget(Operand, Location, getPointerAccessSize(DL, Operand)));
+        Dest.push_back(ITarget::createSpatialCheckTarget(Operand, Location, getPointerAccessSize(DL, Operand)));
       } else {
         Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
       }
@@ -125,14 +125,14 @@ void BeforeOutflowPolicy::classifyTargets(
   case Instruction::Load: {
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Dest.push_back(ITarget::createCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
     ++NumITargetsGathered;
     break;
   }
   case Instruction::Store: {
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Dest.push_back(ITarget::createCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
     ++NumITargetsGathered;
 
     auto *StoreOperand = I->getValueOperand();

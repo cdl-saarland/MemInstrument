@@ -177,20 +177,20 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
 
   for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;
-    assert(Target->hasWitness());
-    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+    assert(Target->hasBoundWitness());
+    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
   for (auto &Pair : InternalNodes) {
     auto *Node = Pair.getSecond();
     auto &Target = Node->Target;
-    assert(Target->hasWitness());
-    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+    assert(Target->hasBoundWitness());
+    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
   for (auto &Pair : PrintMap) {
     for (auto *Target : Pair.getSecond()) {
-      Stream << "(" << Target->Instrumentee->getName() << ", ";
+      Stream << "(" << Target->getInstrumentee()->getName() << ", ";
       Target->printLocation(Stream);
       Stream << ")"
              << "; ";

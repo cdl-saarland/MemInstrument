@@ -74,7 +74,7 @@ public:
 
   bool hasBoundWitness(void) const;
 
-  Witness &getBoundWitness(void);
+  std::shared_ptr<Witness> getBoundWitness(void);
 
   void setBoundWitness(std::shared_ptr<Witness> BoundWitness);
 
@@ -90,22 +90,28 @@ public:
   bool joinFlags(const ITarget &other);
 
 
-  static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Value* Location);
+  static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
 
-  static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* Location);
+  static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
 
-  static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size);
+  static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, size_t Size);
 
-  static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size);
+  static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, llvm::Value *Size);
 
-  static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location);
+  static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
 
-  static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other);
+  static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, const ITarget &other);
 
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
+
+  void printLocation(llvm::raw_ostream &Stream) const;
 private:
   ITarget(Kind k) : _Kind(k), _BoundWitness(std::shared_ptr<Witness>(nullptr)) {}
+
+  llvm::Value *_Instrumentee;
+
+  llvm::Instruction *_Location;
 
   const Kind _Kind;
 
@@ -123,9 +129,6 @@ private:
 
   size_t _AccessSize = 0;
   llvm::Value *_AccessSizeVal = nullptr;
-
-
-  void PrintLocation(llvm::raw_ostream &Stream) const;
 };
 
 

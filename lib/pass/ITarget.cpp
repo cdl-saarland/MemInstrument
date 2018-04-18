@@ -14,24 +14,11 @@
 using namespace llvm;
 using namespace meminstrument;
 
-namespace {
-bool flagSubsumes(const ITarget &i1, const ITarget &i2) {
-  return
-      //  i1.HasConstAccessSize && i2.HasConstAccessSize &&
-      // (i1.AccessSize >= i2.AccessSize) &&
-      (i1.CheckUpperBoundFlag >= i2.CheckUpperBoundFlag) &&
-      (i1.CheckLowerBoundFlag >= i2.CheckLowerBoundFlag) &&
-      (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
-      (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
-}
-} // namespace
-
-
 bool ITarget::is(Kind k) const {
   return this->getKind() == k;
 }
 
-Kind ITarget::getKind(void) const {
+ITarget::Kind ITarget::getKind(void) const {
   return _Kind;
 }
 
@@ -86,10 +73,10 @@ bool ITarget::hasBoundWitness(void) const {
   return _BoundWitness.get() != nullptr;
 }
 
-Witness &ITarget::getBoundWitness(void) {
+std::shared_ptr<Witness> ITarget::getBoundWitness(void) {
   assert(isValid());
   assert(hasBoundWitness());
-  return *_BoundWitness;
+  return _BoundWitness;
 }
 
 void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
@@ -127,7 +114,11 @@ bool ITarget::subsumes(const ITarget &other) const {
         case Kind::VarSizeCheck:
         case Kind::Invariant:
           return true;
+        default:
+          return false;
       }
+    default:
+      return false;
   }
   return false;
 }
@@ -135,12 +126,12 @@ bool ITarget::subsumes(const ITarget &other) const {
 bool ITarget::joinFlags(const ITarget &other) {
   assert(isValid());
   assert(other.isValid());
-  assert(is(Kind::Intermediate))
+  assert(is(Kind::Intermediate));
   bool Changed = false;
 
 #define MERGE_FLAG(X) \
   if (X != other.X) { \
-    X = X || other.X \
+    X = X || other.X; \
     Changed = true; \
   }
 
@@ -153,23 +144,23 @@ bool ITarget::joinFlags(const ITarget &other) {
   return Changed;
 }
 
-static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
-  ITarget *R = new ITarget(Kind::Bounds);
+ITargetPtr ITarget::createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruction *Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Bounds);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   R->_RequiresExplicitBounds = true;
   return std::shared_ptr<ITarget>(R);
 }
 
-static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
-  ITarget *R = new ITarget(Kind::Invariant);
+ITargetPtr ITarget::createInvariantTarget(llvm::Value* Instrumentee, llvm::Instruction *Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Invariant);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
 
-static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, size_t Size) {
-  ITarget *R = new ITarget(Kind::ConstSizeCheck);
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, size_t Size) {
+  ITarget *R = new ITarget(ITarget::Kind::ConstSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   R->_AccessSize = Size;
@@ -178,8 +169,8 @@ static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Valu
   return std::shared_ptr<ITarget>(R);
 }
 
-static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Value* Location, llvm::Value *Size) {
-  ITarget *R = new ITarget(Kind::VarSizeCheck);
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, llvm::Value *Size) {
+  ITarget *R = new ITarget(ITarget::Kind::VarSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   R->_AccessSizeVal = Size;
@@ -188,14 +179,14 @@ static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Valu
   return std::shared_ptr<ITarget>(R);
 }
 
-static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location) {
-  ITarget *R = new ITarget(Kind::Intermediate);
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
-static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Value* Location, const ITarget &other) {
-  ITarget *R = new ITarget(Kind::Intermediate);
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, const ITarget &other) {
+  ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   R->_CheckUpperBoundFlag = other._CheckUpperBoundFlag;
@@ -206,9 +197,9 @@ static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Valu
 }
 
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
-  std::string LocName = this->Location->getName().str();
+  std::string LocName = this->getLocation()->getName().str();
   if (LocName.empty()) {
-    switch (this->Location->getOpcode()) {
+    switch (this->getLocation()->getOpcode()) {
     case llvm::Instruction::Store:
       LocName = "[store]";
       break;
@@ -233,7 +224,7 @@ void ITarget::printLocation(llvm::raw_ostream &Stream) const {
       LocName = "[unknown]";
     }
   }
-  auto *BB = this->Location->getParent();
+  auto *BB = this->getLocation()->getParent();
   Stream << BB->getName() << "::" << LocName;
 }
 
@@ -246,21 +237,23 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
 
   Stream << '<';
   switch (IT._Kind) {
-    case Kind::Bounds:
-      Stream << "bounds"
+    case ITarget::Kind::Bounds:
+      Stream << "bounds";
       break;
-    case Kind::ConstSizeCheck:
+    case ITarget::Kind::ConstSizeCheck:
       Stream << "dereference check with constant size " << IT.getAccessSize();
       break;
-    case Kind::VarSizeCheck:
+    case ITarget::Kind::VarSizeCheck:
       Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
       break;
-    case Kind::Intermediate:
+    case ITarget::Kind::Intermediate:
       Stream << "intermediate target";
-    case Kind::Invariant:
+      break;
+    case ITarget::Kind::Invariant:
       Stream << "invariant check";
+      break;
   }
-  Stream << " for " << IT.getInstrumentee()->getName(); << " at ";
+  Stream << " for " << IT.getInstrumentee()->getName() << " at ";
   IT.printLocation(Stream);
   Stream << '>';
 

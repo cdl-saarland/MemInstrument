@@ -48,7 +48,7 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
 void filterByAnnotation(ITargetVector &Vec) {
   for (auto &IT : Vec) {
     auto *L = IT->getLocation();
-    if (L->getMetadata("nosanitize") && (IT.isCheck())) {
+    if (L->getMetadata("nosanitize") && (IT->isCheck())) {
       ++NumITargetsNoSanitize;
       IT->invalidate();
     }

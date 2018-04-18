@@ -30,44 +30,49 @@ void DummyMechanism::initTypes(llvm::LLVMContext &Ctx) {
 }
 
 void DummyMechanism::insertWitness(ITarget &Target) const {
-  IRBuilder<> Builder(Target.Location);
+  assert(Target.isValid());
+  IRBuilder<> Builder(Target.getLocation());
 
-  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
+  auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
-  auto Name = Target.Instrumentee->getName() + "_witness";
+  auto Name = Target.getInstrumentee()->getName() + "_witness";
   auto *WitnessVal = insertCall(Builder, CreateWitnessFunction, Name, CastVal);
-  Target.BoundWitness = std::make_shared<DummyWitness>(WitnessVal);
+  Target.setBoundWitness(std::make_shared<DummyWitness>(WitnessVal));
 }
 
 void DummyMechanism::insertCheck(ITarget &Target) const {
-  IRBuilder<> Builder(Target.Location);
+  assert(Target.isValid());
+  assert(Target.isCheck());
 
-  auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
+  IRBuilder<> Builder(Target.getLocation());
+
+  auto *Witness = cast<DummyWitness>(Target.getBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
-  auto *CastVal = insertCast(PtrArgType, Target.Instrumentee, Builder);
-  auto *Size = Target.HasConstAccessSize
-                   ? ConstantInt::get(SizeType, Target.AccessSize)
-                   : Target.AccessSizeVal;
+  auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
+  auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
+                   ? ConstantInt::get(SizeType, Target.getAccessSize())
+                   : Target.getAccessSizeVal();
 
   insertCall(Builder, CheckAccessFunction, CastVal, WitnessVal, Size);
 }
 
 void DummyMechanism::materializeBounds(ITarget &Target) const {
-  assert(Target.RequiresExplicitBounds);
+  assert(Target.isValid());
+  assert(Target.requiresExplicitBounds());
 
-  IRBuilder<> Builder(Target.Location);
+  IRBuilder<> Builder(Target.getLocation());
 
-  auto *Witness = cast<DummyWitness>(Target.BoundWitness.get());
+  auto *Witness = cast<DummyWitness>(Target.getBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
 
-  if (Target.CheckUpperBoundFlag) {
-    auto Name = Target.Instrumentee->getName() + "_upper";
+  if (Target.hasUpperBoundFlag()) {
+    auto Name = Target.getInstrumentee()->getName() + "_upper";
     auto *UpperVal =
         insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
     Witness->UpperBound = UpperVal;
   }
-  if (Target.CheckLowerBoundFlag) {
-    auto Name = Target.Instrumentee->getName() + "_lower";
+  if (Target.hasLowerBoundFlag()) {
+    auto Name = Target.getInstrumentee()->getName() + "_lower";
     auto *LowerVal =
         insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
     Witness->LowerBound = LowerVal;
@@ -100,7 +105,8 @@ bool DummyMechanism::initialize(llvm::Module &M) {
 
 std::shared_ptr<Witness>
 DummyMechanism::insertWitnessPhi(ITarget &Target) const {
-  auto *Phi = cast<PHINode>(Target.Instrumentee);
+  assert(Target.isValid());
+  auto *Phi = cast<PHINode>(Target.getInstrumentee());
 
   IRBuilder<> builder(Phi);
 
@@ -108,8 +114,8 @@ DummyMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *NewPhi =
       builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
-  Target.BoundWitness = std::make_shared<DummyWitness>(NewPhi);
-  return Target.BoundWitness;
+  Target.setBoundWitness(std::make_shared<DummyWitness>(NewPhi));
+  return Target.getBoundWitness();
 }
 
 void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
@@ -125,7 +131,8 @@ void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
 std::shared_ptr<Witness> DummyMechanism::insertWitnessSelect(
     ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
     std::shared_ptr<Witness> &FalseWitness) const {
-  auto *Sel = cast<SelectInst>(Target.Instrumentee);
+  assert(Target.isValid());
+  auto *Sel = cast<SelectInst>(Target.getInstrumentee());
 
   IRBuilder<> builder(Sel);
 
@@ -136,6 +143,6 @@ std::shared_ptr<Witness> DummyMechanism::insertWitnessSelect(
   auto *NewSel =
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
-  Target.BoundWitness = std::make_shared<DummyWitness>(NewSel);
-  return std::make_shared<DummyWitness>(NewSel);
+  Target.setBoundWitness(std::make_shared<DummyWitness>(NewSel));
+  return Target.getBoundWitness();
 }
