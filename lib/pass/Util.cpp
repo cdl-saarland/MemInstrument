@@ -11,10 +11,10 @@
 
 #include "meminstrument/pass/Util.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Metadata.h"
-#include "llvm/ADT/Statistic.h"
 
 #include "meminstrument/Config.h"
 

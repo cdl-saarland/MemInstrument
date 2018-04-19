@@ -49,9 +49,8 @@ bool handleInstrinsicInst(ITargetVector &Dest, llvm::IntrinsicInst *II) {
 }
 } // namespace
 
-void BeforeOutflowPolicy::classifyTargets(
-    ITargetVector &Dest,
-    llvm::Instruction *Location) {
+void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
+                                          llvm::Instruction *Location) {
   switch (Location->getOpcode()) {
   case Instruction::Ret: {
     llvm::ReturnInst *I = llvm::cast<llvm::ReturnInst>(Location);
@@ -81,7 +80,8 @@ void BeforeOutflowPolicy::classifyTargets(
       if (!validateSize(I->getCalledValue())) {
         return;
       }
-      Dest.push_back(ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
+      Dest.push_back(
+          ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
       ++NumITargetsGathered;
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {

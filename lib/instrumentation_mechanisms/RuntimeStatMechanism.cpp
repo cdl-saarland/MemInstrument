@@ -94,7 +94,8 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     if (Target.getLocation()->getFunction()->getMetadata("PMDAprecise")) {
       idx += PMDApreciseIdx;
       ++RTStatNumPMDAprecise;
-    } else if (Target.getLocation()->getFunction()->getMetadata("PMDAsummary")) {
+    } else if (Target.getLocation()->getFunction()->getMetadata(
+                   "PMDAsummary")) {
       idx += PMDAsummaryIdx;
       ++RTStatNumPMDAsummary;
     } else if (Target.getLocation()->getFunction()->getMetadata("PMDAlocal")) {

@@ -20,13 +20,9 @@
 using namespace llvm;
 using namespace meminstrument;
 
-bool ITarget::is(Kind k) const {
-  return this->getKind() == k;
-}
+bool ITarget::is(Kind k) const { return this->getKind() == k; }
 
-ITarget::Kind ITarget::getKind(void) const {
-  return _Kind;
-}
+ITarget::Kind ITarget::getKind(void) const { return _Kind; }
 
 bool ITarget::isCheck() const {
   return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck);
@@ -89,14 +85,9 @@ void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
   _BoundWitness = BoundWitness;
 }
 
-bool ITarget::isValid(void) const {
-  return not _Invalidated;
-}
+bool ITarget::isValid(void) const { return not _Invalidated; }
 
-void ITarget::invalidate(void) {
-  _Invalidated = true;
-}
-
+void ITarget::invalidate(void) { _Invalidated = true; }
 
 bool ITarget::subsumes(const ITarget &other) const {
   assert(isValid());
@@ -106,25 +97,25 @@ bool ITarget::subsumes(const ITarget &other) const {
     return false;
 
   switch (getKind()) {
+  case Kind::ConstSizeCheck:
+    return (other.getKind() == Kind::ConstSizeCheck) &&
+           (getAccessSize() >= other.getAccessSize());
+
+  case Kind::VarSizeCheck:
+    return (other.getKind() == Kind::VarSizeCheck) &&
+           (getAccessSizeVal() == other.getAccessSizeVal());
+
+  case Kind::Invariant:
+    switch (other.getKind()) {
     case Kind::ConstSizeCheck:
-      return (other.getKind() == Kind::ConstSizeCheck) &&
-        (getAccessSize() >= other.getAccessSize());
-
     case Kind::VarSizeCheck:
-      return (other.getKind() == Kind::VarSizeCheck) &&
-        (getAccessSizeVal() == other.getAccessSizeVal());
-
     case Kind::Invariant:
-      switch (other.getKind()) {
-        case Kind::ConstSizeCheck:
-        case Kind::VarSizeCheck:
-        case Kind::Invariant:
-          return true;
-        default:
-          return false;
-      }
+      return true;
     default:
       return false;
+    }
+  default:
+    return false;
   }
   return false;
 }
@@ -135,10 +126,10 @@ bool ITarget::joinFlags(const ITarget &other) {
   assert(is(Kind::Intermediate));
   bool Changed = false;
 
-#define MERGE_FLAG(X) \
-  if (X != other.X) { \
-    X = X || other.X; \
-    Changed = true; \
+#define MERGE_FLAG(X)                                                          \
+  if (X != other.X) {                                                          \
+    X = X || other.X;                                                          \
+    Changed = true;                                                            \
   }
 
   MERGE_FLAG(_CheckUpperBoundFlag);
@@ -150,7 +141,8 @@ bool ITarget::joinFlags(const ITarget &other) {
   return Changed;
 }
 
-ITargetPtr ITarget::createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruction *Location) {
+ITargetPtr ITarget::createBoundsTarget(llvm::Value *Instrumentee,
+                                       llvm::Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Bounds);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -160,21 +152,25 @@ ITargetPtr ITarget::createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruct
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createInvariantTarget(llvm::Value* Instrumentee, llvm::Instruction *Location) {
+ITargetPtr ITarget::createInvariantTarget(llvm::Value *Instrumentee,
+                                          llvm::Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Invariant);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location) {
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location) {
   llvm::Module *M = Location->getModule();
   const auto &DL = M->getDataLayout();
   size_t acc_size = getPointerAccessSize(DL, Instrumentee);
   return ITarget::createSpatialCheckTarget(Instrumentee, Location, acc_size);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, size_t Size) {
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             size_t Size) {
   ITarget *R = new ITarget(ITarget::Kind::ConstSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -184,7 +180,9 @@ ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::In
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, llvm::Value *Size) {
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             llvm::Value *Size) {
   ITarget *R = new ITarget(ITarget::Kind::VarSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -194,13 +192,16 @@ ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::In
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location) {
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
-ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, const ITarget &other) {
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             const ITarget &other) {
   ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -264,21 +265,22 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
 
   Stream << '<';
   switch (IT._Kind) {
-    case ITarget::Kind::Bounds:
-      Stream << "bounds";
-      break;
-    case ITarget::Kind::ConstSizeCheck:
-      Stream << "dereference check with constant size " << IT.getAccessSize() << "B";
-      break;
-    case ITarget::Kind::VarSizeCheck:
-      Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
-      break;
-    case ITarget::Kind::Intermediate:
-      Stream << "intermediate target";
-      break;
-    case ITarget::Kind::Invariant:
-      Stream << "invariant check";
-      break;
+  case ITarget::Kind::Bounds:
+    Stream << "bounds";
+    break;
+  case ITarget::Kind::ConstSizeCheck:
+    Stream << "dereference check with constant size " << IT.getAccessSize()
+           << "B";
+    break;
+  case ITarget::Kind::VarSizeCheck:
+    Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
+    break;
+  case ITarget::Kind::Intermediate:
+    Stream << "intermediate target";
+    break;
+  case ITarget::Kind::Invariant:
+    Stream << "invariant check";
+    break;
   }
   Stream << " for " << IT.getInstrumentee()->getName() << " at ";
   IT.printLocation(Stream);

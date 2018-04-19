@@ -25,7 +25,6 @@
 using namespace meminstrument;
 using namespace llvm;
 
-
 namespace {
 STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
 }

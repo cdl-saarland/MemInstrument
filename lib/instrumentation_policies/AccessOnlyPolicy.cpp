@@ -13,7 +13,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination, llvm::Instruction *Location) {
+void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination,
+                                       llvm::Instruction *Location) {
   llvm::Value *PtrOperand = nullptr;
   switch (Location->getOpcode()) {
   case Instruction::Load: {
@@ -35,5 +36,6 @@ void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination, llvm::Instruc
     return;
   }
 
-  Destination.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location));
+  Destination.push_back(
+      ITarget::createSpatialCheckTarget(PtrOperand, Location));
 }

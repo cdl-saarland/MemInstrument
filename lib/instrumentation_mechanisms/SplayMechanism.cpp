@@ -42,8 +42,8 @@ SplayWitness::SplayWitness(llvm::Value *WitnessValue)
     : Witness(WK_Splay), WitnessValue(WitnessValue) {}
 
 void SplayMechanism::insertWitness(ITarget &Target) const {
-  auto *CastVal =
-      insertCast(WitnessType, Target.getInstrumentee(), Target.getLocation(), "_witness");
+  auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
+                             Target.getLocation(), "_witness");
   Target.setBoundWitness(std::make_shared<SplayWitness>(CastVal));
   ++SplayNumWitnessLookups;
 }
@@ -166,7 +166,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__splay_fail_simple", NoReturnAttr, VoidTy);
 
-  VerboseFailFunction = insertFunDecl(M, "__splay_fail_simple_with_msg", NoReturnAttr, VoidTy, PtrArgType);
+  VerboseFailFunction = insertFunDecl(M, "__splay_fail_simple_with_msg",
+                                      NoReturnAttr, VoidTy, PtrArgType);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {

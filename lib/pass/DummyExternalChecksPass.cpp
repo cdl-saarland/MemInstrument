@@ -84,9 +84,9 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(
     auto *Lower = Builder.CreatePtrToInt(LowerPtr, I64Ty);
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
-    auto acc_size = getPointerAccessSize(F.getParent()->getDataLayout(), IT->getInstrumentee());
-    auto *Sum =
-        Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, acc_size));
+    auto acc_size = getPointerAccessSize(F.getParent()->getDataLayout(),
+                                         IT->getInstrumentee());
+    auto *Sum = Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, acc_size));
     auto *UpperPtr = IT->getBoundWitness()->getUpperBound();
     auto *Upper = Builder.CreatePtrToInt(UpperPtr, I64Ty);
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);

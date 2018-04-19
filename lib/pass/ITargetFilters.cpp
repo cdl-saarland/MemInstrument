@@ -37,7 +37,8 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
       if (i1 == i2 || !i1->isValid() || !i2->isValid())
         continue;
 
-      if (i1->subsumes(*i2) && DomTree.dominates(i1->getLocation(), i2->getLocation())) {
+      if (i1->subsumes(*i2) &&
+          DomTree.dominates(i1->getLocation(), i2->getLocation())) {
         i2->invalidate();
         ++NumITargetsSubsumed;
       }
