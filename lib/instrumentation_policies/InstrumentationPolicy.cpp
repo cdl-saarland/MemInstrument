@@ -22,31 +22,22 @@
 
 #include "meminstrument/pass/Util.h"
 
-STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
-
 using namespace meminstrument;
 using namespace llvm;
 
-size_t InstrumentationPolicy::getPointerAccessSize(const llvm::DataLayout &DL,
-                                                   llvm::Value *V) {
-  auto *Ty = V->getType();
-  assert(Ty->isPointerTy() && "Only pointer types allowed!");
 
-  auto *PointeeType = Ty->getPointerElementType();
+namespace {
+STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
+}
 
-  if (PointeeType->isFunctionTy()) {
-    return 0;
-  }
+InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
 
-  if (!PointeeType->isSized()) {
+bool InstrumentationPolicy::validateSize(llvm::Value *Ptr) {
+  if (!hasPointerAccessSize(Ptr)) {
     ++NumUnsizedTypes;
-    DEBUG(dbgs() << "Found pointer to unsized type `" << *PointeeType
-                 << "'!\n";);
+    DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
     _CFG.noteError();
-    return 1;
+    return false;
   }
-
-  size_t Size = DL.getTypeStoreSize(PointeeType);
-
-  return Size;
+  return true;
 }

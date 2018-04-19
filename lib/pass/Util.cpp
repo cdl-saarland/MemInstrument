@@ -14,6 +14,9 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/ADT/Statistic.h"
+
+#include "meminstrument/Config.h"
 
 using namespace llvm;
 using namespace meminstrument;
@@ -64,4 +67,38 @@ bool hasNoInstrument(Instruction *O) {
   return hasNoInstrumentImpl(O->getMetadata(MEMINSTRUMENT_MD));
 }
 
+bool hasPointerAccessSize(llvm::Value *V) {
+  auto *Ty = V->getType();
+  if (!Ty->isPointerTy()) {
+    return false;
+  }
+
+  auto *PointeeType = Ty->getPointerElementType();
+
+  if (PointeeType->isFunctionTy()) {
+    return true;
+  }
+
+  if (!PointeeType->isSized()) {
+    return false;
+  }
+
+  return true;
+}
+
+size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
+  assert(hasPointerAccessSize(V));
+
+  auto *Ty = V->getType();
+
+  auto *PointeeType = Ty->getPointerElementType();
+
+  if (PointeeType->isFunctionTy()) {
+    return 0;
+  }
+
+  size_t Size = DL.getTypeStoreSize(PointeeType);
+
+  return Size;
+}
 } // namespace meminstrument

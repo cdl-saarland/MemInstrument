@@ -36,9 +36,9 @@ public:
 protected:
   GlobalConfig &_CFG;
 
-  InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
+  InstrumentationPolicy(GlobalConfig &cfg);
 
-  size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V);
+  bool validateSize(llvm::Value *Ptr);
 };
 
 } // namespace meminstrument

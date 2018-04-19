@@ -78,6 +78,9 @@ void BeforeOutflowPolicy::classifyTargets(
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
+      if (!validateSize(I->getCalledValue())) {
+        return;
+      }
       Dest.push_back(ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
       ++NumITargetsGathered;
     }
@@ -108,7 +111,10 @@ void BeforeOutflowPolicy::classifyTargets(
       }
 
       if (FunIsNoVarArg && ArgIt->hasByValAttr()) {
-        Dest.push_back(ITarget::createSpatialCheckTarget(Operand, Location, getPointerAccessSize(DL, Operand)));
+        if (!validateSize(Operand)) {
+          return;
+        }
+        Dest.push_back(ITarget::createSpatialCheckTarget(Operand, Location));
       } else {
         Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
       }
@@ -125,14 +131,20 @@ void BeforeOutflowPolicy::classifyTargets(
   case Instruction::Load: {
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
+    if (!validateSize(PtrOperand)) {
+      return;
+    }
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location));
     ++NumITargetsGathered;
     break;
   }
   case Instruction::Store: {
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location, getPointerAccessSize(DL, PtrOperand)));
+    if (!validateSize(PtrOperand)) {
+      return;
+    }
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location));
     ++NumITargetsGathered;
 
     auto *StoreOperand = I->getValueOperand();

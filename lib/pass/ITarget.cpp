@@ -11,6 +11,10 @@
 
 #include "meminstrument/pass/ITarget.h"
 
+#include "meminstrument/Config.h"
+
+#include "meminstrument/pass/Util.h"
+
 using namespace llvm;
 using namespace meminstrument;
 
@@ -148,6 +152,8 @@ ITargetPtr ITarget::createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruct
   ITarget *R = new ITarget(ITarget::Kind::Bounds);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
   R->_RequiresExplicitBounds = true;
   return std::shared_ptr<ITarget>(R);
 }
@@ -157,6 +163,13 @@ ITargetPtr ITarget::createInvariantTarget(llvm::Value* Instrumentee, llvm::Instr
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location) {
+  llvm::Module *M = Location->getModule();
+  const auto &DL = M->getDataLayout();
+  size_t acc_size = getPointerAccessSize(DL, Instrumentee);
+  return ITarget::createSpatialCheckTarget(Instrumentee, Location, acc_size);
 }
 
 ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, size_t Size) {
@@ -192,7 +205,7 @@ ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::In
   R->_CheckUpperBoundFlag = other._CheckUpperBoundFlag;
   R->_CheckLowerBoundFlag = other._CheckLowerBoundFlag;
   R->_CheckTemporalFlag = other._CheckTemporalFlag;
-  //TODO explicit bounds?
+  R->_RequiresExplicitBounds = other._RequiresExplicitBounds;
   return std::shared_ptr<ITarget>(R);
 }
 
@@ -255,6 +268,9 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
   }
   Stream << " for " << IT.getInstrumentee()->getName() << " at ";
   IT.printLocation(Stream);
+  if (IT.hasBoundWitness()) {
+    Stream << " with witness";
+  }
   Stream << '>';
 
   return Stream;

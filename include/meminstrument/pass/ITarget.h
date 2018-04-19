@@ -90,12 +90,31 @@ public:
   bool joinFlags(const ITarget &other);
 
 
+  /// Static factory method for creating an ITarget that requires that bounds
+  /// are available for Instrumentee at Location.
+  /// The result will have the kind Instrumentee::Kind::Bounds.
   static ITargetPtr createBoundsTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
 
+  /// Static factory method for creating an ITarget for an invariant check for
+  /// Instrumentee at Location.
+  /// The result will have the kind Instrumentee::Kind::Invariant.
   static ITargetPtr createInvariantTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
 
+  /// Static factory method for creating an ITarget for a spatial (upper and
+  /// lower bound) check for Instrumentee at Location.
+  /// The (constant) access size is derived from Instrumentee.
+  /// The result will have the kind Instrumentee::Kind::ConstSizeCheck.
+  /// The caller should validate with a call to meminstrument::validateSize(Instrumentee) that deriving an access size is possible.
+  static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);
+
+  /// Static factory method for creating an ITarget for a spatial (upper and
+  /// lower bound) check for Instrumentee at Location with access size Size.
+  /// The result will have the kind Instrumentee::Kind::ConstSizeCheck.
   static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, size_t Size);
 
+  /// Static factory method for creating an ITarget for a spatial (upper and
+  /// lower bound) check for Instrumentee at Location with variable access size Size.
+  /// The result will have the kind Instrumentee::Kind::VarSizeCheck.
   static ITargetPtr createSpatialCheckTarget(llvm::Value* Instrumentee, llvm::Instruction* Location, llvm::Value *Size);
 
   static ITargetPtr createIntermediateTarget(llvm::Value* Instrumentee, llvm::Instruction* Location);

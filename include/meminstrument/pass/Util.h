@@ -44,6 +44,10 @@ bool hasNoInstrument(llvm::GlobalObject *O);
 
 bool hasNoInstrument(llvm::Instruction *I);
 
+bool hasPointerAccessSize(llvm::Value *V);
+
+size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V);
+
 } // namespace meminstrument
 
 #endif

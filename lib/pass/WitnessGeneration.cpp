@@ -58,7 +58,14 @@ void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
                        WG.printWitnessClasses(dbgs()););
 
   for (auto &T : Vec) {
-    if (T->isValid() && T->requiresExplicitBounds()) {
+    if (! T->isValid()) {
+      continue;
+    }
+    assert(T->hasBoundWitness());
+    if (T->requiresExplicitBounds()) {
+      DEBUG(
+        dbgs() << "Materializing explicit bounds for " << *T << "\n";
+      );
       IM.materializeBounds(*T);
     }
   }
