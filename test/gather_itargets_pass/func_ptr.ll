@@ -1,8 +1,10 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
-; RUN: fgrep "<a, bar_bb::res, 1B, ___>" %t.log
-; RUN: fgrep "<b, bar_bb::res, 1B, ___>" %t.log
-; RUN: fgrep "<x, foo_bb::res, 1B, ___>" %t.log
-; RUN: fgrep "<y, foo_bb::res, 1B, ___>" %t.log
+; RUN: fgrep "<dereference check with constant size 1B for arg at bar_bb::res>" %t.log
+; RUN: fgrep "<invariant check for a at bar_bb::res>" %t.log
+; RUN: fgrep "<invariant check for b at bar_bb::res>" %t.log
+; RUN: fgrep "<invariant check for baz at foo_bb::res>" %t.log
+; RUN: fgrep "<invariant check for x at foo_bb::res>" %t.log
+; RUN: fgrep "<invariant check for y at foo_bb::res>" %t.log
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"

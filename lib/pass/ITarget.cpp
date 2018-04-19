@@ -15,6 +15,8 @@
 
 #include "meminstrument/pass/Util.h"
 
+#include <sstream>
+
 using namespace llvm;
 using namespace meminstrument;
 
@@ -210,32 +212,44 @@ ITargetPtr ITarget::createIntermediateTarget(llvm::Value* Instrumentee, llvm::In
 }
 
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
-  std::string LocName = this->getLocation()->getName().str();
+  auto *L = this->getLocation();
+  std::string LocName = L->getName().str();
   if (LocName.empty()) {
-    switch (this->getLocation()->getOpcode()) {
+    switch (L->getOpcode()) {
     case llvm::Instruction::Store:
-      LocName = "[store]";
+      LocName = "[store";
       break;
 
     case llvm::Instruction::Ret:
-      LocName = "[ret]";
+      LocName = "[ret";
       break;
 
     case llvm::Instruction::Br:
-      LocName = "[br]";
+      LocName = "[br";
       break;
 
     case llvm::Instruction::Switch:
-      LocName = "[switch]";
+      LocName = "[switch";
       break;
 
     case llvm::Instruction::Call:
-      LocName = "[anon call]";
+      LocName = "[anon call";
       break;
 
     default:
-      LocName = "[unknown]";
+      LocName = "[unknown";
     }
+
+    size_t idx = 0;
+    for (auto &I : *L->getParent()) {
+      if (&I == L) {
+        break;
+      }
+      ++idx;
+    }
+    std::stringstream ss;
+    ss << LocName << "," << idx << "]";
+    LocName = ss.str();
   }
   auto *BB = this->getLocation()->getParent();
   Stream << BB->getName() << "::" << LocName;
@@ -254,7 +268,7 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
       Stream << "bounds";
       break;
     case ITarget::Kind::ConstSizeCheck:
-      Stream << "dereference check with constant size " << IT.getAccessSize();
+      Stream << "dereference check with constant size " << IT.getAccessSize() << "B";
       break;
     case ITarget::Kind::VarSizeCheck:
       Stream << "dereference check with variable size " << *IT.getAccessSizeVal();

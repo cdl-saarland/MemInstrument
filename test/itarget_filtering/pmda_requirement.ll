@@ -1,9 +1,9 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only meminstrument-itargetprovider %s -S > /dev/null 2> %t1.log
 ; RUN: %opt %loadlibs  -meminstrument -mi-use-extchecks -mi-config=splay -mi-mode=filteritargets -debug-only meminstrument-external %s -S > /dev/null 2> %t2.log
-; RUN: fgrep "<arrayidx, entry::[store], 4B, ul_>" %t1.log
-; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t1.log
-; RUN: %not fgrep "<arrayidx, entry::[store], 4B, ul_>" %t2.log
-; RUN: fgrep "<arrayidx1, entry::bar, 4B, ul_>" %t2.log
+; RUN: fgrep "<dereference check with constant size 4B for arrayidx at entry::[store,3]>" %t1.log
+; RUN: fgrep "<dereference check with constant size 4B for arrayidx1 at entry::bar>" %t1.log
+; RUN: %not fgrep "<dereference check with constant size 4B for arrayidx at entry::[store,3]>" %t2.log
+; RUN: fgrep "<dereference check with constant size 4B for arrayidx1 at entry::bar>" %t2.log
 ; REQUIRES: pmda
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
