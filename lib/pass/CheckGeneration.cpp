@@ -22,7 +22,9 @@ void meminstrument::generateChecks(GlobalConfig &CFG, ITargetVector &Vec,
 
   for (auto &T : Vec) {
     if (T->isValid()) {
-      IM.insertCheck(*T);
+      if (T->isCheck() || T->is(ITarget::Kind::Invariant)) {
+        IM.insertCheck(*T);
+      }
     }
   }
 }
