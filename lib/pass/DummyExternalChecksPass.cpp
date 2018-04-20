@@ -62,6 +62,8 @@ void DummyExternalChecksPass::updateITargetsForFunction(GlobalConfig &,
       }
     }
   }
+  size_t Num = meminstrument::getNumValidITargets(Vec);
+  DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
   // add new targets to the ITarget vector
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }

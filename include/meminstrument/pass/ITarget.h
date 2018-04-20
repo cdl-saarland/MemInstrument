@@ -22,6 +22,7 @@
 #include "llvm/IR/Value.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -32,6 +33,11 @@ class ITarget;
 typedef std::shared_ptr<ITarget> ITargetPtr;
 
 typedef std::vector<ITargetPtr> ITargetVector;
+
+size_t getNumITargets(const ITargetVector &IV,
+                      const std::function<bool(const ITarget &)> &Predicate);
+
+size_t getNumValidITargets(const ITargetVector &IV);
 
 class ITarget {
 public:

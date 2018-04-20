@@ -20,6 +20,22 @@
 using namespace llvm;
 using namespace meminstrument;
 
+size_t meminstrument::getNumITargets(
+    const ITargetVector &IV,
+    const std::function<bool(const ITarget &)> &Predicate) {
+  size_t res = 0;
+  for (const auto &IT : IV) {
+    if (Predicate(*IT)) {
+      ++res;
+    }
+  }
+  return res;
+}
+
+size_t meminstrument::getNumValidITargets(const ITargetVector &IV) {
+  return getNumITargets(IV, [](const ITarget &IT) { return IT.isValid(); });
+}
+
 bool ITarget::is(Kind k) const { return this->getKind() == k; }
 
 ITarget::Kind ITarget::getKind(void) const { return _Kind; }
