@@ -93,18 +93,28 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
 if(MEMINSTRUMENT_USE_PMDA)
-  message(STATUS "Looking for PMDA CheckOptimizer...")
+  message(STATUS "Looking for PMDA + CheckOptimizer...")
 
-  find_path(PMDA_CO_BASE "include/CheckOptimizer/CheckOptimizerPass.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/CheckOptimizer")
-  if(PMDA_CO_BASE)
-    message(STATUS "Found PMDA CheckOptimizer in ${PMDA_CO_BASE}")
+  find_path(CO_BASE "include/CheckOptimizer/CheckOptimizerPass.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/CheckOptimizer")
+
+  if(CO_BASE)
+    message(STATUS "Found CheckOptimizer in ${CO_BASE}")
   else()
-    message(FATAL_ERROR "PMDA CheckOptimizer not found ${PMDA_CO_BASE}")
+    message(FATAL_ERROR "CheckOptimizer not found ${CO_BASE}")
+  endif()
+
+  find_path(PMDA_BASE "include/PMDA/PMDA.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/PMDA")
+
+  if(PMDA_BASE)
+    message(STATUS "Found PMDA in ${PMDA_BASE}")
+  else()
+    message(FATAL_ERROR "PMDA not found ${PMDA_BASE}")
   endif()
 
   include_directories(
     BEFORE
-    ${PMDA_CO_BASE}/include
+    ${CO_BASE}/include
+    ${PMDA_BASE}/include
     ${ISL_INCLUDE_PATH}
     ${ISL_BUILD_INCLUDE_PATH}
     )

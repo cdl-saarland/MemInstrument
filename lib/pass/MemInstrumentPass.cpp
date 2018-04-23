@@ -22,6 +22,8 @@
 
 #if MEMINSTRUMENT_USE_PMDA
 #include "CheckOptimizer/CheckOptimizerPass.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "PMDA/PMDA.h"
 #define EXTERNAL_PASS checkoptimizer::CheckOptimizerPass
 #else
 #define EXTERNAL_PASS DummyExternalChecksPass
@@ -144,6 +146,10 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
+#if MEMINSTRUMENT_USE_PMDA
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<pmda::PMDA>();
+#endif
   AU.addRequired<EXTERNAL_PASS>();
 }
 
