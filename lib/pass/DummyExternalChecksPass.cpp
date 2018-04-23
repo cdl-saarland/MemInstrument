@@ -36,7 +36,7 @@ char DummyExternalChecksPass::ID = 0;
 
 /// Alternative implementation that only changes existing ITargets
 /// (required for use with external_only config)
-void DummyExternalChecksPass::updateITargetsForFunction(GlobalConfig &,
+void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
                                                         ITargetVector &Vec,
                                                         llvm::Function &F) {
   // we store our relevant targets in a worklist for later materialization
@@ -69,7 +69,8 @@ void DummyExternalChecksPass::updateITargetsForFunction(GlobalConfig &,
 }
 
 void DummyExternalChecksPass::materializeExternalChecksForFunction(
-    GlobalConfig &CFG, ITargetVector &Vec, llvm::Function &F) {
+    MemInstrumentPass &P, ITargetVector &Vec, llvm::Function &F) {
+  auto &CFG = P.getConfig();
   auto &IM = CFG.getInstrumentationMechanism();
   auto &Ctx = F.getContext();
 

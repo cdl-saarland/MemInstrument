@@ -34,6 +34,8 @@ MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 void MemInstrumentPass::releaseMemory(void) {}
 
+GlobalConfig &MemInstrumentPass::getConfig(void) { return *CFG; }
+
 bool MemInstrumentPass::runOnModule(Module &M) {
 
   if (M.getName().endswith("tools/timeit.c")) {
@@ -43,7 +45,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     return false;
   }
 
-  auto CFG = GlobalConfig::create(M);
+  CFG = GlobalConfig::create(M);
 
   MIMode Mode = CFG->getMIMode();
 
@@ -103,7 +105,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (CFG->hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
-      ECP.updateITargetsForFunction(*CFG, Targets, F);
+      ECP.updateITargetsForFunction(*this, Targets, F);
 
       DEBUG_ALSO_WITH_TYPE(
           "meminstrument-external",
@@ -126,7 +128,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       DEBUG(
           dbgs() << "MemInstrumentPass: generating external checks with pass `"
                  << ECP.getPassName() << "'\n";);
-      ECP.materializeExternalChecksForFunction(*CFG, Targets, F);
+      ECP.materializeExternalChecksForFunction(*this, Targets, F);
     }
 
     if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS || CFG->hasErrors())

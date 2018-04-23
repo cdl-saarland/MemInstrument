@@ -9,6 +9,7 @@
 
 #include "meminstrument/Config.h"
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/pass/MemInstrumentPass.h"
 #include "llvm/IR/Function.h"
 
 namespace meminstrument {
@@ -66,7 +67,8 @@ public:
   /// external checks, you can either mark them here by calling their
   /// invalidate() method or by setting nosanitize metadata at the
   /// corresponding access instructions in the runOnModule method of your pass.
-  virtual void updateITargetsForFunction(GlobalConfig &CFG, ITargetVector &Vec,
+  virtual void updateITargetsForFunction(MemInstrumentPass &P,
+                                         ITargetVector &Vec,
                                          llvm::Function &F) = 0;
 
   /// \brief create external checks
@@ -78,7 +80,7 @@ public:
   /// It might be desirable to store the necessary ITargets per function in
   /// some private data structure of the pass in the updateITargetsForFunction
   /// method to make use them here.
-  virtual void materializeExternalChecksForFunction(GlobalConfig &CFG,
+  virtual void materializeExternalChecksForFunction(MemInstrumentPass &P,
                                                     ITargetVector &Vec,
                                                     llvm::Function &F) = 0;
 
