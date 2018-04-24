@@ -166,9 +166,13 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     }
   }
 
+  // Get the location right at the beginning of the function. We want to place
+  // witnesses for arguments, global values and constants here.
+  auto *Fun = Target->getLocation()->getParent()->getParent();
+  auto *EntryLoc = Fun->getEntryBlock().getFirstNonPHI();
+
   if (isa<Argument>(Target->getInstrumentee())) {
-    // Generate witnesses for arguments right when we need them. This might be
-    // inefficient.
+    requireSource(Node, Target->getInstrumentee(), EntryLoc);
     return;
   }
 
@@ -176,10 +180,10 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     std::vector<Value *> Pointers;
     getPointerOperands(Pointers, C);
     for (auto *V : Pointers) {
-      // Generate witnesses for globals and constants right when we need them.
-      // This might be inefficient.
-      requireSource(Node, V, Target->getLocation());
-      // TODO this location might be sub-optimal
+      // Generate witnesses for globals and constants at the beginning of the
+      // function.
+      // TODO It might be interesting to have global witnesses for these.
+      requireSource(Node, V, EntryLoc);
       // TODO do we really want to have witnesses for constant null pointers?
     }
     return;
