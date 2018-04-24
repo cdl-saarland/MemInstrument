@@ -22,8 +22,8 @@
 
 #if MEMINSTRUMENT_USE_PMDA
 #include "CheckOptimizer/CheckOptimizerPass.h"
-#include "llvm/Analysis/ScalarEvolution.h"
 #include "PMDA/PMDA.h"
+#include "llvm/Analysis/ScalarEvolution.h"
 #define EXTERNAL_PASS checkoptimizer::CheckOptimizerPass
 #else
 #define EXTERNAL_PASS DummyExternalChecksPass

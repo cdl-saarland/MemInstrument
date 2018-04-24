@@ -28,9 +28,16 @@ struct SplayWitness : public Witness {
 
   virtual llvm::Value *getUpperBound(void) const override;
 
-  SplayWitness(llvm::Value *WitnessValue);
+  llvm::Instruction *getInsertionLocation(void) const;
+
+  bool hasBoundsMaterialized(void) const;
+
+  SplayWitness(llvm::Value *WitnessValue, llvm::Instruction *Location);
 
   static bool classof(const Witness *W) { return W->getKind() == WK_Splay; }
+
+private:
+  llvm::Instruction *Location;
 };
 
 class SplayMechanism : public InstrumentationMechanism {

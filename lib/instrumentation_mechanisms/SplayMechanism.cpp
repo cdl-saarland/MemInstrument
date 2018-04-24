@@ -38,13 +38,27 @@ llvm::Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
 
 llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
 
-SplayWitness::SplayWitness(llvm::Value *WitnessValue)
-    : Witness(WK_Splay), WitnessValue(WitnessValue) {}
+SplayWitness::SplayWitness(llvm::Value *WitnessValue,
+                           llvm::Instruction *Location)
+    : Witness(WK_Splay), WitnessValue(WitnessValue), Location(Location) {}
+
+llvm::Instruction *SplayWitness::getInsertionLocation() const {
+  auto *Res = Location;
+  while (isa<PHINode>(Res)) {
+    Res = Res->getNextNode();
+  }
+  return Res;
+}
+
+bool SplayWitness::hasBoundsMaterialized(void) const {
+  return UpperBound != nullptr && LowerBound != nullptr;
+}
 
 void SplayMechanism::insertWitness(ITarget &Target) const {
   auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
                              Target.getLocation(), "_witness");
-  Target.setBoundWitness(std::make_shared<SplayWitness>(CastVal));
+  Target.setBoundWitness(
+      std::make_shared<SplayWitness>(CastVal, Target.getLocation()));
   ++SplayNumWitnessLookups;
 }
 
@@ -102,10 +116,15 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 
-  IRBuilder<> Builder(Target.getLocation());
-
   auto *Witness = cast<SplayWitness>(Target.getBoundWitness().get());
+
+  if (Witness->hasBoundsMaterialized()) {
+    return;
+  }
+
   auto *WitnessVal = Witness->WitnessValue;
+
+  IRBuilder<> Builder(Witness->getInsertionLocation());
 
   if (Target.hasUpperBoundFlag()) {
     auto Name = Target.getInstrumentee()->getName() + "_upper";
@@ -286,7 +305,7 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
   auto *NewPhi =
       builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
-  Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi));
+  Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi, Phi));
   ++SplayNumWitnessPhis;
   return Target.getBoundWitness();
 }
@@ -316,7 +335,7 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   auto *NewSel =
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
-  Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel));
+  Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel, Sel));
   ++SplayNumWitnessSelects;
   return Target.getBoundWitness();
 }
