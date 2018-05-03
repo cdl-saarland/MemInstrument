@@ -172,9 +172,9 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   }
 
   GetLowerBoundFunction =
-      insertFunDecl(M, "__splay_get_lower", PtrArgType, WitnessType);
+      insertFunDecl(M, "__splay_get_lower_as_ptr", PtrArgType, WitnessType);
   GetUpperBoundFunction =
-      insertFunDecl(M, "__splay_get_upper", PtrArgType, WitnessType);
+      insertFunDecl(M, "__splay_get_upper_as_ptr", PtrArgType, WitnessType);
 
   GlobalAllocFunction =
       insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
@@ -183,9 +183,9 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
 
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
-  FailFunction = insertFunDecl(M, "__splay_fail_simple", NoReturnAttr, VoidTy);
+  FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
 
-  VerboseFailFunction = insertFunDecl(M, "__splay_fail_simple_with_msg",
+  VerboseFailFunction = insertFunDecl(M, "__mi_fail_with_msg",
                                       NoReturnAttr, VoidTy, PtrArgType);
 }
 

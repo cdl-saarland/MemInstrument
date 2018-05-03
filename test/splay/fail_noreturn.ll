@@ -1,6 +1,6 @@
 ; RUN: %opt %loadlibs -meminstrument %s -mi-config=splay -S > %t1.ll
 ; RUN: fgrep "attributes #0 = { noreturn }" %t1.ll
-; RUN: fgrep "__splay_fail_simple() #0" %t1.ll
+; RUN: fgrep "__mi_fail() #0" %t1.ll
 
 define i32 @test(i64 %n, i32* %p) {
 bb:
