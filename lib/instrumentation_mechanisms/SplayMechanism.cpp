@@ -185,8 +185,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
 
-  VerboseFailFunction = insertFunDecl(M, "__mi_fail_with_msg",
-                                      NoReturnAttr, VoidTy, PtrArgType);
+  VerboseFailFunction =
+      insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
