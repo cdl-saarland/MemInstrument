@@ -16,6 +16,7 @@
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
 
 #include "meminstrument/pass/Util.h"
@@ -32,6 +33,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
+STATISTIC(NumVarArgs, "The # of modules with a function that has varargs");
+
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 void MemInstrumentPass::releaseMemory(void) {}
@@ -45,6 +48,15 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
                  << "`\n";);
     return false;
+  }
+
+  for (auto &F : M) {
+    if (!F.empty() && F.isVarArg()) {
+      ++NumVarArgs;
+      DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
+                   << "` because of varargs\n";);
+      return false;
+    }
   }
 
   CFG = GlobalConfig::create(M);
