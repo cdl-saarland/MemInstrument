@@ -66,11 +66,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
-  DEBUG(
-    dbgs() << "Dumped module:\n";
-    M.dump();
-    dbgs() << "\nEnd of dumped module.\n";
-    );
+  DEBUG(dbgs() << "Dumped module:\n"; M.dump();
+        dbgs() << "\nEnd of dumped module.\n";);
 
   DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
