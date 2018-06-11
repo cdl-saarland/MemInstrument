@@ -3,7 +3,6 @@
 // RUN: %opt %loadlibs -mem2reg -meminstrument -mi-config=splay %t1_main.ll -S > %t2_main.ll
 // RUN: %clink -g -O0 -L/ -l:%t0_lib.so -ldl -l:libsplay.a -o %t3 %t2_main.ll
 // RUN: %t3
-// XFAIL: *
 // This fails because we cannot add the external static data to the splay tree.
 
 struct T {
