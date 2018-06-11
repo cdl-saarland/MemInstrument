@@ -237,6 +237,10 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   auto *PtrArg = insertCast(PtrArgType, AI, Builder);
 
   uint64_t sz = M.getDataLayout().getTypeAllocSize(AI->getAllocatedType());
+  DEBUG(
+    dbgs() << "Registering alloca `";
+    AI->dump();
+    dbgs() << "` with size " << sz << "\n";);
   Value *Size = ConstantInt::get(SizeType, sz);
 
   if (AI->isArrayAllocation()) {
