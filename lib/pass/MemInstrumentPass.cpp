@@ -156,6 +156,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     generateChecks(*CFG, Targets, F);
   }
 
+  DEBUG(M.dump(););
+
   return true;
 }
 
