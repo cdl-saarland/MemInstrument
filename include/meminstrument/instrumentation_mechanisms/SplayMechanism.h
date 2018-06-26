@@ -78,6 +78,7 @@ private:
   llvm::Constant *GetLowerBoundFunction = nullptr;
   llvm::Constant *FailFunction = nullptr;
   llvm::Constant *VerboseFailFunction = nullptr;
+  llvm::Constant *WarningFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
