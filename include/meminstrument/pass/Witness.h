@@ -28,6 +28,7 @@ public:
     WK_Splay,
     WK_RuntimeStat,
     WK_Noop,
+    WK_Lowfat,
     // Insert new WitnessKinds for each new type of witnesses here!
   };
 
