@@ -66,6 +66,14 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
+  auto &ECP = getAnalysis<EXTERNAL_PASS>();
+
+  if (CFG->hasUseExternalChecks()) {
+    DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
+                    "checks\n";);
+    ECP.prepareModule(*this, M);
+  }
+
   DEBUG(dbgs() << "Dumped module:\n"; M.dump();
         dbgs() << "\nEnd of dumped module.\n";);
 
@@ -118,7 +126,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     auto &Targets = TargetMap[&F];
 
-    auto &ECP = getAnalysis<EXTERNAL_PASS>();
     if (CFG->hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
