@@ -17,8 +17,8 @@
 #include "llvm/IR/Instructions.h"
 
 #include <algorithm>
-#include <string>
 #include <math.h>
+#include <string>
 
 #include "meminstrument/pass/Util.h"
 
@@ -67,11 +67,10 @@ cl::opt<double>
                             cl::init(-1.0) // default
     );
 
-cl::opt<int>
-    RandomFilteringSeedOpt("mi-random-filter-seed",
-                           cl::desc("random seed for filtering"),
-                           cl::init(424242) // default
-    );
+cl::opt<int> RandomFilteringSeedOpt("mi-random-filter-seed",
+                                    cl::desc("random seed for filtering"),
+                                    cl::init(424242) // default
+);
 
 enum FilterOrdering {
   FO_random,
@@ -79,14 +78,13 @@ enum FilterOrdering {
   FO_coolest,
 };
 
-cl::opt<FilterOrdering>
-    FilterOrderingOpt("mi-filter-ordering",
-                      cl::desc("strategy for filtering arbitrary checks"),
-                      cl::values(clEnumValN(FO_random, "random", "filter checks randomly")),
-                      cl::values(clEnumValN(FO_hottest, "hottest", "filter hottest checks")),
-                      cl::values(clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
-                      cl::init(FO_random) // default
-    );
+cl::opt<FilterOrdering> FilterOrderingOpt(
+    "mi-filter-ordering", cl::desc("strategy for filtering arbitrary checks"),
+    cl::values(clEnumValN(FO_random, "random", "filter checks randomly")),
+    cl::values(clEnumValN(FO_hottest, "hottest", "filter hottest checks")),
+    cl::values(clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
+    cl::init(FO_random) // default
+);
 
 } // namespace
 
@@ -129,25 +127,30 @@ void meminstrument::filterITargetsRandomly(
   std::random_shuffle(cpy.begin(), cpy.end());
 
   if (FilterOrderingOpt != FO_random) {
-    std::stable_sort(cpy.begin(), cpy.end(), [&](const std::shared_ptr<ITarget> &a, const std::shared_ptr<ITarget> &b){
-        Function *funA = a->getLocation()->getParent()->getParent();
-        Function *funB = b->getLocation()->getParent()->getParent();
-        Module *mod = funA->getParent();
-        assert(mod == funB->getParent());
+    std::stable_sort(
+        cpy.begin(), cpy.end(),
+        [&](const std::shared_ptr<ITarget> &a,
+            const std::shared_ptr<ITarget> &b) {
+          Function *funA = a->getLocation()->getParent()->getParent();
+          Function *funB = b->getLocation()->getParent()->getParent();
+          Module *mod = funA->getParent();
+          assert(mod == funB->getParent());
 
-        auto funAname = funA->getName().str();
-        auto funBname = funB->getName().str();
-        auto modname = mod->getName().str();
+          auto funAname = funA->getName().str();
+          auto funBname = funB->getName().str();
+          auto modname = mod->getName().str();
 
-        // errs() << "Module name 1: '" << modname << "'\n";
-        // errs() << "Module name 2: '" << mod->getName().str().c_str() << "'\n";
+          // errs() << "Module name 1: '" << modname << "'\n";
+          // errs() << "Module name 2: '" << mod->getName().str().c_str() <<
+          // "'\n";
 
-        uint64_t idxA = extractAccessId(a->getLocation());
-        uint64_t idxB = extractAccessId(b->getLocation());
+          uint64_t idxA = extractAccessId(a->getLocation());
+          uint64_t idxB = extractAccessId(b->getLocation());
 
-        unsigned heatA = getHotnessIndex(modname, funAname, idxA);
-        unsigned heatB = getHotnessIndex(modname, funBname, idxB);
-        return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB) : (heatA < heatB);
+          unsigned heatA = getHotnessIndex(modname, funAname, idxA);
+          unsigned heatB = getHotnessIndex(modname, funBname, idxB);
+          return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB)
+                                                   : (heatA < heatB);
         });
   }
 

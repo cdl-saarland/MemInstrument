@@ -52,16 +52,16 @@ void labelAccesses(Module &M) {
     for (auto &BB : F) {
       for (auto &I : BB) {
         if (isa<StoreInst>(&I) || isa<LoadInst>(&I)) {
-          MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, std::to_string(idx++)));
+          MDNode *N =
+              MDNode::get(Ctx, MDString::get(Ctx, std::to_string(idx++)));
           I.setMetadata("mi_access_id", N);
         }
       }
     }
-
   }
 }
 
-}
+} // namespace
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
