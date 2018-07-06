@@ -22,6 +22,8 @@
 
 namespace meminstrument {
 
+class GlobalConfig;
+
 class InstrumentationPolicy {
 public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
@@ -29,7 +31,14 @@ public:
 
   virtual const char *getName(void) const = 0;
 
-  virtual ~InstrumentationPolicy() {}
+  virtual ~InstrumentationPolicy(void) {}
+
+protected:
+  GlobalConfig &_CFG;
+
+  InstrumentationPolicy(GlobalConfig &cfg);
+
+  bool validateSize(llvm::Value *Ptr);
 };
 
 } // namespace meminstrument

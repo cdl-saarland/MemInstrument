@@ -11,138 +11,264 @@
 
 #include "meminstrument/pass/ITarget.h"
 
+#include "meminstrument/Config.h"
+
+#include "meminstrument/pass/Util.h"
+
+#include <sstream>
+
 using namespace llvm;
 using namespace meminstrument;
 
-namespace {
-bool flagSubsumes(const ITarget &i1, const ITarget &i2) {
-  return
-      //  i1.HasConstAccessSize && i2.HasConstAccessSize &&
-      // (i1.AccessSize >= i2.AccessSize) &&
-      (i1.CheckUpperBoundFlag >= i2.CheckUpperBoundFlag) &&
-      (i1.CheckLowerBoundFlag >= i2.CheckLowerBoundFlag) &&
-      (i1.CheckTemporalFlag >= i2.CheckTemporalFlag) &&
-      (i1.RequiresExplicitBounds >= i2.RequiresExplicitBounds);
-}
-} // namespace
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
-                 bool RequiresExplicitBounds)
-    : Instrumentee(Instrumentee), Location(Location), AccessSize(AccessSize),
-      HasConstAccessSize(true), AccessSizeVal(nullptr),
-      CheckUpperBoundFlag(CheckUpperBoundFlag),
-      CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
-  assert(Instrumentee);
-  assert(Location);
+size_t meminstrument::getNumITargets(
+    const ITargetVector &IV,
+    const std::function<bool(const ITarget &)> &Predicate) {
+  size_t res = 0;
+  for (const auto &IT : IV) {
+    if (Predicate(*IT)) {
+      ++res;
+    }
+  }
+  return res;
 }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
-              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, true, true,
-              RequiresExplicitBounds) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 size_t AccessSize)
-    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
-
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool CheckTemporalFlag,
-                 bool RequiresExplicitBounds)
-    : Instrumentee(Instrumentee), Location(Location), AccessSize(0),
-      HasConstAccessSize(false), AccessSizeVal(AccessSize),
-      CheckUpperBoundFlag(CheckUpperBoundFlag),
-      CheckLowerBoundFlag(CheckLowerBoundFlag),
-      CheckTemporalFlag(CheckTemporalFlag),
-      RequiresExplicitBounds(RequiresExplicitBounds), BoundWitness(nullptr) {
-  assert(Instrumentee);
-  assert(Location);
-  assert(AccessSize);
+size_t meminstrument::getNumValidITargets(const ITargetVector &IV) {
+  return getNumITargets(IV, [](const ITarget &IT) { return IT.isValid(); });
 }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool CheckUpperBoundFlag,
-                 bool CheckLowerBoundFlag, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, CheckUpperBoundFlag,
-              CheckLowerBoundFlag, false, RequiresExplicitBounds) {}
+bool ITarget::is(Kind k) const { return this->getKind() == k; }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize, bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, AccessSize, true, true,
-              RequiresExplicitBounds) {}
+ITarget::Kind ITarget::getKind(void) const { return _Kind; }
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 Value *AccessSize)
-    : ITarget(Instrumentee, Location, AccessSize, true, true, false) {}
+bool ITarget::isCheck() const {
+  return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck);
+}
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location)
-    : ITarget(Instrumentee, Location, nullptr, true, true, false) {}
+llvm::Value *ITarget::getInstrumentee(void) const {
+  assert(isValid());
+  return _Instrumentee;
+}
 
-ITarget::ITarget(llvm::Value *Instrumentee, llvm::Instruction *Location,
-                 bool RequiresExplicitBounds)
-    : ITarget(Instrumentee, Location, nullptr, true, true,
-              RequiresExplicitBounds) {}
+llvm::Instruction *ITarget::getLocation(void) const {
+  assert(isValid());
+  return _Location;
+}
+
+size_t ITarget::getAccessSize(void) const {
+  assert(isValid());
+  assert(is(Kind::ConstSizeCheck));
+  return _AccessSize;
+}
+
+llvm::Value *ITarget::getAccessSizeVal(void) const {
+  assert(isValid());
+  assert(is(Kind::VarSizeCheck));
+  return _AccessSizeVal;
+}
+
+bool ITarget::hasUpperBoundFlag(void) const {
+  assert(isValid());
+  return _CheckUpperBoundFlag;
+}
+
+bool ITarget::hasLowerBoundFlag(void) const {
+  assert(isValid());
+  return _CheckLowerBoundFlag;
+}
+
+bool ITarget::hasTemporalFlag(void) const {
+  assert(isValid());
+  return _CheckTemporalFlag;
+}
+
+bool ITarget::requiresExplicitBounds(void) const {
+  assert(isValid());
+  return _RequiresExplicitBounds;
+}
+
+bool ITarget::hasBoundWitness(void) const {
+  assert(isValid());
+  return _BoundWitness.get() != nullptr;
+}
+
+std::shared_ptr<Witness> ITarget::getBoundWitness(void) {
+  assert(isValid());
+  assert(hasBoundWitness());
+  return _BoundWitness;
+}
+
+void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
+  _BoundWitness = BoundWitness;
+}
+
+bool ITarget::isValid(void) const { return not _Invalidated; }
+
+void ITarget::invalidate(void) { _Invalidated = true; }
 
 bool ITarget::subsumes(const ITarget &other) const {
-  return (Instrumentee == other.Instrumentee) &&
-         ((HasConstAccessSize && other.HasConstAccessSize) ||
-          AccessSizeVal == other.AccessSizeVal) &&
-         (AccessSize >= other.AccessSize) && flagSubsumes(*this, other);
+  assert(isValid());
+  assert(other.isValid());
+
+  if (getInstrumentee() != other.getInstrumentee())
+    return false;
+
+  switch (getKind()) {
+  case Kind::ConstSizeCheck:
+    return (other.getKind() == Kind::ConstSizeCheck) &&
+           (getAccessSize() >= other.getAccessSize());
+
+  case Kind::VarSizeCheck:
+    return (other.getKind() == Kind::VarSizeCheck) &&
+           (getAccessSizeVal() == other.getAccessSizeVal());
+
+  case Kind::Invariant:
+    switch (other.getKind()) {
+    case Kind::ConstSizeCheck:
+    case Kind::VarSizeCheck:
+    case Kind::Invariant:
+      return true;
+    default:
+      return false;
+    }
+  default:
+    return false;
+  }
+  return false;
 }
 
 bool ITarget::joinFlags(const ITarget &other) {
-  bool Changed = !flagSubsumes(*this, other);
+  assert(isValid());
+  assert(other.isValid());
+  assert(is(Kind::Intermediate));
+  bool Changed = false;
 
-  // AccessSize = std::max(AccessSize, other.AccessSize);
-  CheckUpperBoundFlag = CheckUpperBoundFlag || other.CheckUpperBoundFlag;
-  CheckLowerBoundFlag = CheckLowerBoundFlag || other.CheckLowerBoundFlag;
-  CheckTemporalFlag = CheckTemporalFlag || other.CheckTemporalFlag;
-  RequiresExplicitBounds =
-      RequiresExplicitBounds || other.RequiresExplicitBounds;
+#define MERGE_FLAG(X)                                                          \
+  if (X != other.X) {                                                          \
+    X = X || other.X;                                                          \
+    Changed = true;                                                            \
+  }
+
+  MERGE_FLAG(_CheckUpperBoundFlag);
+  MERGE_FLAG(_CheckLowerBoundFlag);
+  MERGE_FLAG(_CheckTemporalFlag);
+  MERGE_FLAG(_RequiresExplicitBounds);
+#undef MERGE_FLAG
+
   return Changed;
 }
 
-bool ITarget::hasWitness(void) const { return BoundWitness.get() != nullptr; }
+ITargetPtr ITarget::createBoundsTarget(llvm::Value *Instrumentee,
+                                       llvm::Instruction *Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Bounds);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
+  R->_RequiresExplicitBounds = true;
+  return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createInvariantTarget(llvm::Value *Instrumentee,
+                                          llvm::Instruction *Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Invariant);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location) {
+  llvm::Module *M = Location->getModule();
+  const auto &DL = M->getDataLayout();
+  size_t acc_size = getPointerAccessSize(DL, Instrumentee);
+  return ITarget::createSpatialCheckTarget(Instrumentee, Location, acc_size);
+}
+
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             size_t Size) {
+  ITarget *R = new ITarget(ITarget::Kind::ConstSizeCheck);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_AccessSize = Size;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
+  return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             llvm::Value *Size) {
+  ITarget *R = new ITarget(ITarget::Kind::VarSizeCheck);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_AccessSizeVal = Size;
+  R->_CheckUpperBoundFlag = true;
+  R->_CheckLowerBoundFlag = true;
+  return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location) {
+  ITarget *R = new ITarget(ITarget::Kind::Intermediate);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  return std::shared_ptr<ITarget>(R);
+}
+ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
+                                             llvm::Instruction *Location,
+                                             const ITarget &other) {
+  ITarget *R = new ITarget(ITarget::Kind::Intermediate);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Location;
+  R->_CheckUpperBoundFlag = other._CheckUpperBoundFlag;
+  R->_CheckLowerBoundFlag = other._CheckLowerBoundFlag;
+  R->_CheckTemporalFlag = other._CheckTemporalFlag;
+  R->_RequiresExplicitBounds = other._RequiresExplicitBounds;
+  return std::shared_ptr<ITarget>(R);
+}
 
 void ITarget::printLocation(llvm::raw_ostream &Stream) const {
-  std::string LocName = this->Location->getName().str();
+  auto *L = this->getLocation();
+  std::string LocName = L->getName().str();
   if (LocName.empty()) {
-    switch (this->Location->getOpcode()) {
+    switch (L->getOpcode()) {
     case llvm::Instruction::Store:
-      LocName = "[store]";
+      LocName = "[store";
       break;
 
     case llvm::Instruction::Ret:
-      LocName = "[ret]";
+      LocName = "[ret";
       break;
 
     case llvm::Instruction::Br:
-      LocName = "[br]";
+      LocName = "[br";
       break;
 
     case llvm::Instruction::Switch:
-      LocName = "[switch]";
+      LocName = "[switch";
       break;
 
     case llvm::Instruction::Call:
-      LocName = "[anon call]";
+      LocName = "[anon call";
       break;
 
     default:
-      LocName = "[unknown]";
+      LocName = "[unknown";
     }
+
+    size_t idx = 0;
+    for (auto &I : *L->getParent()) {
+      if (&I == L) {
+        break;
+      }
+      ++idx;
+    }
+    std::stringstream ss;
+    ss << LocName << "," << idx << "]";
+    LocName = ss.str();
   }
-  auto *BB = this->Location->getParent();
+  auto *BB = this->getLocation()->getParent();
   Stream << BB->getName() << "::" << LocName;
 }
 
@@ -153,29 +279,31 @@ llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
     return Stream;
   }
 
-  Stream << "<" << IT.Instrumentee->getName() << ", ";
+  Stream << '<';
+  switch (IT._Kind) {
+  case ITarget::Kind::Bounds:
+    Stream << "bounds";
+    break;
+  case ITarget::Kind::ConstSizeCheck:
+    Stream << "dereference check with constant size " << IT.getAccessSize()
+           << "B";
+    break;
+  case ITarget::Kind::VarSizeCheck:
+    Stream << "dereference check with variable size " << *IT.getAccessSizeVal();
+    break;
+  case ITarget::Kind::Intermediate:
+    Stream << "intermediate target";
+    break;
+  case ITarget::Kind::Invariant:
+    Stream << "invariant check";
+    break;
+  }
+  Stream << " for " << IT.getInstrumentee()->getName() << " at ";
   IT.printLocation(Stream);
-  Stream << ", ";
-  if (IT.HasConstAccessSize) {
-    Stream << IT.AccessSize << "B, ";
-  } else {
-    Stream << "xB, ";
+  if (IT.hasBoundWitness()) {
+    Stream << " with witness";
   }
-  if (IT.CheckUpperBoundFlag) {
-    Stream << "u";
-  } else {
-    Stream << "_";
-  }
-  if (IT.CheckLowerBoundFlag) {
-    Stream << "l";
-  } else {
-    Stream << "_";
-  }
-  if (IT.CheckTemporalFlag) {
-    Stream << "t";
-  } else {
-    Stream << "_";
-  }
-  Stream << ">";
+  Stream << '>';
+
   return Stream;
 }

@@ -1,11 +1,12 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
-; RUN: fgrep "<add.ptr, entry::tmp, 4B, ul_>" %t.log
-; RUN: fgrep "<arrayidx, for.body::[store], 4B, ul_>" %t.log
-; RUN: fgrep "<tmp, for.end::call1, 4B, ___>" %t.log
-; RUN: fgrep "<i, entry::[store], 4B, ul_>" %t.log
-; RUN: fgrep "<x, entry::[store], 8B, ul_>" %t.log
-; RUN: fgrep "<i1, entry::[store], 4B, ___>" %t.log
-; RUN: fgrep "<i2, entry::call, 4B, ___>" %t.log
+; RUN: fgrep "<dereference check with constant size 4B for add.ptr at entry::tmp>" %t.log
+; RUN: fgrep "<dereference check with constant size 4B for arrayidx at for.body::[store,3]>" %t.log
+; RUN: fgrep "<invariant check for tmp at for.end::call1>" %t.log
+; RUN: fgrep "<dereference check with constant size 4B for i at entry::[store,4]>" %t.log
+; RUN: fgrep "<dereference check with constant size 8B for x at entry::[store,7]>" %t.log
+; RUN: fgrep "<invariant check for i1 at entry::[store,7]>" %t.log
+; RUN: fgrep "<invariant check for i2 at entry::call>" %t.log
+
 ; ModuleID = 'test_subobj.o0.ll'
 source_filename = "test_subobj.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"

@@ -7,6 +7,7 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_DUMMYMECHANISM_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_DUMMYMECHANISM_H
 
+#include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/ITarget.h"
 
@@ -32,6 +33,8 @@ struct DummyWitness : public Witness {
 
 class DummyMechanism : public InstrumentationMechanism {
 public:
+  DummyMechanism(GlobalConfig &CFG) : InstrumentationMechanism(CFG) {}
+
   virtual void insertWitness(ITarget &Target) const override;
 
   virtual void insertCheck(ITarget &Target) const override;

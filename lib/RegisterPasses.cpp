@@ -11,10 +11,10 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#if MEMINSTRUMENT_USE_PMDA
-#include "CheckOptimizer/CheckOptimizerPass.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#if MEMINSTRUMENT_USE_PMDA
+#include "CheckOptimizer/CheckOptimizerPass.h"
 #endif
 
 using namespace meminstrument;
@@ -34,18 +34,19 @@ static RegisterPass<DummyExternalChecksPass>
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
-#if MEMINSTRUMENT_USE_PMDA
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
-#endif
+  PM.add(createBreakCriticalEdgesPass());
   PM.add(new MemInstrumentPass());
 }
 
-#if MEMINSTRUMENT_USE_PMDA
-static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_ModuleOptimizerEarly, registerMeminstrumentPass);
-#else
-static llvm::RegisterStandardPasses RegisterMeminstrumentPass(
-    llvm::PassManagerBuilder::EP_OptimizerLast, registerMeminstrumentPass);
-#endif
+// #if MEMINSTRUMENT_USE_PMDA
+static llvm::RegisterStandardPasses
+    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
+                              registerMeminstrumentPass);
+// #else
+// static llvm::RegisterStandardPasses
+//     RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
+//                               registerMeminstrumentPass);
+// #endif
 } // namespace meminstrument

@@ -34,9 +34,16 @@ void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 char DummyExternalChecksPass::ID = 0;
 
-/// Alternative implementation that only changes existing ITargets
+bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &P,
+                                            llvm::Module &M) {
+  // No need to do something here.
+  return false;
+}
+
+/// Implementation that only changes existing ITargets
 /// (required for use with external_only config)
-void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec,
+void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
+                                                        ITargetVector &Vec,
                                                         llvm::Function &F) {
   // we store our relevant targets in a worklist for later materialization
   auto &CurrentWL = WorkList[&F];
@@ -46,33 +53,31 @@ void DummyExternalChecksPass::updateITargetsForFunction(ITargetVector &Vec,
   auto *EntryLoc = F.getEntryBlock().getFirstNonPHI();
 
   for (auto &IT : Vec) {
-    if (!(IT->isValid() && IT->CheckUpperBoundFlag &&
-          IT->CheckLowerBoundFlag)) {
+    if (!IT->isValid() || !IT->is(ITarget::Kind::ConstSizeCheck)) {
       continue;
     }
-    auto *L = IT->Location;
+    auto *L = IT->getLocation();
     if (L->getMetadata("checkearly")) {
-      auto *A = dyn_cast<Argument>(IT->Instrumentee);
-      if (A && IT->HasConstAccessSize) {
+      if (auto *A = dyn_cast<Argument>(IT->getInstrumentee())) {
         // create a new ITarget for the beginning of the function
-        auto res = std::make_shared<ITarget>(A, EntryLoc, IT->AccessSize,
-                                             /* RequiresExplicitBounds */ true);
-        // make sure it checks for the same criteria
-        res->joinFlags(*IT);
-        // also remember it for later
+        auto res = ITarget::createBoundsTarget(A, EntryLoc);
+        // remember it for later
         CurrentWL.push_back(res);
         // invalidate the initial ITarget so that no checks are generated for it
         IT->invalidate();
       }
     }
   }
+  size_t Num = meminstrument::getNumValidITargets(Vec);
+  DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
   // add new targets to the ITarget vector
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }
 
 void DummyExternalChecksPass::materializeExternalChecksForFunction(
-    ITargetVector &Vec, llvm::Function &F) {
-  auto &IM = GlobalConfig::get(*F.getParent()).getInstrumentationMechanism();
+    MemInstrumentPass &P, ITargetVector &Vec, llvm::Function &F) {
+  auto &CFG = P.getConfig();
+  auto &IM = CFG.getInstrumentationMechanism();
   auto &Ctx = F.getContext();
 
   auto &CurrentWL = WorkList[&F];
@@ -80,21 +85,24 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(
   auto *I64Ty = Type::getInt64Ty(Ctx);
 
   for (auto &IT : CurrentWL) {
-    IRBuilder<> Builder(IT->Location);
+    IRBuilder<> Builder(IT->getLocation());
 
-    auto *Ptr2Int = Builder.CreatePtrToInt(IT->Instrumentee, I64Ty);
+    auto *Ptr2Int = Builder.CreatePtrToInt(IT->getInstrumentee(), I64Ty);
 
-    auto *Lower = IT->BoundWitness->getLowerBound();
+    auto *LowerPtr = IT->getBoundWitness()->getLowerBound();
+    auto *Lower = Builder.CreatePtrToInt(LowerPtr, I64Ty);
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
-    auto *Sum =
-        Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, IT->AccessSize));
-    auto *Upper = IT->BoundWitness->getUpperBound();
+    auto acc_size = getPointerAccessSize(F.getParent()->getDataLayout(),
+                                         IT->getInstrumentee());
+    auto *Sum = Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, acc_size));
+    auto *UpperPtr = IT->getBoundWitness()->getUpperBound();
+    auto *Upper = Builder.CreatePtrToInt(UpperPtr, I64Ty);
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);
 
     auto *Or = Builder.CreateOr(CmpLower, CmpUpper);
 
-    auto Unreach = SplitBlockAndInsertIfThen(Or, IT->Location, true);
+    auto Unreach = SplitBlockAndInsertIfThen(Or, IT->getLocation(), true);
     Builder.SetInsertPoint(Unreach);
     Builder.CreateCall(IM.getFailFunction());
     IT->invalidate();

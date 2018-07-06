@@ -23,8 +23,8 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
-  auto &CFG = GlobalConfig::get(*F.getParent());
+void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
+                                      Function &F) {
   const auto &WS = CFG.getWitnessStrategy();
   auto &IM = CFG.getInstrumentationMechanism();
 
@@ -58,8 +58,20 @@ void meminstrument::generateWitnesses(ITargetVector &Vec, Function &F) {
                        WG.printWitnessClasses(dbgs()););
 
   for (auto &T : Vec) {
-    if (T->isValid() && T->RequiresExplicitBounds) {
+    if (!T->isValid()) {
+      continue;
+    }
+    assert(T->hasBoundWitness());
+    if (T->requiresExplicitBounds()) {
+      DEBUG(dbgs() << "Materializing explicit bounds for " << *T << "\n";);
       IM.materializeBounds(*T);
+      DEBUG({
+        dbgs() << "  resulting explicit bounds for " << *T << ":\n";
+        dbgs() << "    upper: " << *T->getBoundWitness()->getUpperBound()
+               << "\n";
+        dbgs() << "    lower: " << *T->getBoundWitness()->getLowerBound()
+               << "\n";
+      });
     }
   }
 }

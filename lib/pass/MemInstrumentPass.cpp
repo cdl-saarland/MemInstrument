@@ -16,13 +16,15 @@
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 
-// #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
 
 #include "meminstrument/pass/Util.h"
 
 #if MEMINSTRUMENT_USE_PMDA
 #include "CheckOptimizer/CheckOptimizerPass.h"
+#include "PMDA/PMDA.h"
+#include "llvm/Analysis/ScalarEvolution.h"
 #define EXTERNAL_PASS checkoptimizer::CheckOptimizerPass
 #else
 #define EXTERNAL_PASS DummyExternalChecksPass
@@ -31,9 +33,13 @@
 using namespace meminstrument;
 using namespace llvm;
 
+STATISTIC(NumVarArgs, "The # of modules with a function that has varargs");
+
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
-void MemInstrumentPass::releaseMemory(void) { GlobalConfig::release(); }
+void MemInstrumentPass::releaseMemory(void) {}
+
+GlobalConfig &MemInstrumentPass::getConfig(void) { return *CFG; }
 
 namespace {
 
@@ -66,21 +72,41 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     return false;
   }
 
+  for (auto &F : M) {
+    if (!F.empty() && F.isVarArg()) {
+      ++NumVarArgs;
+      DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
+                   << "` because of varargs\n";);
+      return false;
+    }
+  }
+
+  CFG = GlobalConfig::create(M);
+
   labelAccesses(M);
 
-  auto &CFG = GlobalConfig::get(M);
-
-  Config::MIMode Mode = CFG.getMIMode();
+  MIMode Mode = CFG->getMIMode();
 
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
+  auto &ECP = getAnalysis<EXTERNAL_PASS>();
+
+  if (CFG->hasUseExternalChecks()) {
+    DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
+                    "checks\n";);
+    ECP.prepareModule(*this, M);
+  }
+
+  DEBUG(dbgs() << "Dumped module:\n"; M.dump();
+        dbgs() << "\nEnd of dumped module.\n";);
+
   DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
-  auto &IM = CFG.getInstrumentationMechanism();
+  auto &IM = CFG->getInstrumentationMechanism();
   IM.initialize(M);
 
-  if (Mode == Config::MIMode::SETUP)
+  if (Mode == MIMode::SETUP || CFG->hasErrors())
     return true;
 
   std::map<llvm::Function *, ITargetVector> TargetMap;
@@ -97,15 +123,15 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     DEBUG(dbgs() << "MemInstrumentPass: gathering ITargets\n";);
 
-    gatherITargets(Targets, F);
+    gatherITargets(*CFG, Targets, F);
 
-    if (Mode == Config::MIMode::GATHER_ITARGETS)
+    if (Mode == MIMode::GATHER_ITARGETS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
                     "filters\n";);
 
-    filterITargets(this, Targets, F);
+    filterITargets(*CFG, this, Targets, F);
 
     DEBUG_ALSO_WITH_TYPE(
         "meminstrument-itargetfilter",
@@ -115,7 +141,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
              : Targets) { dbgs() << "  " << *Target << "\n"; });
   }
 
-  filterITargetsRandomly(this, TargetMap);
+  filterITargetsRandomly(*CFG, TargetMap);
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F)) {
@@ -124,11 +150,10 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     auto &Targets = TargetMap[&F];
 
-    auto &ECP = getAnalysis<EXTERNAL_PASS>();
-    if (CFG.hasUseExternalChecks()) {
+    if (CFG->hasUseExternalChecks()) {
       DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
                    << ECP.getPassName() << "'\n";);
-      ECP.updateITargetsForFunction(Targets, F);
+      ECP.updateITargetsForFunction(*this, Targets, F);
 
       DEBUG_ALSO_WITH_TYPE(
           "meminstrument-external",
@@ -137,44 +162,47 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
 
-    if (Mode == Config::MIMode::FILTER_ITARGETS)
+    if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating Witnesses\n";);
 
-    generateWitnesses(Targets, F);
+    generateWitnesses(*CFG, Targets, F);
 
-    if (Mode == Config::MIMode::GENERATE_WITNESSES)
+    if (Mode == MIMode::GENERATE_WITNESSES || CFG->hasErrors())
       continue;
 
-    if (CFG.hasUseExternalChecks()) {
+    if (CFG->hasUseExternalChecks()) {
       DEBUG(
           dbgs() << "MemInstrumentPass: generating external checks with pass `"
                  << ECP.getPassName() << "'\n";);
-      ECP.materializeExternalChecksForFunction(Targets, F);
+      ECP.materializeExternalChecksForFunction(*this, Targets, F);
     }
 
-    if (Mode == Config::MIMode::GENERATE_EXTERNAL_CHECKS)
+    if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS || CFG->hasErrors())
       continue;
 
     DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);
 
-    generateChecks(Targets, F);
+    generateChecks(*CFG, Targets, F);
   }
+
+  DEBUG(M.dump(););
 
   return true;
 }
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
-
-  // AU.addRequired<LoopInfoWrapperPass>(); // TODO put into #if?
-
+#if MEMINSTRUMENT_USE_PMDA
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<pmda::PMDA>();
+#endif
   AU.addRequired<EXTERNAL_PASS>();
 }
 
-
-void MemInstrumentPass::print(llvm::raw_ostream &O, const llvm::Module *M) const {
+void MemInstrumentPass::print(llvm::raw_ostream &O,
+                              const llvm::Module *M) const {
   O << "MemInstrumentPass for module '" << M->getName() << "'\n";
 }
 

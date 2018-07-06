@@ -16,6 +16,8 @@
 
 namespace meminstrument {
 
+class GlobalConfig;
+
 struct SplayWitness : public Witness {
   llvm::Value *WitnessValue;
 
@@ -26,13 +28,22 @@ struct SplayWitness : public Witness {
 
   virtual llvm::Value *getUpperBound(void) const override;
 
-  SplayWitness(llvm::Value *WitnessValue);
+  llvm::Instruction *getInsertionLocation(void) const;
+
+  bool hasBoundsMaterialized(void) const;
+
+  SplayWitness(llvm::Value *WitnessValue, llvm::Instruction *Location);
 
   static bool classof(const Witness *W) { return W->getKind() == WK_Splay; }
+
+private:
+  llvm::Instruction *Location;
 };
 
 class SplayMechanism : public InstrumentationMechanism {
 public:
+  SplayMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
+
   virtual void insertWitness(ITarget &Target) const override;
 
   virtual void insertCheck(ITarget &Target) const override;
@@ -40,6 +51,8 @@ public:
   virtual void materializeBounds(ITarget &Target) const override;
 
   virtual llvm::Constant *getFailFunction(void) const override;
+
+  virtual llvm::Constant *getVerboseFailFunction(void) const override;
 
   virtual std::shared_ptr<Witness>
   insertWitnessPhi(ITarget &Target) const override;
@@ -64,6 +77,8 @@ private:
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
   llvm::Constant *FailFunction = nullptr;
+  llvm::Constant *VerboseFailFunction = nullptr;
+  llvm::Constant *WarningFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

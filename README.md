@@ -11,7 +11,7 @@
 
 ### 1. Setting up LLVM
 
-Start in your project root folder. Clone the [LLVM sources](https://github.com/llvm-mirror/llvm) as `llvm`. Next, clone the [Clang sources](https://github.com/llvm-mirror/clang) into `llvm/tools` and the [Compiler-RT sources](https://github.com/llvm-mirror/compiler-rt) into `llvm/projects`. Make sure to checkout the same branch/commit in all three of these repositories (currently supported: `release_40`).
+Start in your project root folder. Clone the [LLVM sources](https://github.com/llvm-mirror/llvm) as `llvm`. Next, clone the [Clang sources](https://github.com/llvm-mirror/clang) into `llvm/tools`. Make sure to checkout the same branch/commit in both of these repositories (currently supported: `release_60`).
 
 ### 2. Setting up meminstrument
 

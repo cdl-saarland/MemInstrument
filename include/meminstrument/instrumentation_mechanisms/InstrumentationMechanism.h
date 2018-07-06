@@ -16,6 +16,8 @@
 
 namespace meminstrument {
 
+class GlobalConfig;
+
 class InstrumentationMechanism {
 public:
   virtual void insertWitness(ITarget &Target) const = 0;
@@ -25,6 +27,10 @@ public:
   virtual void materializeBounds(ITarget &Target) const = 0;
 
   virtual llvm::Constant *getFailFunction(void) const = 0;
+
+  virtual llvm::Constant *getVerboseFailFunction(void) const {
+    llvm_unreachable("Not supported!");
+  }
 
   virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) const = 0;
 
@@ -42,6 +48,14 @@ public:
 
   virtual ~InstrumentationMechanism(void) {}
 
+  InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) {}
+
+  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
+                                                   llvm::StringRef Str);
+
+protected:
+  GlobalConfig &_CFG;
+
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
   static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
@@ -55,8 +69,8 @@ private:
   template <typename... Args>
   static llvm::Constant *
   insertFunDecl_impl(std::vector<llvm::Type *> &Vec, llvm::Module &M,
-                     llvm::StringRef Name, llvm::AttributeList AList, llvm::Type *RetTy, llvm::Type *Ty,
-                     Args... args) {
+                     llvm::StringRef Name, llvm::AttributeList AList,
+                     llvm::Type *RetTy, llvm::Type *Ty, Args... args) {
     Vec.push_back(Ty);
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
@@ -81,8 +95,6 @@ protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
                 llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
-  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
-                                                   llvm::StringRef Str);
 
   /// Inserts a function declaration into a Module and marks it for no
   /// instrumentation.
@@ -97,7 +109,8 @@ protected:
   }
 
   template <typename... Args>
-  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name, llvm::AttributeList AList,
+  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
+                                       llvm::AttributeList AList,
                                        llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);

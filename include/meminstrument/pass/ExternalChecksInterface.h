@@ -7,7 +7,9 @@
 #ifndef MEMINSTRUMENT_PASS_EXTERNALCHECKSINTERFACE_H
 #define MEMINSTRUMENT_PASS_EXTERNALCHECKSINTERFACE_H
 
+#include "meminstrument/Config.h"
 #include "meminstrument/pass/ITarget.h"
+#include "meminstrument/pass/MemInstrumentPass.h"
 #include "llvm/IR/Function.h"
 
 namespace meminstrument {
@@ -25,6 +27,11 @@ namespace meminstrument {
 /// appropriate cli flags). They are then executed at the following positions in
 /// the pipeline:
 ///
+///  +-----------------+
+///  | prepareModule() |
+///  +-----------------+
+///           ||
+///           \/
 ///  +-------------------+
 ///  | ITarget Gathering |
 ///  +-------------------+
@@ -56,6 +63,17 @@ namespace meminstrument {
 ///
 class ExternalChecksInterface {
 public:
+  /// \brief Perform preparing steps on the module
+  ///
+  /// A possible use case for this function is to insert new Functions or clone
+  /// existing ones.
+  /// This interface provides a noop default implementation in case the function
+  /// is not required.
+  ///
+  /// \returns true if the module is modified during the execution of this
+  ///   function
+  virtual bool prepareModule(MemInstrumentPass &P, llvm::Module &M);
+
   /// \brief Adjust the required ITargets for the external check generation
   ///
   /// New ITargets (i.e. shared pointers to them) may be added here, most
@@ -65,7 +83,8 @@ public:
   /// external checks, you can either mark them here by calling their
   /// invalidate() method or by setting nosanitize metadata at the
   /// corresponding access instructions in the runOnModule method of your pass.
-  virtual void updateITargetsForFunction(ITargetVector &Vec,
+  virtual void updateITargetsForFunction(MemInstrumentPass &P,
+                                         ITargetVector &Vec,
                                          llvm::Function &F) = 0;
 
   /// \brief create external checks
@@ -77,7 +96,8 @@ public:
   /// It might be desirable to store the necessary ITargets per function in
   /// some private data structure of the pass in the updateITargetsForFunction
   /// method to make use them here.
-  virtual void materializeExternalChecksForFunction(ITargetVector &Vec,
+  virtual void materializeExternalChecksForFunction(MemInstrumentPass &P,
+                                                    ITargetVector &Vec,
                                                     llvm::Function &F) = 0;
 
   virtual ~ExternalChecksInterface(void);

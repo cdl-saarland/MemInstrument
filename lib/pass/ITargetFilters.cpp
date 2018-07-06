@@ -41,7 +41,8 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
       if (i1 == i2 || !i1->isValid() || !i2->isValid())
         continue;
 
-      if (i1->subsumes(*i2) && DomTree.dominates(i1->Location, i2->Location)) {
+      if (i1->subsumes(*i2) &&
+          DomTree.dominates(i1->getLocation(), i2->getLocation())) {
         i2->invalidate();
         ++NumITargetsSubsumed;
       }
@@ -51,12 +52,8 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
 
 void filterByAnnotation(ITargetVector &Vec) {
   for (auto &IT : Vec) {
-    auto *L = IT->Location;
-    auto *V = IT->Instrumentee;
-    bool res = L->getMetadata("nosanitize") &&
-               ((isa<LoadInst>(L) && (V == L->getOperand(0))) ||
-                (isa<StoreInst>(L) && (V == L->getOperand(1))));
-    if (res) {
+    auto *L = IT->getLocation();
+    if (L->getMetadata("nosanitize") && (IT->isCheck())) {
       ++NumITargetsNoSanitize;
       IT->invalidate();
     }
@@ -91,52 +88,11 @@ cl::opt<FilterOrdering>
                       cl::init(FO_random) // default
     );
 
-
-// void filterByRandom(ITargetVector &Vec, int seed, double filter_ratio) {
-//   ITargetVector cpy = Vec;
-//   std::srand(seed);
-//
-//   std::random_shuffle(cpy.begin(), cpy.end());
-//
-//   size_t bound = (size_t)(((double)cpy.size()) * filter_ratio);
-//
-//   for (size_t i = 0; i < bound; ++i) {
-//     cpy[i]->invalidate();
-//   }
-// }
-
-// void filterByLoopDepth(Pass *ParentPass, ITargetVector &Vec, Function &F, unsigned removeFromInnermost, unsigned removeFromOutermost) {
-//   const auto &LI = ParentPass->getAnalysis<LoopInfo>(F);
-//
-//   // remove checks from the `removeFromOutermost` outermost loop levels
-//   // and from the `removeFromInnermost` innermost loop levels
-//   // if both values are 0, this is a no-op
-//
-//   unsigned MaxLoopDepth = 0;
-//
-//   for (auto &i : Vec) {
-//     BasicBlock *BB = i->Location->getParent()
-//     unsigned depth = LI.getLoopDepth(BB);
-//     if (depth > MaxLoopDepth) {
-//       MaxLoopDepth = depth;
-//     }
-//   }
-//
-//   for (auto &i : Vec) {
-//     BasicBlock *BB = i->Location->getParent()
-//     unsigned depth = LI.getLoopDepth(BB);
-//     if (depth < removeFromOutermost) {
-//       i->invalidate();
-//     }
-//   }
-// }
-
-
-
 } // namespace
 
-void meminstrument::filterITargets(Pass *P, ITargetVector &Vec, Function &F) {
-  bool UseFilters = GlobalConfig::get(*F.getParent()).hasUseFilters();
+void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
+                                   ITargetVector &Vec, Function &F) {
+  bool UseFilters = CFG.hasUseFilters();
   if (!UseFilters) {
     return;
   }
@@ -159,8 +115,8 @@ uint64_t extractAccessId(Instruction *I) {
   }
 }
 
-void meminstrument::filterITargetsRandomly(Pass *ParentPass,
-    std::map<llvm::Function *, ITargetVector> TargetMap) {
+void meminstrument::filterITargetsRandomly(
+    GlobalConfig &CFG, std::map<llvm::Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
   }
@@ -174,8 +130,8 @@ void meminstrument::filterITargetsRandomly(Pass *ParentPass,
 
   if (FilterOrderingOpt != FO_random) {
     std::stable_sort(cpy.begin(), cpy.end(), [&](const std::shared_ptr<ITarget> &a, const std::shared_ptr<ITarget> &b){
-        Function *funA = a->Location->getParent()->getParent();
-        Function *funB = b->Location->getParent()->getParent();
+        Function *funA = a->getLocation()->getParent()->getParent();
+        Function *funB = b->getLocation()->getParent()->getParent();
         Module *mod = funA->getParent();
         assert(mod == funB->getParent());
 
@@ -186,8 +142,8 @@ void meminstrument::filterITargetsRandomly(Pass *ParentPass,
         // errs() << "Module name 1: '" << modname << "'\n";
         // errs() << "Module name 2: '" << mod->getName().str().c_str() << "'\n";
 
-        uint64_t idxA = extractAccessId(a->Location);
-        uint64_t idxB = extractAccessId(b->Location);
+        uint64_t idxA = extractAccessId(a->getLocation());
+        uint64_t idxB = extractAccessId(b->getLocation());
 
         unsigned heatA = getHotnessIndex(modname, funAname, idxA);
         unsigned heatB = getHotnessIndex(modname, funBname, idxB);

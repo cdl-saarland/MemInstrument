@@ -33,8 +33,7 @@ void WitnessGraphNode::clearRequirements(void) {
 
 WitnessGraphNode::~WitnessGraphNode(void) { clearRequirements(); }
 
-WitnessGraphNode *
-WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
+WitnessGraphNode *WitnessGraph::getInternalNode(ITargetPtr Target) {
   // see whether we already have a node for Target
   if (auto *Node = getInternalNodeOrNull(Target)) {
     return Node;
@@ -43,20 +42,18 @@ WitnessGraph::getInternalNode(std::shared_ptr<ITarget> Target) {
   return createNewInternalNode(Target);
 }
 
-WitnessGraphNode *
-WitnessGraph::createNewInternalNode(std::shared_ptr<ITarget> Target) {
+WitnessGraphNode *WitnessGraph::createNewInternalNode(ITargetPtr Target) {
   assert(getInternalNodeOrNull(Target) == nullptr &&
          "Internal node already exists!");
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
   auto *NewNode = new WitnessGraphNode(*this, Target);
   InternalNodes.insert(std::make_pair(Key, NewNode));
 
   return NewNode;
 }
 
-WitnessGraphNode *
-WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
-  auto Key = std::make_pair(Target->Instrumentee, Target->Location);
+WitnessGraphNode *WitnessGraph::getInternalNodeOrNull(ITargetPtr Target) {
+  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
   auto It = InternalNodes.find(Key);
   if (It != InternalNodes.end()) {
     auto *Node = It->getSecond();
@@ -65,7 +62,7 @@ WitnessGraph::getInternalNodeOrNull(std::shared_ptr<ITarget> Target) {
   return nullptr;
 }
 
-void WitnessGraph::insertRequiredTarget(std::shared_ptr<ITarget> T) {
+void WitnessGraph::insertRequiredTarget(ITargetPtr T) {
   auto *Res = new WitnessGraphNode(*this, T);
   ExternalNodes.push_back(Res);
   Strategy.addRequired(Res);
@@ -177,20 +174,20 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
 
   for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;
-    assert(Target->hasWitness());
-    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+    assert(Target->hasBoundWitness());
+    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
   for (auto &Pair : InternalNodes) {
     auto *Node = Pair.getSecond();
     auto &Target = Node->Target;
-    assert(Target->hasWitness());
-    PrintMap[Target->BoundWitness.get()].insert(Target.get());
+    assert(Target->hasBoundWitness());
+    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
   for (auto &Pair : PrintMap) {
     for (auto *Target : Pair.getSecond()) {
-      Stream << "(" << Target->Instrumentee->getName() << ", ";
+      Stream << "(" << Target->getInstrumentee()->getName() << ", ";
       Target->printLocation(Stream);
       Stream << ")"
              << "; ";

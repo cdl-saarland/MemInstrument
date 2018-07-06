@@ -1,8 +1,9 @@
-// RUN: export MI_CONFIG=rt_stat; %clink -Xclang -load -Xclang %passlib -ldl -l:librt_stat.a -g -O1 -o %t0 %s
+// RUN: %clink -Xclang -load -Xclang %passlib -mllvm -mi-config=rt_stat -ldl -l:librt_stat.a -g -O1 -o %t0 %s
 // RUN: %t0 2> %t1.log
 // RUN: grep -e "\.c - l 12 - c 10 - unmarked store .* : 20" %t1.log
 // RUN: grep -e "\.c - l 18 - c 12 - unmarked load .* : 20" %t1.log
 // REQUIRES: no_pmda
+// XFAIL: *
 
 int main(void) {
 

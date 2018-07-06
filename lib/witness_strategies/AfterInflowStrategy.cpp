@@ -6,6 +6,8 @@
 
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 
+#include "meminstrument/Config.h"
+
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DataLayout.h"
@@ -26,10 +28,21 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
 
-void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
-  if (!C->getType()->isPointerTy()) {
-    llvm_unreachable("getPointerOperands() called for non-pointer constant!");
-  }
+STATISTIC(NumUnsupportedConstExprs, "unsupported constant expressions");
+
+STATISTIC(NumUnsupportedConstVals, "unsupported constant values other than"
+                                   " constant expressions");
+
+STATISTIC(NumUnsupportedInsns, "unsupported instructions");
+
+STATISTIC(NumUnsupportedValOps, "unsupported value operands");
+
+} // namespace
+
+void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
+                                             llvm::Constant *C) const {
+  assert(C->getType()->isPointerTy() &&
+         "getPointerOperands() called for non-pointer constant!");
 
   if (auto *GV = dyn_cast<GlobalValue>(C)) {
     Results.push_back(GV);
@@ -46,26 +59,24 @@ void getPointerOperands(std::vector<Value *> &Results, llvm::Constant *C) {
     case Instruction::GetElementPtr:
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
-    case Instruction::Select:
-      getPointerOperands(Results, CE->getOperand(1)); // true operand
-      getPointerOperands(Results, CE->getOperand(2)); // false operand
-      llvm_unreachable("Select constant expression!");
-      break;
     case Instruction::BitCast:
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
     default:
-      errs() << "Unsupported constant expression:\n" << *CE << "\n\n";
-      llvm_unreachable("Unsupported constant expression!");
+      ++NumUnsupportedConstExprs;
+      DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
+      _CFG.noteError();
+      return;
     }
 
     return;
   }
 
-  errs() << "Unsupported constant value:\n" << *C << "\n\n";
-  llvm_unreachable("Unsupported constant value!");
+  ++NumUnsupportedConstVals;
+  DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
+  _CFG.noteError();
+  return;
 }
-} // namespace
 
 void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   if (Node->HasAllRequirements) {
@@ -77,7 +88,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   auto &WG = Node->Graph;
 
   auto &Target = Node->Target;
-  if (auto *I = dyn_cast<Instruction>(Target->Instrumentee)) {
+  if (auto *I = dyn_cast<Instruction>(Target->getInstrumentee())) {
     switch (I->getOpcode()) {
     case Instruction::Alloca:
     case Instruction::Call:
@@ -148,37 +159,46 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::ShuffleVector:
       ++NumPtrVectorInstructions; // fallthrough
     default:
-      errs() << "Unsupported instruction:\n" << *I << "\n\n";
-      llvm_unreachable("Unsupported instruction!");
+      ++NumUnsupportedInsns;
+      DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
+      _CFG.noteError();
+      return;
     }
   }
 
-  if (isa<Argument>(Target->Instrumentee)) {
-    // Generate witnesses for arguments right when we need them. This might be
-    // inefficient.
+  // Get the location right at the beginning of the function. We want to place
+  // witnesses for arguments, global values and constants here.
+  auto *Fun = Target->getLocation()->getParent()->getParent();
+  auto *EntryLoc = Fun->getEntryBlock().getFirstNonPHI();
+
+  if (isa<Argument>(Target->getInstrumentee())) {
+    requireSource(Node, Target->getInstrumentee(), EntryLoc);
     return;
   }
 
-  if (auto *C = dyn_cast<Constant>(Target->Instrumentee)) {
+  if (auto *C = dyn_cast<Constant>(Target->getInstrumentee())) {
     std::vector<Value *> Pointers;
     getPointerOperands(Pointers, C);
     for (auto *V : Pointers) {
-      // Generate witnesses for globals and constants right when we need them.
-      // This might be inefficient.
-      requireSource(Node, V, Target->Location);
-      // TODO this location might be sub-optimal
+      // Generate witnesses for globals and constants at the beginning of the
+      // function.
+      // TODO It might be interesting to have global witnesses for these.
+      requireSource(Node, V, EntryLoc);
       // TODO do we really want to have witnesses for constant null pointers?
     }
     return;
   }
 
-  errs() << "Unsupported value operand:\n" << *Target->Instrumentee << "\n\n";
-  llvm_unreachable("Unsupported value operand!");
+  ++NumUnsupportedValOps;
+  DEBUG(dbgs() << "Unsupported value operand:\n"
+               << *Target->getInstrumentee() << "\n\n";);
+  _CFG.noteError();
+  return;
 }
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
                                         WitnessGraphNode *Node) const {
-  if (Node->Target->hasWitness()) {
+  if (Node->Target->hasBoundWitness()) {
     // We already handled this node.
     return;
   }
@@ -194,11 +214,11 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     // We just use the witness of the single requirement, nothing to combine.
     auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
-    Node->Target->BoundWitness = Requirement->Target->BoundWitness;
+    Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
     return;
   }
 
-  auto *Instrumentee = Node->Target->Instrumentee;
+  auto *Instrumentee = Node->Target->getInstrumentee();
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
     // Insert new phis that use the witnesses of the operands of the
     // instrumentee. This has to happen in two separate steps to break loops.
@@ -212,7 +232,8 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     for (auto *ReqNode : Node->getRequiredNodes()) {
       createWitness(IM, ReqNode);
       auto *BB = Phi->getIncomingBlock(i);
-      IM.addIncomingWitnessToPhi(PhiWitness, ReqNode->Target->BoundWitness, BB);
+      auto bw = ReqNode->Target->getBoundWitness();
+      IM.addIncomingWitnessToPhi(PhiWitness, bw, BB);
       i++;
     }
     return;
@@ -227,9 +248,9 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
       createWitness(IM, ReqNode);
     }
 
-    IM.insertWitnessSelect(*(Node->Target),
-                           Node->getRequiredNodes()[0]->Target->BoundWitness,
-                           Node->getRequiredNodes()[1]->Target->BoundWitness);
+    auto bm0 = Node->getRequiredNodes()[0]->Target->getBoundWitness();
+    auto bm1 = Node->getRequiredNodes()[1]->Target->getBoundWitness();
+    IM.insertWitnessSelect(*(Node->Target), bm0, bm1);
 
     return;
   }
@@ -289,7 +310,7 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
   Seen.insert(N);
 
-  if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->Location)) {
+  if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->getLocation())) {
     if (!GEP->hasAllZeroIndices()) {
       return false;
     }
@@ -313,7 +334,7 @@ void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   // for out-flowing pointers (as we assume the values to be valid anyway).
   for (auto *External : WG.getExternalNodes()) {
     auto &T = External->Target;
-    if (T->isValid() && !(T->CheckUpperBoundFlag || T->CheckLowerBoundFlag)) {
+    if (T->isValid() && T->is(ITarget::Kind::Invariant)) {
       std::set<WitnessGraphNode *> Seen;
       if (didNotChangeSinceWitness(Seen, External)) {
         External->Target->invalidate();
@@ -346,7 +367,6 @@ void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
       N->clearRequirements();
       N->addRequirement(Req);
     }
-
   });
   WG.removeDeadNodes();
 

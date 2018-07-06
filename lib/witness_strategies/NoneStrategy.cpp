@@ -17,7 +17,7 @@ void NoneStrategy::addRequired(WitnessGraphNode *Node) const {
 
 void NoneStrategy::createWitness(InstrumentationMechanism &IM,
                                  WitnessGraphNode *Node) const {
-  if (Node->Target->hasWitness()) {
+  if (Node->Target->hasBoundWitness()) {
     // We already handled this node.
     return;
   }

@@ -7,6 +7,7 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_POLICIES_ACCESSONLYPOLICY_H
 #define MEMINSTRUMENT_INSTRUMENTATION_POLICIES_ACCESSONLYPOLICY_H
 
+#include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/ITarget.h"
 
@@ -18,12 +19,13 @@ namespace meminstrument {
 
 class AccessOnlyPolicy : public InstrumentationPolicy {
 public:
-  virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
+  virtual void classifyTargets(ITargetVector &Dest,
                                llvm::Instruction *Loc) override;
 
   virtual const char *getName(void) const override { return "AccessOnly"; }
 
-  AccessOnlyPolicy(const llvm::DataLayout &DL) : DL(DL) {}
+  AccessOnlyPolicy(GlobalConfig &cfg, const llvm::DataLayout &DL)
+      : InstrumentationPolicy(cfg), DL(DL) {}
 
 private:
   const llvm::DataLayout &DL;

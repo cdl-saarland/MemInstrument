@@ -7,6 +7,7 @@
 #ifndef MEMINSTRUMENT_PASS_ITARGETFILTERS_H
 #define MEMINSTRUMENT_PASS_ITARGETFILTERS_H
 
+#include "meminstrument/Config.h"
 #include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Module.h"
@@ -14,10 +15,11 @@
 
 namespace meminstrument {
 
-void filterITargets(llvm::Pass *P, ITargetVector &Vec, llvm::Function &F);
+void filterITargets(GlobalConfig &CFG, llvm::Pass *P, ITargetVector &Vec,
+                    llvm::Function &F);
 
-void filterITargetsRandomly(llvm::Pass *ParentPass,
-    std::map<llvm::Function *, ITargetVector> TargetMap);
+void filterITargetsRandomly(
+    GlobalConfig &CFG, std::map<llvm::Function *, ITargetVector> TargetMap);
 
 } // namespace meminstrument
 

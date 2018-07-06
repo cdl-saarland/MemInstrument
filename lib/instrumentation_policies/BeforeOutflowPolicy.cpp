@@ -24,31 +24,23 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
-                          llvm::IntrinsicInst *II) {
+bool handleInstrinsicInst(ITargetVector &Dest, llvm::IntrinsicInst *II) {
   switch (II->getIntrinsicID()) {
   case Intrinsic::memcpy:
   case Intrinsic::memmove: {
     auto *MT = cast<MemTransferInst>(II);
     auto *Len = MT->getLength();
     auto *Src = MT->getSource();
-    Dest.push_back(std::make_shared<ITarget>(
-        Src, II, Len,
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
-
     auto *Dst = MT->getDest();
-    Dest.push_back(std::make_shared<ITarget>(
-        Dst, II, Len,
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Src, II, Len));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   case Intrinsic::memset: {
     auto *MS = cast<MemSetInst>(II);
     auto *Len = MS->getLength();
     auto *Dst = MS->getDest();
-    Dest.push_back(std::make_shared<ITarget>(
-        Dst, II, Len,
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   default:
@@ -57,9 +49,8 @@ bool handleInstrinsicInst(std::vector<std::shared_ptr<ITarget>> &Dest,
 }
 } // namespace
 
-void BeforeOutflowPolicy::classifyTargets(
-    std::vector<std::shared_ptr<ITarget>> &Destination,
-    llvm::Instruction *Location) {
+void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
+                                          llvm::Instruction *Location) {
   switch (Location->getOpcode()) {
   case Instruction::Ret: {
     llvm::ReturnInst *I = llvm::cast<llvm::ReturnInst>(Location);
@@ -69,10 +60,7 @@ void BeforeOutflowPolicy::classifyTargets(
       return;
     }
 
-    Destination.push_back(std::make_shared<ITarget>(
-        Operand, Location, getPointerAccessSize(DL, Operand),
-        /*CheckUpper*/ false,
-        /*CheckLower*/ false, /*ExplicitBounds*/ false));
+    Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
     ++NumITargetsGathered;
     break;
   }
@@ -80,7 +68,7 @@ void BeforeOutflowPolicy::classifyTargets(
     llvm::CallInst *I = llvm::cast<llvm::CallInst>(Location);
 
     if (auto *II = dyn_cast<IntrinsicInst>(I)) {
-      if (handleInstrinsicInst(Destination, II)) {
+      if (handleInstrinsicInst(Dest, II)) {
         ++NumIntrinsicsHandled;
         break;
       }
@@ -89,9 +77,11 @@ void BeforeOutflowPolicy::classifyTargets(
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
-      Destination.push_back(std::make_shared<ITarget>(
-          I->getCalledValue(), Location, 1, /*CheckUpper*/ true,
-          /*CheckLower*/ true, /*ExplicitBounds*/ false));
+      if (!validateSize(I->getCalledValue())) {
+        return;
+      }
+      Dest.push_back(
+          ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
       ++NumITargetsGathered;
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
@@ -120,12 +110,15 @@ void BeforeOutflowPolicy::classifyTargets(
         continue;
       }
 
-      bool isByVal = FunIsNoVarArg && ArgIt->hasByValAttr();
+      if (FunIsNoVarArg && ArgIt->hasByValAttr()) {
+        if (!validateSize(Operand)) {
+          return;
+        }
+        Dest.push_back(ITarget::createSpatialCheckTarget(Operand, Location));
+      } else {
+        Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
+      }
 
-      Destination.push_back(std::make_shared<ITarget>(
-          Operand, Location, getPointerAccessSize(DL, Operand),
-          /*CheckUpper*/ isByVal, /*CheckLower*/ isByVal,
-          /*ExplicitBounds*/ false));
       ++NumITargetsGathered;
 
       if (FunIsNoVarArg) {
@@ -138,18 +131,20 @@ void BeforeOutflowPolicy::classifyTargets(
   case Instruction::Load: {
     llvm::LoadInst *I = llvm::cast<llvm::LoadInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    if (!validateSize(PtrOperand)) {
+      return;
+    }
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location));
     ++NumITargetsGathered;
     break;
   }
   case Instruction::Store: {
     llvm::StoreInst *I = llvm::cast<llvm::StoreInst>(Location);
     auto *PtrOperand = I->getPointerOperand();
-    Destination.push_back(std::make_shared<ITarget>(
-        PtrOperand, Location, getPointerAccessSize(DL, PtrOperand),
-        /*CheckUpper*/ true, /*CheckLower*/ true, /*ExplicitBounds*/ false));
+    if (!validateSize(PtrOperand)) {
+      return;
+    }
+    Dest.push_back(ITarget::createSpatialCheckTarget(PtrOperand, Location));
     ++NumITargetsGathered;
 
     auto *StoreOperand = I->getValueOperand();
@@ -157,9 +152,7 @@ void BeforeOutflowPolicy::classifyTargets(
       return;
     }
 
-    Destination.push_back(std::make_shared<ITarget>(
-        StoreOperand, Location, getPointerAccessSize(DL, StoreOperand),
-        /*CheckUpper*/ false, /*CheckLower*/ false, /*ExplicitBounds*/ false));
+    Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Location));
     ++NumITargetsGathered;
 
     break;
