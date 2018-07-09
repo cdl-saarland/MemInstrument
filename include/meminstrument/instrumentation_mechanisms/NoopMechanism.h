@@ -17,13 +17,18 @@
 namespace meminstrument {
 
 struct NoopWitness : public Witness {
-  NoopWitness(void);
+public:
+  NoopWitness(llvm::Value *Lower, llvm::Value *Upper);
 
   virtual llvm::Value *getLowerBound(void) const override;
 
   virtual llvm::Value *getUpperBound(void) const override;
 
   static bool classof(const Witness *W) { return W->getKind() == WK_Noop; }
+
+private:
+  llvm::Value *Lower = nullptr;
+  llvm::Value *Upper = nullptr;
 };
 
 class NoopMechanism : public InstrumentationMechanism {
@@ -56,14 +61,26 @@ public:
   virtual ~NoopMechanism(void) {}
 
 private:
+  void insertSleepCall(llvm::Instruction *Loc, uint32_t USecs) const;
+
+  llvm::Type *I32Type = nullptr;
+
   llvm::Type *SizeType = nullptr;
 
   llvm::Constant *FailFunction = nullptr;
 
-  llvm::Value *LowerBoundLocation = nullptr;
-  llvm::Value *UpperBoundLocation = nullptr;
+  llvm::Constant *SleepFunction = nullptr;
 
-  llvm::Value *CheckResultLocation = nullptr;
+
+  // There will be only a single witness object
+  std::shared_ptr<NoopWitness> TheWitness;
+
+  uint32_t gen_witness_time = 0;
+  uint32_t gen_bounds_time = 0;
+  uint32_t check_time = 0;
+  // uint32_t alloca_time = 0;
+  // uint32_t heapalloc_time = 0;
+  // uint32_t heapfree_time = 0;
 };
 
 } // namespace meminstrument
