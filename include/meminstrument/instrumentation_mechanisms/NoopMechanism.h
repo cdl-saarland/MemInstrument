@@ -18,17 +18,27 @@ namespace meminstrument {
 
 struct NoopWitness : public Witness {
 public:
-  NoopWitness(llvm::Value *Lower, llvm::Value *Upper);
+  NoopWitness(llvm::Instruction *Location, llvm::Value *Lower, llvm::Value *Upper);
 
   virtual llvm::Value *getLowerBound(void) const override;
 
   virtual llvm::Value *getUpperBound(void) const override;
 
+  llvm::Instruction *getInsertionLocation(void) const;
+
+  bool hasBoundsMaterialized(void) const;
+
+  void setBoundsMaterialized(void);
+
   static bool classof(const Witness *W) { return W->getKind() == WK_Noop; }
 
 private:
+  llvm::Instruction *Location = nullptr;
+
   llvm::Value *Lower = nullptr;
   llvm::Value *Upper = nullptr;
+
+  bool hasBounds = false;
 };
 
 class NoopMechanism : public InstrumentationMechanism {
@@ -71,9 +81,8 @@ private:
 
   llvm::Constant *SleepFunction = nullptr;
 
-
-  // There will be only a single witness object
-  std::shared_ptr<NoopWitness> TheWitness;
+  llvm::Value *LowerBoundVal = nullptr;
+  llvm::Value *UpperBoundVal = nullptr;
 
   uint32_t gen_witness_time = 0;
   uint32_t gen_bounds_time = 0;
