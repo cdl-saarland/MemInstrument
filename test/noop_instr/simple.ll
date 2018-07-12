@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=noop -mi-noop-time-check=10 -S > %t1.ll
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=noop -mi-noop-time-deref-check=10 -S > %t1.ll
 ; RUN: egrep "call .* @usleep" %t1.ll | wc -l | grep 10
 
 declare void @foo(i32)

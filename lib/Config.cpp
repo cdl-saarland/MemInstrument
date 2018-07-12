@@ -224,6 +224,64 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
+
+cl::opt<int> DefaultTime("mi-noop-time-default",
+                            cl::desc("default time in microseconds that operations should take as a noop if not overwritten"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(0) // default
+);
+
+
+cl::opt<int> GenBoundsTime("mi-noop-time-gen-bounds",
+                            cl::desc("time in microseconds that generating bounds should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> DerefCheckTime("mi-noop-time-deref-check",
+                            cl::desc("time in microseconds that a dereference check should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> InvarCheckTime("mi-noop-time-invar-check",
+                            cl::desc("time in microseconds that an inbounds check should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> StackAllocTime("mi-noop-time-stack-alloc",
+                            cl::desc("time in microseconds that a stack allocation should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> HeapAllocTime("mi-noop-time-heap-alloc",
+                            cl::desc("time in microseconds that a heap allocation should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> GlobalAllocTime("mi-noop-time-global-alloc",
+                            cl::desc("time in microseconds that a global allocation should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+cl::opt<int> HeapFreeTime("mi-noop-time-heap-free",
+                            cl::desc("time in microseconds that a heap deallocation should take as a noop"),
+                            cl::cat(MemInstrumentCat),
+                            cl::init(-1) // default
+);
+
+uint32_t getNoopValOrDefault(int32_t v) {
+  if (v != -1) {
+    return v;
+  } else {
+    return DefaultTime;
+  }
+}
+
 } // namespace
 
 namespace meminstrument {
@@ -391,6 +449,31 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   _ConfigName = Cfg->getName();
 
   delete Cfg;
+}
+
+#define GET_NOOP_METHOD(x) \
+uint32_t GlobalConfig::getNoop##x##Time(void) { \
+  return getNoopValOrDefault(x##Time); \
+}
+
+GET_NOOP_METHOD(GenBounds)
+GET_NOOP_METHOD(DerefCheck)
+GET_NOOP_METHOD(InvarCheck)
+GET_NOOP_METHOD(StackAlloc)
+GET_NOOP_METHOD(HeapAlloc)
+GET_NOOP_METHOD(GlobalAlloc)
+GET_NOOP_METHOD(HeapFree)
+
+bool GlobalConfig::hasUseNoop(void) {
+  bool res = false;
+  res = res || (GenBoundsTime != -1);
+  res = res || (DerefCheckTime != -1);
+  res = res || (InvarCheckTime != -1);
+  res = res || (StackAllocTime != -1);
+  res = res || (HeapAllocTime != -1);
+  res = res || (GlobalAllocTime != -1);
+  res = res || (HeapFreeTime != -1);
+  return res;
 }
 
 std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {

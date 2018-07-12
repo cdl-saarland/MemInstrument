@@ -84,7 +84,7 @@ private:
   llvm::Value *LowerBoundVal = nullptr;
   llvm::Value *UpperBoundVal = nullptr;
 
-  uint32_t gen_witness_time = 0;
+  // uint32_t gen_witness_time = 0;
   uint32_t gen_bounds_time = 0;
   uint32_t check_time = 0;
   // uint32_t alloca_time = 0;

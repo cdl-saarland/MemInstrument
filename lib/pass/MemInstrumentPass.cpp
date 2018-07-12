@@ -83,6 +83,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     }
   }
 
+  dbgs() << "Dumped module:\n"; M.dump();
+  dbgs() << "\nEnd of dumped module.\n";
+
   CFG = GlobalConfig::create(M);
 
   labelAccesses(M);

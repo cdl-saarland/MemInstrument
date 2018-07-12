@@ -23,54 +23,6 @@ using namespace llvm;
 using namespace meminstrument;
 
 
-namespace {
-
-cl::opt<int> DefaultTime("mi-noop-time-default",
-                            cl::desc("default time in microseconds that operations should take in the noop mechanism if not overwritten"),
-                            cl::init(0) // default
-);
-
-
-cl::opt<int> GenWitnessTime("mi-noop-time-gen-witness",
-                            cl::desc("time in microseconds that generating witnesses should take in the noop mechanism"),
-                            cl::init(-1) // default
-);
-
-cl::opt<int> GenBoundsTime("mi-noop-time-gen-bounds",
-                            cl::desc("time in microseconds that generating bounds should take in the noop mechanism"),
-                            cl::init(-1) // default
-);
-
-cl::opt<int> CheckTime("mi-noop-time-check",
-                            cl::desc("time in microseconds that an inbounds/dereference check should take in the noop mechanism"),
-                            cl::init(-1) // default
-);
-
-// cl::opt<int> AllocaTime("mi-noop-time-alloca",
-//                             cl::desc("time in microseconds that an alloca should take in the noop mechanism"),
-//                             cl::init(-1) // default
-// );
-
-// cl::opt<int> HeapAllocTime("mi-noop-time-heapalloc",
-//                             cl::desc("time in microseconds that a heap allocation should take in the noop mechanism"),
-//                             cl::init(-1) // default
-// );
-
-// cl::opt<int> HeapFreeTime("mi-noop-time-heapfree",
-//                             cl::desc("time in microseconds that a heap deallocation should take in the noop mechanism"),
-//                             cl::init(-1) // default
-// );
-
-uint32_t getValOrDefault(int32_t v) {
-  if (v != -1) {
-    return v;
-  } else {
-    return DefaultTime;
-  }
-}
-}
-
-
 llvm::Value *NoopWitness::getLowerBound(void) const { return Lower; }
 
 llvm::Value *NoopWitness::getUpperBound(void) const { return Upper; }
@@ -105,7 +57,7 @@ void NoopMechanism::insertSleepCall(Instruction *Loc, uint32_t USecs) const {
 
 void NoopMechanism::insertWitness(ITarget &Target) const {
   assert(Target.isValid());
-  insertSleepCall(Target.getLocation(), gen_witness_time);
+  // insertSleepCall(Target.getLocation(), gen_witness_time);
   Target.setBoundWitness(
       std::make_shared<NoopWitness>(Target.getLocation(), LowerBoundVal, UpperBoundVal));
 }
@@ -168,9 +120,9 @@ bool NoopMechanism::initialize(llvm::Module &M) {
 
   SleepFunction = M.getOrInsertFunction("usleep", I32Type, I32Type);
 
-  gen_witness_time = getValOrDefault(GenWitnessTime);
-  gen_bounds_time = getValOrDefault(GenBoundsTime);
-  check_time = getValOrDefault(CheckTime);
+  // gen_witness_time = _CFG.getNoopGenWitnessTime();
+  gen_bounds_time = _CFG.getNoopGenBoundsTime();
+  check_time = _CFG.getNoopDerefCheckTime();
   // alloca_time = getValOrDefault(AllocaTime);
   // heapalloc_time = getValOrDefault(HeapAllocTime);
   // heapfree_time = getValOrDefault(HeapFreeTime);

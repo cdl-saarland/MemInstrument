@@ -80,12 +80,15 @@ private:
   llvm::Constant *VerboseFailFunction = nullptr;
   llvm::Constant *WarningFunction = nullptr;
 
+  llvm::Constant *ConfigFunction = nullptr;
+
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
   llvm::Type *SizeType = nullptr;
 
   void initTypes(llvm::LLVMContext &Ctx);
   void insertFunctionDeclarations(llvm::Module &M);
+  void setupInitCall(llvm::Module &M);
   void setupGlobals(llvm::Module &M);
   void instrumentAlloca(llvm::Module &M, llvm::AllocaInst *AI);
 };
