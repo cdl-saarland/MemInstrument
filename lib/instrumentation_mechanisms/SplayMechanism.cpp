@@ -188,8 +188,11 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   VerboseFailFunction =
       insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
 
-  WarningFunction =
-      insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
+  WarningFunction = insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
+
+  if (_CFG.hasUseNoop()) {
+    ConfigFunction = insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
+  }
 }
 
 void SplayMechanism::setupGlobals(llvm::Module &M) {
@@ -260,12 +263,43 @@ void SplayMechanism::initTypes(llvm::LLVMContext &Ctx) {
   SizeType = Type::getInt64Ty(Ctx);
 }
 
+void SplayMechanism::setupInitCall(Module &M) {
+  auto &Ctx = M.getContext();
+  auto FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
+  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage, "__mi_init_callback__", &M);
+  setNoInstrument(Fun);
+
+  auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
+  IRBuilder<> Builder(BB);
+
+  Constant *TimeVal = nullptr;
+  Constant *IndexVal = nullptr;
+
+#define ADD_TIME_VAL(i, x) \
+  IndexVal = ConstantInt::get(SizeType, i); \
+  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time()); \
+  insertCall(Builder, ConfigFunction, IndexVal, TimeVal);
+
+  ADD_TIME_VAL(0, DerefCheck)
+  ADD_TIME_VAL(1, InvarCheck)
+  ADD_TIME_VAL(2, GenBounds)
+  ADD_TIME_VAL(3, StackAlloc)
+  ADD_TIME_VAL(4, HeapAlloc)
+  ADD_TIME_VAL(5, GlobalAlloc)
+  ADD_TIME_VAL(6, HeapFree)
+  Builder.CreateRetVoid();
+}
+
 bool SplayMechanism::initialize(llvm::Module &M) {
   initTypes(M.getContext());
 
   insertFunctionDeclarations(M);
 
   setupGlobals(M);
+
+  if (_CFG.hasUseNoop()) {
+    setupInitCall(M);
+  }
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))

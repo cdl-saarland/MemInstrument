@@ -37,6 +37,8 @@ public:
   // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
   // override;
 
+  virtual bool prepareModule(MemInstrumentPass &P, llvm::Module &M) override;
+
   virtual void updateITargetsForFunction(MemInstrumentPass &P,
                                          ITargetVector &Vec,
                                          llvm::Function &F) override;

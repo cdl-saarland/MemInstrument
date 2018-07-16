@@ -34,7 +34,13 @@ void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 char DummyExternalChecksPass::ID = 0;
 
-/// Alternative implementation that only changes existing ITargets
+bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &P,
+                                            llvm::Module &M) {
+  // No need to do something here.
+  return false;
+}
+
+/// Implementation that only changes existing ITargets
 /// (required for use with external_only config)
 void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
                                                         ITargetVector &Vec,

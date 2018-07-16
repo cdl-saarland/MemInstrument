@@ -17,13 +17,28 @@
 namespace meminstrument {
 
 struct NoopWitness : public Witness {
-  NoopWitness(void);
+public:
+  NoopWitness(llvm::Instruction *Location, llvm::Value *Lower, llvm::Value *Upper);
 
   virtual llvm::Value *getLowerBound(void) const override;
 
   virtual llvm::Value *getUpperBound(void) const override;
 
+  llvm::Instruction *getInsertionLocation(void) const;
+
+  bool hasBoundsMaterialized(void) const;
+
+  void setBoundsMaterialized(void);
+
   static bool classof(const Witness *W) { return W->getKind() == WK_Noop; }
+
+private:
+  llvm::Instruction *Location = nullptr;
+
+  llvm::Value *Lower = nullptr;
+  llvm::Value *Upper = nullptr;
+
+  bool hasBounds = false;
 };
 
 class NoopMechanism : public InstrumentationMechanism {
@@ -56,14 +71,25 @@ public:
   virtual ~NoopMechanism(void) {}
 
 private:
+  void insertSleepCall(llvm::Instruction *Loc, uint32_t USecs) const;
+
+  llvm::Type *I32Type = nullptr;
+
   llvm::Type *SizeType = nullptr;
 
   llvm::Constant *FailFunction = nullptr;
 
-  llvm::Value *LowerBoundLocation = nullptr;
-  llvm::Value *UpperBoundLocation = nullptr;
+  llvm::Constant *SleepFunction = nullptr;
 
-  llvm::Value *CheckResultLocation = nullptr;
+  llvm::Value *LowerBoundVal = nullptr;
+  llvm::Value *UpperBoundVal = nullptr;
+
+  // uint32_t gen_witness_time = 0;
+  uint32_t gen_bounds_time = 0;
+  uint32_t check_time = 0;
+  // uint32_t alloca_time = 0;
+  // uint32_t heapalloc_time = 0;
+  // uint32_t heapfree_time = 0;
 };
 
 } // namespace meminstrument

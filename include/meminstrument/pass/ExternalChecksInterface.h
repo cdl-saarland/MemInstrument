@@ -27,6 +27,11 @@ namespace meminstrument {
 /// appropriate cli flags). They are then executed at the following positions in
 /// the pipeline:
 ///
+///  +-----------------+
+///  | prepareModule() |
+///  +-----------------+
+///           ||
+///           \/
 ///  +-------------------+
 ///  | ITarget Gathering |
 ///  +-------------------+
@@ -58,6 +63,17 @@ namespace meminstrument {
 ///
 class ExternalChecksInterface {
 public:
+  /// \brief Perform preparing steps on the module
+  ///
+  /// A possible use case for this function is to insert new Functions or clone
+  /// existing ones.
+  /// This interface provides a noop default implementation in case the function
+  /// is not required.
+  ///
+  /// \returns true if the module is modified during the execution of this
+  ///   function
+  virtual bool prepareModule(MemInstrumentPass &P, llvm::Module &M);
+
   /// \brief Adjust the required ITargets for the external check generation
   ///
   /// New ITargets (i.e. shared pointers to them) may be added here, most

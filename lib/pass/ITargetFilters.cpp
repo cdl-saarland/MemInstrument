@@ -9,12 +9,16 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
+#include "meminstrument/perf_data.h"
+
 #include "llvm/ADT/Statistic.h"
+// #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
 #include <algorithm>
 #include <math.h>
+#include <string>
 
 #include "meminstrument/pass/Util.h"
 
@@ -63,12 +67,24 @@ cl::opt<double>
                             cl::init(-1.0) // default
     );
 
-cl::opt<int>
-    RandomFilteringSeedOpt("mi-random-filter-seed",
-                           cl::desc("random seed for filtering, only relevant "
-                                    "if mi-random-filter is present"),
-                           cl::init(424242) // default
-    );
+cl::opt<int> RandomFilteringSeedOpt("mi-random-filter-seed",
+                                    cl::desc("random seed for filtering"),
+                                    cl::init(424242) // default
+);
+
+enum FilterOrdering {
+  FO_random,
+  FO_hottest,
+  FO_coolest,
+};
+
+cl::opt<FilterOrdering> FilterOrderingOpt(
+    "mi-filter-ordering", cl::desc("strategy for filtering arbitrary checks"),
+    cl::values(clEnumValN(FO_random, "random", "filter checks randomly")),
+    cl::values(clEnumValN(FO_hottest, "hottest", "filter hottest checks")),
+    cl::values(clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
+    cl::init(FO_random) // default
+);
 
 } // namespace
 
@@ -84,6 +100,19 @@ void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
   filterByDominance(P, Vec, F);
 }
 
+uint64_t extractAccessId(Instruction *I) {
+  if (auto *N = I->getMetadata("mi_access_id")) {
+    assert(N->getNumOperands() == 1);
+
+    assert(isa<MDString>(N->getOperand(0)));
+    auto *Str = cast<MDString>(N->getOperand(0));
+    return std::stoi(Str->getString());
+  } else {
+    assert(false && "Missing access id metadata!");
+    return 0;
+  }
+}
+
 void meminstrument::filterITargetsRandomly(
     GlobalConfig &CFG, std::map<llvm::Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
@@ -96,6 +125,34 @@ void meminstrument::filterITargetsRandomly(
   std::srand(RandomFilteringSeedOpt);
 
   std::random_shuffle(cpy.begin(), cpy.end());
+
+  if (FilterOrderingOpt != FO_random) {
+    std::stable_sort(
+        cpy.begin(), cpy.end(),
+        [&](const std::shared_ptr<ITarget> &a,
+            const std::shared_ptr<ITarget> &b) {
+          Function *funA = a->getLocation()->getParent()->getParent();
+          Function *funB = b->getLocation()->getParent()->getParent();
+          Module *mod = funA->getParent();
+          assert(mod == funB->getParent());
+
+          auto funAname = funA->getName().str();
+          auto funBname = funB->getName().str();
+          auto modname = mod->getName().str();
+
+          // errs() << "Module name 1: '" << modname << "'\n";
+          // errs() << "Module name 2: '" << mod->getName().str().c_str() <<
+          // "'\n";
+
+          uint64_t idxA = extractAccessId(a->getLocation());
+          uint64_t idxB = extractAccessId(b->getLocation());
+
+          unsigned heatA = getHotnessIndex(modname, funAname, idxA);
+          unsigned heatB = getHotnessIndex(modname, funBname, idxB);
+          return (FilterOrderingOpt == FO_hottest) ? (heatA > heatB)
+                                                   : (heatA < heatB);
+        });
+  }
 
   size_t bound = (size_t)(((double)cpy.size()) * RandomFilteringRatioOpt);
 

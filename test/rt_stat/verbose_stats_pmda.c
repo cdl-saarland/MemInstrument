@@ -3,6 +3,7 @@
 // RUN: grep -e "\.c - l 12 - c 10 - marked store .* : 20" %t1.log
 // RUN: grep -e "\.c - l 18 - c 12 - marked load .* : 20" %t1.log
 // REQUIRES: pmda
+// XFAIL: *
 
 int main(void) {
 
