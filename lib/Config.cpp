@@ -226,50 +226,50 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
 
 
 cl::opt<int> DefaultTime("mi-noop-time-default",
-                            cl::desc("default time in microseconds that operations should take as a noop if not overwritten"),
+                            cl::desc("default time that operations should take as a noop if not overwritten"),
                             cl::cat(MemInstrumentCat),
                             cl::init(0) // default
 );
 
 
 cl::opt<int> GenBoundsTime("mi-noop-time-gen-bounds",
-                            cl::desc("time in microseconds that generating bounds should take as a noop"),
+                            cl::desc("time that generating bounds should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> DerefCheckTime("mi-noop-time-deref-check",
-                            cl::desc("time in microseconds that a dereference check should take as a noop"),
+                            cl::desc("time that a dereference check should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> InvarCheckTime("mi-noop-time-invar-check",
-                            cl::desc("time in microseconds that an inbounds check should take as a noop"),
+                            cl::desc("time that an inbounds check should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> StackAllocTime("mi-noop-time-stack-alloc",
-                            cl::desc("time in microseconds that a stack allocation should take as a noop"),
+                            cl::desc("time that a stack allocation should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> HeapAllocTime("mi-noop-time-heap-alloc",
-                            cl::desc("time in microseconds that a heap allocation should take as a noop"),
+                            cl::desc("time that a heap allocation should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> GlobalAllocTime("mi-noop-time-global-alloc",
-                            cl::desc("time in microseconds that a global allocation should take as a noop"),
+                            cl::desc("time that a global allocation should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
 
 cl::opt<int> HeapFreeTime("mi-noop-time-heap-free",
-                            cl::desc("time in microseconds that a heap deallocation should take as a noop"),
+                            cl::desc("time that a heap deallocation should take as a noop"),
                             cl::cat(MemInstrumentCat),
                             cl::init(-1) // default
 );
