@@ -1,5 +1,5 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -emit-llvm -O3 -c -S -mllvm -mi-config=noop -mllvm -mi-use-extchecks -mllvm -mi-wstrategy=after-inflow -mllvm -mi-noop-time-check=10 -mllvm -mi-noop-time-gen-bounds=10 -o %t0.ll %s 2> %t3.log
-// RUN: egrep "call .* @usleep" %t0.ll | wc -l | grep 2
+// RUN: %clang -Xclang -load -Xclang %passlib -emit-llvm -O3 -c -S -mllvm -mi-config=noop -mllvm -mi-use-extchecks -mllvm -mi-wstrategy=after-inflow -mllvm -mi-noop-time-deref-check=10 -mllvm -mi-noop-time-gen-bounds=10 -o %t0.ll %s 2> %t3.log
+// RUN: egrep "call .* @usleep" %t0.ll
 // RUN: %clink -o %t1 %t0.ll
 // RUN: %t1
 // REQUIRES: pmda
