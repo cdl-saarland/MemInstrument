@@ -163,23 +163,26 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
     CheckDereferenceFunction =
         insertFunDecl(M, "__splay_check_dereference_named", VoidTy, WitnessType,
                       PtrArgType, SizeType, StringTy);
+    GlobalAllocFunction =
+        insertFunDecl(M, "__splay_alloc_or_merge_with_msg", VoidTy, PtrArgType, SizeType, PtrArgType);
+    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace_with_msg", VoidTy,
+                                  PtrArgType, SizeType, PtrArgType);
   } else {
     CheckInboundsFunction = insertFunDecl(M, "__splay_check_inbounds", VoidTy,
                                           WitnessType, PtrArgType);
     CheckDereferenceFunction =
         insertFunDecl(M, "__splay_check_dereference", VoidTy, WitnessType,
                       PtrArgType, SizeType);
+    GlobalAllocFunction =
+        insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
+    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
+                                  PtrArgType, SizeType);
   }
 
   GetLowerBoundFunction =
       insertFunDecl(M, "__splay_get_lower_as_ptr", PtrArgType, WitnessType);
   GetUpperBoundFunction =
       insertFunDecl(M, "__splay_get_upper_as_ptr", PtrArgType, WitnessType);
-
-  GlobalAllocFunction =
-      insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
-  AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
-                                PtrArgType, SizeType);
 
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
@@ -218,7 +221,16 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
     auto *Size = ConstantInt::get(SizeType, sz);
 
-    insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    if (_CFG.hasInstrumentVerbose()) {
+      std::string insn = "";
+      raw_string_ostream ss(insn);
+      ss << GV;
+      auto *Arr = insertStringLiteral(M, ss.str());
+      auto *Str = insertCast(PtrArgType, Arr, Builder);
+      insertCall(Builder, GlobalAllocFunction, PtrArg, Size, Str);
+    } else {
+      insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    }
     ++SplayNumGlobals;
   }
 
@@ -232,7 +244,16 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 
     auto *Size = ConstantInt::get(SizeType, 1);
 
-    insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    if (_CFG.hasInstrumentVerbose()) {
+      std::string insn = "";
+      raw_string_ostream ss(insn);
+      ss << "Function "<< F.getName();
+      auto *Arr = insertStringLiteral(M, ss.str());
+      auto *Str = insertCast(PtrArgType, Arr, Builder);
+      insertCall(Builder, GlobalAllocFunction, PtrArg, Size, Str);
+    } else {
+      insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    }
     ++SplayNumFunctions;
   }
   Builder.CreateRetVoid();
@@ -253,7 +274,16 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
                              /*hasNSW*/ false);
   }
 
-  insertCall(Builder, AllocFunction, PtrArg, Size);
+  if (_CFG.hasInstrumentVerbose()) {
+    std::string insn = "";
+    raw_string_ostream ss(insn);
+    ss << *AI;
+    auto *Arr = insertStringLiteral(M, ss.str());
+    auto *Str = insertCast(PtrArgType, Arr, Builder);
+    insertCall(Builder, AllocFunction, PtrArg, Size, Str);
+  } else {
+    insertCall(Builder, AllocFunction, PtrArg, Size);
+  }
   ++SplayNumAllocas;
 }
 
@@ -317,7 +347,16 @@ bool SplayMechanism::initialize(llvm::Module &M) {
         uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
         auto *Size = ConstantInt::get(SizeType, sz);
 
-        insertCall(Builder, AllocFunction, PtrArg, Size);
+        if (_CFG.hasInstrumentVerbose()) {
+          std::string insn = "";
+          raw_string_ostream ss(insn);
+          ss << "byval";
+          auto *Arr = insertStringLiteral(M, ss.str());
+          auto *Str = insertCast(PtrArgType, Arr, Builder);
+          insertCall(Builder, AllocFunction, PtrArg, Size, Str);
+        } else {
+          insertCall(Builder, AllocFunction, PtrArg, Size);
+        }
         ++SplayNumByValArgs;
       }
     }
