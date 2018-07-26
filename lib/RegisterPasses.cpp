@@ -7,6 +7,7 @@
 #include "meminstrument/Definitions.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
+#include "meminstrument/lifetimekiller/LifeTimeKillerPass.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -26,6 +27,11 @@ static RegisterPass<MemInstrumentPass>
                               false,  // CFGOnly
                               false); // isAnalysis
 
+static RegisterPass<LifeTimeKillerPass>
+    RegisterLifeTimeKillerPass("lifetimekiller", "LifeTimeKiller",
+                              false,  // CFGOnly
+                              false); // isAnalysis
+
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",
                                     "Dummy External Checks",
@@ -34,6 +40,7 @@ static RegisterPass<DummyExternalChecksPass>
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
+  PM.add(new LifeTimeKillerPass());
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
   PM.add(createBreakCriticalEdgesPass());

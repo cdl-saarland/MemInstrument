@@ -33,6 +33,7 @@ add_meminstrument_library(meminstrument
   witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
   Config.cpp
+  lifetimekiller/LifeTimeKillerPass.cpp
 )
 
 # List external library dependencies that need to be linked to your library
@@ -75,6 +76,7 @@ else ()
     pass/ExternalChecksInterface.cpp
     RegisterPasses.cpp
     Config.cpp
+    lifetimekiller/LifeTimeKillerPass.cpp
   )
 
   target_link_libraries(LLVMmeminstrument meminstrument)
