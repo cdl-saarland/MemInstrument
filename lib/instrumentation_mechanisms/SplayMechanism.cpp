@@ -78,13 +78,20 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   Value *NameVal = nullptr;
   if (Verbose) {
     std::string Name;
+    raw_string_ostream ss(Name);
+    ss << *Target.getLocation() << "(";
     if (DILocation *Loc = Target.getLocation()->getDebugLoc()) {
       unsigned Line = Loc->getLine();
       StringRef File = Loc->getFilename();
-      Name = (File + ": " + std::to_string(Line)).str();
+      ss << (File + ": " + std::to_string(Line)).str();
     } else {
-      Name = "unknown location";
+      ss << "unknown location";
     }
+    ss << ", idx:";
+    static uint64_t i = 0;
+    ss << i++;
+    ss << ")";
+    ss.str();
 
     auto *Str = insertStringLiteral(*M, Name);
     NameVal = insertCast(PtrArgType, Str, Builder);
