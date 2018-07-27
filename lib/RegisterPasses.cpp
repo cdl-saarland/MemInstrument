@@ -10,6 +10,7 @@
 #include "meminstrument/lifetimekiller/LifeTimeKillerPass.h"
 
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "llvm/Transforms/Scalar.h"
@@ -20,6 +21,14 @@
 
 using namespace meminstrument;
 using namespace llvm;
+
+namespace {
+cl::opt<bool>
+    UseLifeTimeKillerOpt("mi-use-lifetime-killer",
+                  cl::desc("Eliminate all llvm.lifetime.* intrinsics before memory safety instrumentation"),
+                  cl::init(true)
+                  );
+}
 
 namespace meminstrument {
 static RegisterPass<MemInstrumentPass>
@@ -40,7 +49,9 @@ static RegisterPass<DummyExternalChecksPass>
 
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
-  PM.add(new LifeTimeKillerPass());
+  if (UseLifeTimeKillerOpt) {
+    PM.add(new LifeTimeKillerPass());
+  }
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
   PM.add(createBreakCriticalEdgesPass());
