@@ -28,6 +28,11 @@ cl::opt<bool>
                   cl::desc("Eliminate all llvm.lifetime.* intrinsics before memory safety instrumentation"),
                   cl::init(true)
                   );
+cl::opt<bool>
+    NoMemInstrumentOpt("mi-no-meminstrument",
+                  cl::desc("Do not add meminstrument and required passes into the clang pipeline"),
+                  cl::init(false)
+                  );
 }
 
 namespace meminstrument {
@@ -52,6 +57,10 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
   if (UseLifeTimeKillerOpt) {
     PM.add(new LifeTimeKillerPass());
   }
+  if (NoMemInstrumentOpt) {
+    return;
+  }
+
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
   PM.add(createBreakCriticalEdgesPass());
