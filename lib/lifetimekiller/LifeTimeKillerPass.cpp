@@ -8,6 +8,7 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 
 #include "meminstrument/pass/Util.h"
 
@@ -38,20 +39,17 @@ bool LifeTimeKillerPass::runOnModule(Module &M) {
       for (auto It = BB.begin(); It != BB.end();) {
         Instruction *I = &*It;
         ++It;
-        if (auto *CI = dyn_cast<CallInst>(I)) {
-          auto *Fun = CI->getCalledFunction();
-          if (! Fun) {
-            continue;
-          }
-          if (Fun->getName().startswith("llvm.lifetime.start")) {
+        if (auto *Intr = dyn_cast<IntrinsicInst>(I)) {
+          switch (Intr->getIntrinsicID()) {
+          case Intrinsic::lifetime_start:
             ++NumKilledLifeTimeStart;
-          } else if (Fun->getName().startswith("llvm.lifetime.end")) {
+          // FALLTHROUGH
+          case Intrinsic::lifetime_end:
             ++NumKilledLifeTimeEnd;
-          } else {
-            continue;
+            I->eraseFromParent();
+            didSomething = true;
+          default:;
           }
-          I->eraseFromParent();
-          didSomething = true;
         }
       }
     }
