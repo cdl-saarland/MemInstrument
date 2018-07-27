@@ -37,9 +37,7 @@ STATISTIC(NumVarArgs, "The # of modules with a function that has varargs");
 
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
-void MemInstrumentPass::releaseMemory(void) {
-  CFG.reset(nullptr);
-}
+void MemInstrumentPass::releaseMemory(void) { CFG.reset(nullptr); }
 
 GlobalConfig &MemInstrumentPass::getConfig(void) { return *CFG; }
 
@@ -83,9 +81,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     }
   }
 
-  dbgs() << "Dumped module:\n"; M.dump();
-  dbgs() << "\nEnd of dumped module.\n";
-
+  DEBUG(dbgs() << "Dumped module:\n"; M.dump();
+        dbgs() << "\nEnd of dumped module.\n";);
   CFG = GlobalConfig::create(M);
 
   labelAccesses(M);
