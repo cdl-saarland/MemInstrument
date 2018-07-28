@@ -16,6 +16,7 @@ add_meminstrument_library(meminstrument
   pass/CheckGeneration.cpp
   pass/ITarget.cpp
   pass/Util.cpp
+  pass/PerfData.cpp
   pass/WitnessGraph.cpp
   pass/DummyExternalChecksPass.cpp
   pass/ExternalChecksInterface.cpp
