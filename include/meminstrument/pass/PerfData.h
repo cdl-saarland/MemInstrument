@@ -1,4 +1,11 @@
-#pragma once
+//===----------------------------------------------------------------------===//
+///
+/// \file TODO doku
+///
+//===----------------------------------------------------------------------===//
+
+#ifndef MEMINSTRUMENT_PASS_PERFDATA_H
+#define MEMINSTRUMENT_PASS_PERFDATA_H
 
 #include <sqlite3.h>
 #include <sstream>
@@ -112,3 +119,5 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
   return qr.value;
 }
 } // namespace
+
+#endif

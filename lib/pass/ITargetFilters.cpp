@@ -9,7 +9,7 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
-#include "meminstrument/perf_data.h"
+#include "meminstrument/pass/PerfData.h"
 
 #include "llvm/ADT/Statistic.h"
 // #include "llvm/Analysis/LoopInfo.h"
