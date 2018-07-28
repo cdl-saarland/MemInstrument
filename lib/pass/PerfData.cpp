@@ -6,19 +6,25 @@
 
 #include "meminstrument/pass/PerfData.h"
 
+#include "meminstrument/Definitions.h"
+
+#include "llvm/ADT/Statistic.h"
+
+#include "meminstrument/pass/Util.h"
+
+STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
+
+#if HAS_SQLITE3
+
 #include <sqlite3.h>
 #include <sstream>
 #include <string>
 
-#include "meminstrument/pass/Util.h"
-#include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace meminstrument;
 using namespace llvm;
-
-STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
 
 namespace {
 
@@ -56,6 +62,8 @@ llvm::cl::opt<std::string>
               llvm::cl::desc("path to a meminstrument profile database"),
               llvm::cl::init("") // default
     );
+
+} // namespace
 
 uint64_t getHotnessIndex(const std::string &ModuleName,
                          const std::string &FunctionName, uint64_t AccessId) {
@@ -120,4 +128,20 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 
   return qr.value;
 }
-} // namespace
+
+#else
+
+uint64_t getHotnessIndex(const std::string &, const std::string &, uint64_t) {
+  ++FailingHotnessLookUps;
+
+  static bool first_time = true;
+  if (first_time) {
+    dbgs() <<
+      "Trying to use performance data without sqlite3, this has no results.\n"
+  }
+
+  first_time = false;
+  return 0;
+}
+
+#endif

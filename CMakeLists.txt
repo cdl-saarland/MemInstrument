@@ -121,6 +121,22 @@ if(MEMINSTRUMENT_USE_PMDA)
 
 endif(MEMINSTRUMENT_USE_PMDA)
 
+# See if we have an installation of sqlite3, this is necessary for reading
+# performance data.
+find_path(SQLITE3_INCLUDE_PATH "sqlite3.h")
+
+if(SQLITE3_INCLUDE_PATH)
+  message(STATUS "Found sqlite3 in ${SQLITE3_INCLUDE_PATH}")
+  if(NOT EXISTS ${SQLITE3_INCLUDE_PATH}/sqlite3.h)
+    message(FATAL_ERROR "Cannot find sqlite3.h in ${SQLITE3_INCLUDE_PATH}.")
+  endif()
+  set(HAS_SQLITE3 1)
+else()
+  message(STATUS "sqlite3 not found. Reading performance data is disabled.")
+  set(HAS_SQLITE3 0)
+endif()
+
+
 set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
