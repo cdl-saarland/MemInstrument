@@ -8,8 +8,8 @@
 
 #include "meminstrument/Definitions.h"
 
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "meminstrument/pass/Util.h"
 
@@ -31,7 +31,6 @@ llvm::cl::opt<std::string>
 
 #include <sqlite3.h>
 #include <sstream>
-
 
 using namespace meminstrument;
 using namespace llvm;
@@ -143,8 +142,8 @@ uint64_t getHotnessIndex(const std::string &, const std::string &, uint64_t) {
 
   static bool first_time = true;
   if (first_time) {
-    dbgs() <<
-      "Trying to use performance data without sqlite3, this has no results.\n";
+    dbgs() << "Trying to use performance data without sqlite3, this has no "
+              "results.\n";
   }
 
   first_time = false;

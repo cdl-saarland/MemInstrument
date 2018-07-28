@@ -5,9 +5,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/Definitions.h"
+#include "meminstrument/lifetimekiller/LifeTimeKillerPass.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
-#include "meminstrument/lifetimekiller/LifeTimeKillerPass.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
@@ -25,15 +25,15 @@ using namespace llvm;
 namespace {
 cl::opt<bool>
     UseLifeTimeKillerOpt("mi-use-lifetime-killer",
-                  cl::desc("Eliminate all llvm.lifetime.* intrinsics before memory safety instrumentation"),
-                  cl::init(true)
-                  );
-cl::opt<bool>
-    NoMemInstrumentOpt("mi-no-meminstrument",
-                  cl::desc("Do not add meminstrument and required passes into the clang pipeline"),
-                  cl::init(false)
-                  );
-}
+                         cl::desc("Eliminate all llvm.lifetime.* intrinsics "
+                                  "before memory safety instrumentation"),
+                         cl::init(true));
+cl::opt<bool> NoMemInstrumentOpt(
+    "mi-no-meminstrument",
+    cl::desc(
+        "Do not add meminstrument and required passes into the clang pipeline"),
+    cl::init(false));
+} // namespace
 
 namespace meminstrument {
 static RegisterPass<MemInstrumentPass>
@@ -43,8 +43,8 @@ static RegisterPass<MemInstrumentPass>
 
 static RegisterPass<LifeTimeKillerPass>
     RegisterLifeTimeKillerPass("lifetimekiller", "LifeTimeKiller",
-                              false,  // CFGOnly
-                              false); // isAnalysis
+                               false,  // CFGOnly
+                               false); // isAnalysis
 
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",

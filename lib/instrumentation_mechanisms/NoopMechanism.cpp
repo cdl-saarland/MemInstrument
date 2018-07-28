@@ -22,13 +22,13 @@ STATISTIC(NoopMechanismAnnotated, "The number of full bound checks placed");
 using namespace llvm;
 using namespace meminstrument;
 
-
 llvm::Value *NoopWitness::getLowerBound(void) const { return Lower; }
 
 llvm::Value *NoopWitness::getUpperBound(void) const { return Upper; }
 
-NoopWitness::NoopWitness(llvm::Instruction *Location, llvm::Value *Lower, llvm::Value *Upper) :
-  Witness(WK_Noop), Location(Location), Lower(Lower), Upper(Upper) {}
+NoopWitness::NoopWitness(llvm::Instruction *Location, llvm::Value *Lower,
+                         llvm::Value *Upper)
+    : Witness(WK_Noop), Location(Location), Lower(Lower), Upper(Upper) {}
 
 llvm::Instruction *NoopWitness::getInsertionLocation() const {
   auto *Res = Location;
@@ -38,13 +38,9 @@ llvm::Instruction *NoopWitness::getInsertionLocation() const {
   return Res;
 }
 
-bool NoopWitness::hasBoundsMaterialized(void) const {
-  return hasBounds;
-}
+bool NoopWitness::hasBoundsMaterialized(void) const { return hasBounds; }
 
-void NoopWitness::setBoundsMaterialized(void) {
-  hasBounds = true;
-}
+void NoopWitness::setBoundsMaterialized(void) { hasBounds = true; }
 
 void NoopMechanism::insertSleepCall(Instruction *Loc, uint32_t USecs) const {
   if (USecs == 0) {
@@ -58,8 +54,8 @@ void NoopMechanism::insertSleepCall(Instruction *Loc, uint32_t USecs) const {
 void NoopMechanism::insertWitness(ITarget &Target) const {
   assert(Target.isValid());
   // insertSleepCall(Target.getLocation(), gen_witness_time);
-  Target.setBoundWitness(
-      std::make_shared<NoopWitness>(Target.getLocation(), LowerBoundVal, UpperBoundVal));
+  Target.setBoundWitness(std::make_shared<NoopWitness>(
+      Target.getLocation(), LowerBoundVal, UpperBoundVal));
 }
 
 void NoopMechanism::insertCheck(ITarget &Target) const {
@@ -108,10 +104,12 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   size_t numbits = 64;
 
   llvm::APInt lowerVal = APInt::getNullValue(numbits);
-  LowerBoundVal = ConstantExpr::getIntToPtr(ConstantInt::get(SizeType, lowerVal), PtrArgType);
+  LowerBoundVal = ConstantExpr::getIntToPtr(
+      ConstantInt::get(SizeType, lowerVal), PtrArgType);
 
   llvm::APInt upperVal = APInt::getAllOnesValue(numbits);
-  UpperBoundVal = ConstantExpr::getIntToPtr(ConstantInt::get(SizeType, upperVal), PtrArgType);
+  UpperBoundVal = ConstantExpr::getIntToPtr(
+      ConstantInt::get(SizeType, upperVal), PtrArgType);
 
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
@@ -141,23 +139,25 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   return true;
 }
 
-std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &Target) const {
+std::shared_ptr<Witness>
+NoopMechanism::insertWitnessPhi(ITarget &Target) const {
   assert(Target.isValid());
   auto *Phi = cast<PHINode>(Target.getInstrumentee());
-  Target.setBoundWitness(std::make_shared<NoopWitness>(Phi, LowerBoundVal, UpperBoundVal));
+  Target.setBoundWitness(
+      std::make_shared<NoopWitness>(Phi, LowerBoundVal, UpperBoundVal));
   return Target.getBoundWitness();
 }
 
 void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
                                             std::shared_ptr<Witness> &,
-                                            llvm::BasicBlock *) const {
-}
+                                            llvm::BasicBlock *) const {}
 
 std::shared_ptr<Witness>
 NoopMechanism::insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &,
                                    std::shared_ptr<Witness> &) const {
   assert(Target.isValid());
   auto *Sel = cast<SelectInst>(Target.getInstrumentee());
-  Target.setBoundWitness(std::make_shared<NoopWitness>(Sel, LowerBoundVal, UpperBoundVal));
+  Target.setBoundWitness(
+      std::make_shared<NoopWitness>(Sel, LowerBoundVal, UpperBoundVal));
   return Target.getBoundWitness();
 }

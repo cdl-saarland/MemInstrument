@@ -20,8 +20,7 @@ STATISTIC(NumKilledLifeTimeEnd, "The # of killed lifetime.end calls");
 
 LifeTimeKillerPass::LifeTimeKillerPass() : ModulePass(ID) {}
 
-void LifeTimeKillerPass::releaseMemory(void) {
-}
+void LifeTimeKillerPass::releaseMemory(void) {}
 
 bool LifeTimeKillerPass::runOnModule(Module &M) {
 
@@ -58,13 +57,11 @@ bool LifeTimeKillerPass::runOnModule(Module &M) {
   return didSomething;
 }
 
-void LifeTimeKillerPass::getAnalysisUsage(AnalysisUsage &AU) const {
-}
+void LifeTimeKillerPass::getAnalysisUsage(AnalysisUsage &AU) const {}
 
 void LifeTimeKillerPass::print(llvm::raw_ostream &O,
-                              const llvm::Module *M) const {
+                               const llvm::Module *M) const {
   O << "LifeTimeKillerPass for module '" << M->getName() << "'\n";
 }
 
 char LifeTimeKillerPass::ID = 0;
-

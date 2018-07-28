@@ -171,17 +171,18 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
         insertFunDecl(M, "__splay_check_dereference_named", VoidTy, WitnessType,
                       PtrArgType, SizeType, StringTy);
     GlobalAllocFunction =
-        insertFunDecl(M, "__splay_alloc_or_merge_with_msg", VoidTy, PtrArgType, SizeType, PtrArgType);
-    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace_with_msg", VoidTy,
-                                  PtrArgType, SizeType, PtrArgType);
+        insertFunDecl(M, "__splay_alloc_or_merge_with_msg", VoidTy, PtrArgType,
+                      SizeType, PtrArgType);
+    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace_with_msg",
+                                  VoidTy, PtrArgType, SizeType, PtrArgType);
   } else {
     CheckInboundsFunction = insertFunDecl(M, "__splay_check_inbounds", VoidTy,
                                           WitnessType, PtrArgType);
     CheckDereferenceFunction =
         insertFunDecl(M, "__splay_check_dereference", VoidTy, WitnessType,
                       PtrArgType, SizeType);
-    GlobalAllocFunction =
-        insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
+    GlobalAllocFunction = insertFunDecl(M, "__splay_alloc_or_merge", VoidTy,
+                                        PtrArgType, SizeType);
     AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
                                   PtrArgType, SizeType);
   }
@@ -201,7 +202,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   WarningFunction = insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
 
   if (_CFG.hasUseNoop()) {
-    ConfigFunction = insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
+    ConfigFunction =
+        insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
   }
 }
 
@@ -254,7 +256,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     if (_CFG.hasInstrumentVerbose()) {
       std::string insn = "";
       raw_string_ostream ss(insn);
-      ss << "Function "<< F.getName();
+      ss << "Function " << F.getName();
       auto *Arr = insertStringLiteral(M, ss.str());
       auto *Str = insertCast(PtrArgType, Arr, Builder);
       insertCall(Builder, GlobalAllocFunction, PtrArg, Size, Str);
@@ -303,7 +305,8 @@ void SplayMechanism::initTypes(llvm::LLVMContext &Ctx) {
 void SplayMechanism::setupInitCall(Module &M) {
   auto &Ctx = M.getContext();
   auto FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
-  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage, "__mi_init_callback__", &M);
+  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage,
+                               "__mi_init_callback__", &M);
   setNoInstrument(Fun);
 
   auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
@@ -312,9 +315,9 @@ void SplayMechanism::setupInitCall(Module &M) {
   Constant *TimeVal = nullptr;
   Constant *IndexVal = nullptr;
 
-#define ADD_TIME_VAL(i, x) \
-  IndexVal = ConstantInt::get(SizeType, i); \
-  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time()); \
+#define ADD_TIME_VAL(i, x)                                                     \
+  IndexVal = ConstantInt::get(SizeType, i);                                    \
+  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time());               \
   insertCall(Builder, ConfigFunction, IndexVal, TimeVal);
 
   ADD_TIME_VAL(0, DerefCheck)

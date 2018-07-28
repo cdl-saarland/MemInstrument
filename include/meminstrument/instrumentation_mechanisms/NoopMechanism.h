@@ -18,7 +18,8 @@ namespace meminstrument {
 
 struct NoopWitness : public Witness {
 public:
-  NoopWitness(llvm::Instruction *Location, llvm::Value *Lower, llvm::Value *Upper);
+  NoopWitness(llvm::Instruction *Location, llvm::Value *Lower,
+              llvm::Value *Upper);
 
   virtual llvm::Value *getLowerBound(void) const override;
 
