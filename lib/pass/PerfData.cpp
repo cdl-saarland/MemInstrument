@@ -8,20 +8,30 @@
 
 #include "meminstrument/Definitions.h"
 
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
 
 #include "meminstrument/pass/Util.h"
 
 STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
 
+#include "llvm/Support/CommandLine.h"
+
+namespace {
+
+llvm::cl::opt<std::string>
+    DBPathOpt("mi-profile-db-path",
+              llvm::cl::desc("path to a meminstrument profile database"),
+              llvm::cl::init("") // default
+    );
+
+} // namespace
+
 #if HAS_SQLITE3
 
 #include <sqlite3.h>
 #include <sstream>
-#include <string>
 
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -56,12 +66,6 @@ void queryValue(sqlite3 *db, std::string &query, QueryResult &qr) {
     sqlite3_free(zErrMsg);
   }
 }
-
-llvm::cl::opt<std::string>
-    DBPathOpt("mi-profile-db-path",
-              llvm::cl::desc("path to a meminstrument profile database"),
-              llvm::cl::init("") // default
-    );
 
 } // namespace
 
@@ -131,13 +135,16 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 
 #else
 
+using namespace meminstrument;
+using namespace llvm;
+
 uint64_t getHotnessIndex(const std::string &, const std::string &, uint64_t) {
   ++FailingHotnessLookUps;
 
   static bool first_time = true;
   if (first_time) {
     dbgs() <<
-      "Trying to use performance data without sqlite3, this has no results.\n"
+      "Trying to use performance data without sqlite3, this has no results.\n";
   }
 
   first_time = false;
