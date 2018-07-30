@@ -54,7 +54,9 @@ if (BUILD_SHARED_LIBS)
   )
 endif()
 
-target_link_libraries(meminstrument sqlite3)
+if(HAS_SQLITE3)
+  target_link_libraries(meminstrument sqlite3)
+endif()
 
 if (MEMINSTRUMENT_USE_PMDA)
 target_link_libraries(meminstrument checkoptimizer)
