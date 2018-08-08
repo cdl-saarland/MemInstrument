@@ -155,6 +155,8 @@ WitnessStrategy *createWitnessStrategy(GlobalConfig &cfg, WSKind k) {
 
 const char *getModeName(MIMode M) {
   switch (M) {
+  case MIMode::NOTHING:
+    return "Nothing";
   case MIMode::SETUP:
     return "Setup";
   case MIMode::GATHER_ITARGETS:
@@ -175,6 +177,7 @@ const char *getModeName(MIMode M) {
 cl::opt<MIMode> MIModeOpt(
     "mi-mode",
     cl::desc("Override until which stage instrumentation should be performed:"),
+    cl::values(clEnumValN(MIMode::NOTHING, "nothing", "don't do anything for instrumentation, just have the required passes run")),
     cl::values(clEnumValN(MIMode::SETUP, "setup", "only until setup is done")),
     cl::values(clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
                           "only until ITarget gathering is done")),

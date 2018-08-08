@@ -81,13 +81,18 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     }
   }
 
+  CFG = GlobalConfig::create(M);
+
+  MIMode Mode = CFG->getMIMode();
+
+  if (Mode == MIMode::NOTHING)
+    return true;
+
   DEBUG(dbgs() << "Dumped module:\n"; M.dump();
         dbgs() << "\nEnd of dumped module.\n";);
-  CFG = GlobalConfig::create(M);
 
   labelAccesses(M);
 
-  MIMode Mode = CFG->getMIMode();
 
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
