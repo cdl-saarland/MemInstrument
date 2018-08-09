@@ -24,7 +24,8 @@ STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
 STATISTIC(SplayNumWitnessSelects, "The # of witness selects inserted");
 STATISTIC(SplayNumWitnessLookups, "The # of witness lookups inserted");
 STATISTIC(SplayNumGlobals, "The # of globals registered");
-STATISTIC(SplayNumNonSizedGlobals, "The # of globals non-sized globals ignored");
+STATISTIC(SplayNumNonSizedGlobals,
+          "The # of globals non-sized globals ignored");
 STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
 STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
@@ -228,10 +229,8 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 
     auto *PtrType = cast<PointerType>(GV.getType());
     auto *PointeeType = PtrType->getElementType();
-    if (! PointeeType->isSized()) {
-      DEBUG(
-        dbgs() << "Found unsized global variable: " << GV << "\n";
-      );
+    if (!PointeeType->isSized()) {
+      DEBUG(dbgs() << "Found unsized global variable: " << GV << "\n";);
       ++SplayNumNonSizedGlobals;
       continue;
     }

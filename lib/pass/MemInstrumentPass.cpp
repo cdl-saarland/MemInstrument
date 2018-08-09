@@ -93,7 +93,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
   labelAccesses(M);
 
-
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
