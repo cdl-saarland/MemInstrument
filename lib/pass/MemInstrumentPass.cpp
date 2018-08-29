@@ -209,7 +209,7 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 void MemInstrumentPass::print(llvm::raw_ostream &O,
                               const llvm::Module *M) const {
-  O << "MemInstrumentPass for module '" << M->getName() << "'\n";
+  O << "MemInstrumentPass for module\n" << *M << "\n";
 }
 
 char MemInstrumentPass::ID = 0;
