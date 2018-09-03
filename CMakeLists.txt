@@ -92,6 +92,9 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
+set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 if(MEMINSTRUMENT_USE_PMDA)
   message(STATUS "Looking for PMDA + CheckOptimizer...")
 
@@ -114,6 +117,7 @@ if(MEMINSTRUMENT_USE_PMDA)
   include_directories(
     BEFORE
     ${CO_BASE}/include
+    ${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include
     ${PMDA_BASE}/include
     ${ISL_INCLUDE_PATH}
     ${ISL_BUILD_INCLUDE_PATH}
@@ -135,10 +139,6 @@ else()
   message(STATUS "sqlite3 not found. Reading performance data is disabled.")
   set(HAS_SQLITE3 0)
 endif()
-
-
-set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH
