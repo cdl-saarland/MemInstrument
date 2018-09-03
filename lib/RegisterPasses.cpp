@@ -5,7 +5,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/Definitions.h"
-#include "meminstrument/lifetimekiller/LifeTimeKillerPass.h"
+#include "lifetimekiller/LifeTimeKillerPass.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
@@ -41,11 +41,6 @@ static RegisterPass<MemInstrumentPass>
                               false,  // CFGOnly
                               false); // isAnalysis
 
-static RegisterPass<LifeTimeKillerPass>
-    RegisterLifeTimeKillerPass("lifetimekiller", "LifeTimeKiller",
-                               false,  // CFGOnly
-                               false); // isAnalysis
-
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",
                                     "Dummy External Checks",
@@ -55,7 +50,7 @@ static RegisterPass<DummyExternalChecksPass>
 static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
                                       llvm::legacy::PassManagerBase &PM) {
   if (UseLifeTimeKillerOpt) {
-    PM.add(new LifeTimeKillerPass());
+    PM.add(new lifetimekiller::LifeTimeKillerPass());
   }
   if (NoMemInstrumentOpt) {
     return;

@@ -34,7 +34,6 @@ add_meminstrument_library(meminstrument
   witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
   Config.cpp
-  lifetimekiller/LifeTimeKillerPass.cpp
 )
 
 # List external library dependencies that need to be linked to your library
@@ -53,6 +52,8 @@ if (BUILD_SHARED_LIBS)
     ${LLVM_LIBRARY_DIR}
   )
 endif()
+
+target_link_libraries(meminstrument lifetimekiller)
 
 if(HAS_SQLITE3)
   target_link_libraries(meminstrument sqlite3)
@@ -79,7 +80,6 @@ else ()
     pass/ExternalChecksInterface.cpp
     RegisterPasses.cpp
     Config.cpp
-    lifetimekiller/LifeTimeKillerPass.cpp
   )
 
   target_link_libraries(LLVMmeminstrument meminstrument)
