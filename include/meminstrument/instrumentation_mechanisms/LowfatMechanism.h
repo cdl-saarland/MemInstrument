@@ -70,6 +70,7 @@ public:
     virtual const char *getName(void) const override { return "Lowfat"; }
 
 private:
+    llvm::Constant *CheckDerefFunction = nullptr;
     llvm::Constant *CheckOOBFunction = nullptr;
     llvm::Constant *GetUpperBoundFunction = nullptr;
     llvm::Constant *GetLowerBoundFunction = nullptr;

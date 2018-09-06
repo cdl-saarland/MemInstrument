@@ -67,7 +67,10 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
     auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
     if (Target.isCheck()) {
-        insertCall(Builder, CheckOOBFunction, WitnessVal, CastVal);
+        auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
+                     ? ConstantInt::get(SizeType, Target.getAccessSize())
+                     : Target.getAccessSizeVal();
+        insertCall(Builder, CheckDerefFunction, WitnessVal, CastVal, Size);
         ++LowfatNumDereferenceChecks;
     } else {
         assert(Target.is(ITarget::Kind::Invariant));
@@ -117,6 +120,7 @@ void LowfatMechanism::insertFunctionDeclarations(llvm::Module &M) {
     auto &Ctx = M.getContext();
     auto *VoidTy = Type::getVoidTy(Ctx);
 
+    CheckDerefFunction = insertFunDecl(M, "__lowfat_check_deref", VoidTy, WitnessType, PtrArgType, SizeType);
     CheckOOBFunction = insertFunDecl(M, "__lowfat_check_oob", VoidTy, WitnessType, PtrArgType);
     GetUpperBoundFunction = insertFunDecl(M, "__lowfat_get_upper_bound", SizeType, PtrArgType);
     GetLowerBoundFunction = insertFunDecl(M, "__lowfat_get_lower_bound", SizeType, PtrArgType);
