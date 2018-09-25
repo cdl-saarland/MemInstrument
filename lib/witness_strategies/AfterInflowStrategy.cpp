@@ -169,7 +169,16 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   // Get the location right at the beginning of the function. We want to place
   // witnesses for arguments, global values and constants here.
   auto *Fun = Target->getLocation()->getParent()->getParent();
-  auto *EntryLoc = Fun->getEntryBlock().getFirstNonPHI();
+  auto &EntryBB = Fun->getEntryBlock();
+  Instruction *EntryLoc = nullptr;
+  // Skip instructions that we might have inserted for byval arguments
+  for (auto &I : EntryBB) {
+    if (! hasNoInstrument(&I)) {
+      EntryLoc = &I;
+      break;
+    }
+  }
+  assert(EntryLoc != nullptr);
 
   if (isa<Argument>(Target->getInstrumentee())) {
     requireSource(Node, Target->getInstrumentee(), EntryLoc);

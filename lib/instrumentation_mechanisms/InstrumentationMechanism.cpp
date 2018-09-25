@@ -130,7 +130,11 @@ llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
                                                   llvm::Value *FromVal,
                                                   llvm::IRBuilder<> &Builder,
                                                   llvm::StringRef Suffix) {
-  return Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
+  auto *Res = Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
+  if (auto *I = dyn_cast<Instruction>(Res)) {
+    setNoInstrument(I);
+  }
+  return Res;
 }
 
 llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
