@@ -33,7 +33,7 @@
 using namespace meminstrument;
 using namespace llvm;
 
-STATISTIC(NumVarArgs, "The # of modules with a function that has varargs");
+STATISTIC(NumVarArgs, "The # of function ignored because of varargs");
 
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
@@ -70,15 +70,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
                  << "`\n";);
     return false;
-  }
-
-  for (auto &F : M) {
-    if (!F.empty() && F.isVarArg()) {
-      ++NumVarArgs;
-      DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
-                   << "` because of varargs\n";);
-      return false;
-    }
   }
 
   CFG = GlobalConfig::create(M);
@@ -121,6 +112,12 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (F.empty() || hasNoInstrument(&F)) {
       continue;
     }
+    if (F.isVarArg()) {
+      ++NumVarArgs;
+      DEBUG(dbgs() << "MemInstrumentPass: skip function `" << F.getName().str()
+                   << "` because of varargs\n";);
+      continue;
+    }
 
     auto &Targets = TargetMap[&F];
 
@@ -150,7 +147,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   filterITargetsRandomly(*CFG, TargetMap);
 
   for (auto &F : M) {
-    if (F.empty() || hasNoInstrument(&F)) {
+    if (F.empty() || hasNoInstrument(&F) || F.isVarArg()) {
       continue;
     }
 
