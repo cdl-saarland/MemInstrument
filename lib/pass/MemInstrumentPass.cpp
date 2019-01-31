@@ -165,6 +165,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
 
+    assert(validateITargets(getAnalysis<DominatorTreeWrapperPass>(F).getDomTree(), Targets));
+
     if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
       continue;
 
