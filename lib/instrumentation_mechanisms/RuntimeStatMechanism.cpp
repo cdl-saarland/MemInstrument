@@ -55,6 +55,10 @@ void RuntimeStatMechanism::insertWitness(ITarget &Target) const {
   Target.setBoundWitness(std::make_shared<RuntimeStatWitness>());
 }
 
+void RuntimeStatMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
+  Target.setBoundWitness(std::shared_ptr<RuntimeStatWitness>(new RuntimeStatWitness()));
+}
+
 void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());

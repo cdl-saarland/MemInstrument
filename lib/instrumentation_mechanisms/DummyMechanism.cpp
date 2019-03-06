@@ -40,6 +40,15 @@ void DummyMechanism::insertWitness(ITarget &Target) const {
   Target.setBoundWitness(std::make_shared<DummyWitness>(WitnessVal));
 }
 
+void DummyMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
+  auto *SW = dyn_cast<DummyWitness>(&W);
+  assert(SW != nullptr);
+
+  Target.setBoundWitness(
+      std::shared_ptr<DummyWitness>(new DummyWitness(SW->WitnessValue)));
+}
+
+
 void DummyMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());

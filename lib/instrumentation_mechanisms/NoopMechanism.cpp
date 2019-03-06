@@ -33,6 +33,10 @@ void NoopMechanism::insertWitness(ITarget &Target) const {
   Target.setBoundWitness(std::make_shared<NoopWitness>());
 }
 
+void NoopMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
+  Target.setBoundWitness(std::shared_ptr<NoopWitness>(new NoopWitness()));
+}
+
 void NoopMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());

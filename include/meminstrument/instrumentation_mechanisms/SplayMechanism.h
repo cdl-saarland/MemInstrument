@@ -46,6 +46,8 @@ public:
 
   virtual void insertWitness(ITarget &Target) const override;
 
+  virtual void relocCloneWitness(Witness &W, ITarget &Target) const override;
+
   virtual void insertCheck(ITarget &Target) const override;
 
   virtual void materializeBounds(ITarget &Target) const override;

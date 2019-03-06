@@ -64,6 +64,15 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
   ++SplayNumWitnessLookups;
 }
 
+void SplayMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
+  auto *SW = dyn_cast<SplayWitness>(&W);
+  assert(SW != nullptr);
+
+  Target.setBoundWitness(
+      std::shared_ptr<SplayWitness>(new SplayWitness(SW->WitnessValue, Target.getLocation())));
+  ++SplayNumWitnessLookups;
+}
+
 void SplayMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));

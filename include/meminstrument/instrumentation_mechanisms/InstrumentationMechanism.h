@@ -22,6 +22,8 @@ class InstrumentationMechanism {
 public:
   virtual void insertWitness(ITarget &Target) const = 0;
 
+  virtual void relocCloneWitness(Witness &W, ITarget &Target) const = 0;
+
   virtual void insertCheck(ITarget &Target) const = 0;
 
   virtual void materializeBounds(ITarget &Target) const = 0;
