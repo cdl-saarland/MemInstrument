@@ -58,7 +58,9 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
-  PM.add(createBreakCriticalEdgesPass());
+  // This is necessary for instrumenting invoke instructions that occur in C++
+  // exception handling:
+  // PM.add(createBreakCriticalEdgesPass());
   PM.add(new MemInstrumentPass());
 }
 
