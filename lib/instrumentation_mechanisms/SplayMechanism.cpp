@@ -28,7 +28,7 @@ STATISTIC(SplayNumNonSizedGlobals,
           "The # of globals non-sized globals ignored");
 STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
-STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
+// STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
 
 using namespace llvm;
 using namespace meminstrument;
