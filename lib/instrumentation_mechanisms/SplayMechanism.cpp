@@ -351,32 +351,32 @@ bool SplayMechanism::initialize(llvm::Module &M) {
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F))
       continue;
-    IRBuilder<> Builder(&F.front().front());
-    for (auto &Arg : F.args()) {
-      if (Arg.hasByValAttr()) {
-        // byval parameters are implicitly copied
-        DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
-                     << "'\n");
-        auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
-
-        auto *PtrType = cast<PointerType>(Arg.getType());
-        auto *PointeeType = PtrType->getElementType();
-        uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
-        auto *Size = ConstantInt::get(SizeType, sz);
-
-        if (_CFG.hasInstrumentVerbose()) {
-          std::string insn = "";
-          raw_string_ostream ss(insn);
-          ss << "byval";
-          auto *Arr = insertStringLiteral(M, ss.str());
-          auto *Str = insertCast(PtrArgType, Arr, Builder);
-          insertCall(Builder, AllocFunction, PtrArg, Size, Str);
-        } else {
-          insertCall(Builder, AllocFunction, PtrArg, Size);
-        }
-        ++SplayNumByValArgs;
-      }
-    }
+    // IRBuilder<> Builder(&F.front().front());
+    // for (auto &Arg : F.args()) {
+    //   if (Arg.hasByValAttr()) {
+    //     // byval parameters are implicitly copied
+    //     DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
+    //                  << "'\n");
+    //     auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
+    //
+    //     auto *PtrType = cast<PointerType>(Arg.getType());
+    //     auto *PointeeType = PtrType->getElementType();
+    //     uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
+    //     auto *Size = ConstantInt::get(SizeType, sz);
+    //
+    //     if (_CFG.hasInstrumentVerbose()) {
+    //       std::string insn = "";
+    //       raw_string_ostream ss(insn);
+    //       ss << "byval";
+    //       auto *Arr = insertStringLiteral(M, ss.str());
+    //       auto *Str = insertCast(PtrArgType, Arr, Builder);
+    //       insertCall(Builder, AllocFunction, PtrArg, Size, Str);
+    //     } else {
+    //       insertCall(Builder, AllocFunction, PtrArg, Size);
+    //     }
+    //     ++SplayNumByValArgs;
+    //   }
+    // }
     for (auto &BB : F) {
       for (auto &I : BB) {
         if (auto *AI = dyn_cast<AllocaInst>(&I)) {
