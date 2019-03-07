@@ -177,17 +177,15 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   auto *Fun = Target->getLocation()->getParent()->getParent();
   auto &EntryBB = Fun->getEntryBlock();
 
-  Instruction *EntryLoc = &EntryBB.front();
-
-  // Instruction *EntryLoc = nullptr;
-  // // Skip instructions that we might have inserted for byval arguments
-  // for (auto &I : EntryBB) {
-  //   if (! hasNoInstrument(&I)) {
-  //     EntryLoc = &I;
-  //     break;
-  //   }
-  // }
-  // assert(EntryLoc != nullptr);
+  Instruction *EntryLoc = nullptr;
+  // Skip instructions that we might have inserted for byval arguments
+  for (auto &I : EntryBB) {
+    if (! hasByvalHandling(&I)) {
+      EntryLoc = &I;
+      break;
+    }
+  }
+  assert(EntryLoc != nullptr);
 
   if (isa<Argument>(Target->getInstrumentee())) {
     requireSource(Node, Target->getInstrumentee(), EntryLoc);

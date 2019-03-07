@@ -78,14 +78,14 @@ private:
   }
 
   /// Base case for the implementation of the insertCall helper function.
-  static llvm::Value *insertCall_impl(std::vector<llvm::Value *> &Vec,
+  static llvm::Instruction *insertCall_impl(std::vector<llvm::Value *> &Vec,
                                       llvm::IRBuilder<> &B, llvm::Constant *Fun,
                                       llvm::Twine &Name);
 
   /// Recursive case for the implementation of the insertCall helper
   /// function.
   template <typename... Args>
-  static llvm::Value *insertCall_impl(std::vector<llvm::Value *> &Vec,
+  static llvm::Instruction *insertCall_impl(std::vector<llvm::Value *> &Vec,
                                       llvm::IRBuilder<> &B, llvm::Constant *Fun,
                                       llvm::Twine &Name, llvm::Value *Val,
                                       Args... args) {
@@ -120,7 +120,7 @@ protected:
 
   /// Inserts a call to a function and marks it for no instrumentation.
   template <typename... Args>
-  static llvm::Value *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
                                  llvm::Twine &Name, Args... args) {
     std::vector<llvm::Value *> Vec;
     return insertCall_impl(Vec, B, Fun, Name, args...);
@@ -128,7 +128,7 @@ protected:
 
   /// Inserts a call to a function and marks it for no instrumentation.
   template <typename... Args>
-  static llvm::Value *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
                                  Args... args) {
     llvm::Twine Name = "";
     return insertCall(B, Fun, Name, args...);

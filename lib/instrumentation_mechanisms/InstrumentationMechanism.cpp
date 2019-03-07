@@ -118,7 +118,7 @@ llvm::Constant *InstrumentationMechanism::insertFunDecl_impl(
   return Res;
 }
 
-llvm::Value *InstrumentationMechanism::insertCall_impl(
+llvm::Instruction *InstrumentationMechanism::insertCall_impl(
     std::vector<llvm::Value *> &Vec, llvm::IRBuilder<> &B, llvm::Constant *Fun,
     llvm::Twine &Name) {
   auto *Res = B.CreateCall(Fun, Vec, Name);

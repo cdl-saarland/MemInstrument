@@ -23,15 +23,16 @@ using namespace meminstrument;
 
 #define MEMINSTRUMENT_MD "meminstrument"
 #define NOINSTRUMENT_MD "no_instrument"
+#define BYVAL_HANDLING_MD "byval_handling"
 
 namespace {
-bool hasNoInstrumentImpl(MDNode *N) {
+bool hasMDStrImpl(const char* ref, MDNode *N) {
   if (!N || N->getNumOperands() < 1) {
     return false;
   }
 
   if (auto *Str = dyn_cast<MDString>(N->getOperand(0))) {
-    if (Str->getString().equals(NOINSTRUMENT_MD)) {
+    if (Str->getString().equals(ref)) {
       return true;
     }
   }
@@ -54,17 +55,27 @@ void setNoInstrument(Instruction *I) {
   I->setMetadata(MEMINSTRUMENT_MD, N);
 }
 
+void setByvalHandling(Instruction *I) {
+  auto &Ctx = I->getContext();
+  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, BYVAL_HANDLING_MD));
+  I->setMetadata(BYVAL_HANDLING_MD, N);
+}
+
 void setNoInstrument(Constant *C) {
   auto O = cast<GlobalObject>(C);
   setNoInstrument(O);
 }
 
 bool hasNoInstrument(GlobalObject *O) {
-  return hasNoInstrumentImpl(O->getMetadata(MEMINSTRUMENT_MD));
+  return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
 
 bool hasNoInstrument(Instruction *O) {
-  return hasNoInstrumentImpl(O->getMetadata(MEMINSTRUMENT_MD));
+  return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
+}
+
+bool hasByvalHandling(Instruction *O) {
+  return hasMDStrImpl(BYVAL_HANDLING_MD, O->getMetadata(BYVAL_HANDLING_MD));
 }
 
 bool hasPointerAccessSize(llvm::Value *V) {
