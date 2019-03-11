@@ -130,7 +130,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   }
 }
 
-void SplayMechanism::materializeBounds(ITarget &Target) const {
+void SplayMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 
@@ -141,6 +141,17 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
   }
 
   auto *WitnessVal = Witness->WitnessValue;
+
+  const auto key = std::pair<const Instruction*, Value*>(Target.getLocation(), Target.getInstrumentee());
+  const auto& lookup = MaterializedBounds.find(key);
+  if (lookup != MaterializedBounds.end()) {
+    auto& map_value = lookup->second;
+    Value* lower = map_value.first;
+    Value* upper = map_value.second;
+    Witness->LowerBound = lower;
+    Witness->UpperBound = upper;
+    return;
+  }
 
   IRBuilder<> Builder(Witness->getInsertionLocation());
 
@@ -156,6 +167,9 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
         insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
     Witness->LowerBound = LowerVal;
   }
+
+  MaterializedBounds.emplace(std::make_pair(Target.getLocation(), Target.getInstrumentee()), std::make_pair(Witness->LowerBound, Witness->UpperBound));
+
   ++SplayNumBounds;
 }
 

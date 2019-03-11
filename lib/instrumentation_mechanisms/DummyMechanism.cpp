@@ -65,7 +65,7 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
   insertCall(Builder, CheckAccessFunction, CastVal, WitnessVal, Size);
 }
 
-void DummyMechanism::materializeBounds(ITarget &Target) const {
+void DummyMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 

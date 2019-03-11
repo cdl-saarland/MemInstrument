@@ -26,7 +26,7 @@ public:
 
   virtual void insertCheck(ITarget &Target) const = 0;
 
-  virtual void materializeBounds(ITarget &Target) const = 0;
+  virtual void materializeBounds(ITarget &Target) = 0;
 
   virtual llvm::Constant *getFailFunction(void) const = 0;
 

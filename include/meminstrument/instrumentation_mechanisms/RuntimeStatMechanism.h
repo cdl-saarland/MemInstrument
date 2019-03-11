@@ -38,7 +38,7 @@ public:
 
   virtual void insertCheck(ITarget &Target) const override;
 
-  virtual void materializeBounds(ITarget &Target) const override;
+  virtual void materializeBounds(ITarget &Target) override;
 
   virtual llvm::Constant *getFailFunction(void) const override;
 

@@ -71,7 +71,7 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
   ++NoopMechanismAnnotated;
 }
 
-void NoopMechanism::materializeBounds(ITarget &Target) const {
+void NoopMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 

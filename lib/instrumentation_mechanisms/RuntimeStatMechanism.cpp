@@ -115,7 +115,7 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
              ConstantInt::get(SizeType, idx));
 }
 
-void RuntimeStatMechanism::materializeBounds(ITarget &Target) const {
+void RuntimeStatMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
