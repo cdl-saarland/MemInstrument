@@ -10,6 +10,7 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/CheckGeneration.h"
+#include "meminstrument/pass/ExternalChecksInterface.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/ITargetFilters.h"
@@ -18,6 +19,7 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
+#include "llvm/Support/CommandLine.h"
 
 #include "meminstrument/pass/Util.h"
 
@@ -25,13 +27,24 @@
 #include "CheckOptimizer/CheckOptimizerPass.h"
 #include "PMDA/PMDA.h"
 #include "llvm/Analysis/ScalarEvolution.h"
-#define EXTERNAL_PASS checkoptimizer::CheckOptimizerPass
-#else
-#define EXTERNAL_PASS DummyExternalChecksPass
 #endif
 
 using namespace meminstrument;
 using namespace llvm;
+
+#if MEMINSTRUMENT_USE_PMDA
+namespace {
+cl::opt<bool>
+    NoCheckOpt("mi-no-checkopt",
+                cl::desc("run the instrumentation and PMDA but not checkopt"),
+                         cl::init(false));
+cl::opt<bool>
+    NoPMDA("mi-no-pmda",
+               cl::desc("run the instrumentation but neither PMDA nor checkopt"),
+               cl::init(false));
+} // namespace
+
+#endif
 
 STATISTIC(NumVarArgs, "The # of function ignored because of varargs");
 
@@ -87,12 +100,19 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
-  auto &ECP = getAnalysis<EXTERNAL_PASS>();
+  ExternalChecksInterface *ECP = nullptr;
+#if MEMINSTRUMENT_USE_PMDA
+  if (!(NoPMDA || NoCheckOpt)){
+    ECP = &getAnalysis<checkoptimizer::CheckOptimizerPass>();
+  }
+#else
+  ECP = &getAnalysis<DummyExternalChecksPass>();
+#endif
 
-  if (CFG->hasUseExternalChecks()) {
+  if (CFG->hasUseExternalChecks() && ECP != nullptr) {
     DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
                     "checks\n";);
-    ECP.prepareModule(*this, M);
+    ECP->prepareModule(*this, M);
   }
 
   DEBUG(dbgs() << "Dumped module:\n"; M.dump();
@@ -153,10 +173,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     auto &Targets = TargetMap[&F];
 
-    if (CFG->hasUseExternalChecks()) {
-      DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with pass `"
-                   << ECP.getPassName() << "'\n";);
-      ECP.updateITargetsForFunction(*this, Targets, F);
+    if (CFG->hasUseExternalChecks() && ECP != nullptr) {
+      DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with external pass\n";);
+      ECP->updateITargetsForFunction(*this, Targets, F);
 
       DEBUG_ALSO_WITH_TYPE(
           "meminstrument-external",
@@ -177,11 +196,10 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (Mode == MIMode::GENERATE_WITNESSES || CFG->hasErrors())
       continue;
 
-    if (CFG->hasUseExternalChecks()) {
+    if (CFG->hasUseExternalChecks() && ECP != nullptr) {
       DEBUG(
-          dbgs() << "MemInstrumentPass: generating external checks with pass `"
-                 << ECP.getPassName() << "'\n";);
-      ECP.materializeExternalChecksForFunction(*this, Targets, F);
+          dbgs() << "MemInstrumentPass: generating external checks'\n";);
+      ECP->materializeExternalChecksForFunction(*this, Targets, F);
     }
 
     if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS || CFG->hasErrors())
@@ -201,9 +219,17 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
 #if MEMINSTRUMENT_USE_PMDA
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  if (NoPMDA) {
+    return;
+  }
   AU.addRequired<pmda::PMDA>();
+  if (NoCheckOpt) {
+    return;
+  }
+  AU.addRequired<checkoptimizer::CheckOptimizerPass>();
+#else
+  AU.addRequired<DummyExternalChecksPass>();
 #endif
-  AU.addRequired<EXTERNAL_PASS>();
 }
 
 void MemInstrumentPass::print(llvm::raw_ostream &O,
