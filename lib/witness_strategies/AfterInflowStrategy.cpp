@@ -41,7 +41,7 @@ cl::opt<bool> ShareBoundsOpt(
     "mi-share-bounds",
     cl::desc(
         "Materialize bounds so that multiple targets can have the same bounds"),
-    cl::init(false));
+    cl::init(true));
 
 } // namespace
 
