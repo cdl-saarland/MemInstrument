@@ -30,6 +30,10 @@ public:
 
   virtual llvm::Constant *getFailFunction(void) const = 0;
 
+  virtual llvm::Constant *getExtCheckCounterFunction(void) const {
+    llvm_unreachable("Not supported!");
+  }
+
   virtual llvm::Constant *getVerboseFailFunction(void) const {
     llvm_unreachable("Not supported!");
   }

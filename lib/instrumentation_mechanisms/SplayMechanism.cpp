@@ -177,6 +177,10 @@ llvm::Constant *SplayMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 
+llvm::Constant *SplayMechanism::getExtCheckCounterFunction(void) const {
+  return ExtCheckCounterFunction;
+}
+
 llvm::Constant *SplayMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;
 }
@@ -220,6 +224,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
+
+  ExtCheckCounterFunction = insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
 
   VerboseFailFunction =
       insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);

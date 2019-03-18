@@ -56,6 +56,8 @@ public:
 
   virtual llvm::Constant *getFailFunction(void) const override;
 
+  virtual llvm::Constant *getExtCheckCounterFunction(void) const override;
+
   virtual llvm::Constant *getVerboseFailFunction(void) const override;
 
   virtual std::shared_ptr<Witness>
@@ -81,6 +83,7 @@ private:
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
   llvm::Constant *FailFunction = nullptr;
+  llvm::Constant *ExtCheckCounterFunction = nullptr;
   llvm::Constant *VerboseFailFunction = nullptr;
   llvm::Constant *WarningFunction = nullptr;
 
