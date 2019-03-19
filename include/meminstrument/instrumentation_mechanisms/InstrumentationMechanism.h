@@ -81,22 +81,6 @@ private:
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
 
-  /// Base case for the implementation of the insertCall helper function.
-  static llvm::Instruction *insertCall_impl(std::vector<llvm::Value *> &Vec,
-                                      llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                      llvm::Twine &Name);
-
-  /// Recursive case for the implementation of the insertCall helper
-  /// function.
-  template <typename... Args>
-  static llvm::Instruction *insertCall_impl(std::vector<llvm::Value *> &Vec,
-                                      llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                      llvm::Twine &Name, llvm::Value *Val,
-                                      Args... args) {
-    Vec.push_back(Val);
-    return insertCall_impl(Vec, B, Fun, Name, args...);
-  }
-
 protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
@@ -122,21 +106,17 @@ protected:
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
 
-  /// Inserts a call to a function and marks it for no instrumentation.
-  template <typename... Args>
   static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 llvm::Twine &Name, Args... args) {
-    std::vector<llvm::Value *> Vec;
-    return insertCall_impl(Vec, B, Fun, Name, args...);
-  }
+                                 const std::vector<llvm::Value*>&& args, const llvm::Twine& Name);
 
-  /// Inserts a call to a function and marks it for no instrumentation.
-  template <typename... Args>
   static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 Args... args) {
-    llvm::Twine Name = "";
-    return insertCall(B, Fun, Name, args...);
-  }
+                                 llvm::Value* arg, const llvm::Twine& Name);
+
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                                 const std::vector<llvm::Value*>&& args);
+
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                                 llvm::Value* arg);
 
   static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
                                  llvm::IRBuilder<> &Builder,

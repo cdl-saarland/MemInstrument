@@ -113,18 +113,18 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
                      ? ConstantInt::get(SizeType, Target.getAccessSize())
                      : Target.getAccessSizeVal();
     if (Verbose) {
-      insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size,
-                 NameVal);
+      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size,
+                 NameVal});
     } else {
-      insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size);
+      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size});
     }
     ++SplayNumDereferenceChecks;
   } else {
     assert(Target.is(ITarget::Kind::Invariant));
     if (Verbose) {
-      insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal, NameVal);
+      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal, NameVal});
     } else {
-      insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal);
+      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal});
     }
     ++SplayNumInboundsChecks;
   }
@@ -156,15 +156,13 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
   IRBuilder<> Builder(Witness->getInsertionLocation());
 
   if (Target.hasUpperBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_upper";
     auto *UpperVal =
-        insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetUpperBoundFunction, WitnessVal, "upper_bound");
     Witness->UpperBound = UpperVal;
   }
   if (Target.hasLowerBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_lower";
     auto *LowerVal =
-        insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetLowerBoundFunction, WitnessVal, "lower_bound");
     Witness->LowerBound = LowerVal;
   }
 
@@ -272,9 +270,9 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
       ss << GV;
       auto *Arr = insertStringLiteral(M, ss.str());
       auto *Str = insertCast(PtrArgType, Arr, Builder);
-      insertCall(Builder, GlobalAllocFunction, PtrArg, Size, Str);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
     } else {
-      insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
     }
     ++SplayNumGlobals;
   }
@@ -295,9 +293,9 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
       ss << "Function " << F.getName();
       auto *Arr = insertStringLiteral(M, ss.str());
       auto *Str = insertCast(PtrArgType, Arr, Builder);
-      insertCall(Builder, GlobalAllocFunction, PtrArg, Size, Str);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
     } else {
-      insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
     }
     ++SplayNumFunctions;
   }
@@ -315,7 +313,7 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
 
   if (AI->isArrayAllocation()) {
     Size = Builder.CreateMul(AI->getArraySize(), Size,
-                             AI->getName() + "_byte_size", /*hasNUW*/ true,
+                             "", /*hasNUW*/ true,
                              /*hasNSW*/ false);
   }
 
@@ -325,9 +323,9 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
     ss << *AI;
     auto *Arr = insertStringLiteral(M, ss.str());
     auto *Str = insertCast(PtrArgType, Arr, Builder);
-    insertCall(Builder, AllocFunction, PtrArg, Size, Str);
+    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
   } else {
-    insertCall(Builder, AllocFunction, PtrArg, Size);
+    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
   }
   ++SplayNumAllocas;
 }
@@ -354,7 +352,7 @@ void SplayMechanism::setupInitCall(Module &M) {
 #define ADD_TIME_VAL(i, x)                                                     \
   IndexVal = ConstantInt::get(SizeType, i);                                    \
   TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time());               \
-  insertCall(Builder, ConfigFunction, IndexVal, TimeVal);
+  insertCall(Builder, ConfigFunction, std::vector<Value*>{IndexVal, TimeVal});
 
   ADD_TIME_VAL(0, DerefCheck)
   ADD_TIME_VAL(1, InvarCheck)
@@ -406,10 +404,10 @@ bool SplayMechanism::initialize(llvm::Module &M) {
           if (auto *I = dyn_cast<Instruction>(Str)) {
             setByvalHandling(I);
           }
-          auto *Call = insertCall(Builder, AllocFunction, PtrArg, Size, Str);
+          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
           setByvalHandling(Call);
         } else {
-          auto *Call = insertCall(Builder, AllocFunction, PtrArg, Size);
+          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
           setByvalHandling(Call);
         }
         ++SplayNumByValArgs;
@@ -434,9 +432,9 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
 
   IRBuilder<> builder(Phi);
 
-  auto Name = Phi->getName() + "_witness";
+  // auto Name = Phi->getName() + "_witness";
   auto *NewPhi =
-      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
+      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi, Phi));
   ++SplayNumWitnessPhis;
@@ -464,9 +462,9 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   auto *TrueVal = cast<SplayWitness>(TrueWitness.get())->WitnessValue;
   auto *FalseVal = cast<SplayWitness>(FalseWitness.get())->WitnessValue;
 
-  auto Name = Sel->getName() + "_witness";
+  // auto Name = Sel->getName() + "_witness";
   auto *NewSel =
-      builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
+      builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal);
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel, Sel));
   ++SplayNumWitnessSelects;

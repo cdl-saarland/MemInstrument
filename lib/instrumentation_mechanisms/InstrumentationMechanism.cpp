@@ -118,13 +118,28 @@ llvm::Constant *InstrumentationMechanism::insertFunDecl_impl(
   return Res;
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall_impl(
-    std::vector<llvm::Value *> &Vec, llvm::IRBuilder<> &B, llvm::Constant *Fun,
-    llvm::Twine &Name) {
-  auto *Res = B.CreateCall(Fun, Vec, Name);
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                               const std::vector<llvm::Value*>&& args, const llvm::Twine& Name) {
+  auto *Res = B.CreateCall(Fun, args);
   setNoInstrument(Res);
   return Res;
 }
+
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                                 llvm::Value* arg, const llvm::Twine& Name) {
+  return insertCall(B, Fun, std::vector<Value*>{arg}, Name);
+}
+
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                               const std::vector<llvm::Value*>&& args) {
+  return insertCall(B, Fun, std::move(args), "inserted_call");
+}
+
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+                                 llvm::Value* arg) {
+  return insertCall(B, Fun, arg, "inserted_call");
+}
+
 
 llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
                                                   llvm::Value *FromVal,
