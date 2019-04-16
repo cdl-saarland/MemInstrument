@@ -103,7 +103,7 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
   ArrInits.push_back(Constant::getIntegerValue(CharType, APInt(8, 0)));
 
   auto *GV = new GlobalVariable(
-      M, ArrType, /*isConstant*/ true, GlobalValue::InternalLinkage,
+      M, ArrType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantArray::get(ArrType, ArrInits), "stringliteral." + Str);
   setNoInstrument(GV);
   return GV;
