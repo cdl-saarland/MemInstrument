@@ -52,6 +52,15 @@ void LowfatMechanism::insertWitness(ITarget &Target) const {
     ++LowfatNumWitnessLookups;
 }
 
+void LowfatMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
+    auto *SW = dyn_cast<LowfatWitness>(&W);
+    assert(SW != nullptr);
+
+    Target.setBoundWitness(
+            std::shared_ptr<LowfatWitness>(new LowfatWitness(SW->WitnessValue, Target.getLocation())));
+    ++LowfatNumWitnessLookups;
+}
+
 void LowfatMechanism::insertCheck(ITarget &Target) const {
     assert(Target.isValid());
     assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
