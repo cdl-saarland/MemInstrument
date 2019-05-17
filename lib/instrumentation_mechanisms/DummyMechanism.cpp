@@ -35,10 +35,18 @@ void DummyMechanism::insertWitness(ITarget &Target) const {
 
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
-  auto Name = Target.getInstrumentee()->getName() + "_witness";
-  auto *WitnessVal = insertCall(Builder, CreateWitnessFunction, Name, CastVal);
+  auto *WitnessVal = insertCall(Builder, CreateWitnessFunction, CastVal, "witness");
   Target.setBoundWitness(std::make_shared<DummyWitness>(WitnessVal));
 }
+
+void DummyMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
+  auto *SW = dyn_cast<DummyWitness>(&W);
+  assert(SW != nullptr);
+
+  Target.setBoundWitness(
+      std::shared_ptr<DummyWitness>(new DummyWitness(SW->WitnessValue)));
+}
+
 
 void DummyMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
@@ -53,10 +61,10 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
                    ? ConstantInt::get(SizeType, Target.getAccessSize())
                    : Target.getAccessSizeVal();
 
-  insertCall(Builder, CheckAccessFunction, CastVal, WitnessVal, Size);
+  insertCall(Builder, CheckAccessFunction, std::vector<Value*>{CastVal, WitnessVal, Size}, "check");
 }
 
-void DummyMechanism::materializeBounds(ITarget &Target) const {
+void DummyMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 
@@ -66,15 +74,13 @@ void DummyMechanism::materializeBounds(ITarget &Target) const {
   auto *WitnessVal = Witness->WitnessValue;
 
   if (Target.hasUpperBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_upper";
     auto *UpperVal =
-        insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetUpperBoundFunction, WitnessVal, "upper_bound");
     Witness->UpperBound = UpperVal;
   }
   if (Target.hasLowerBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_lower";
     auto *LowerVal =
-        insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetLowerBoundFunction, WitnessVal, "lower_bound");
     Witness->LowerBound = LowerVal;
   }
 }

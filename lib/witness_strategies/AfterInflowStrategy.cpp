@@ -37,6 +37,12 @@ STATISTIC(NumUnsupportedInsns, "unsupported instructions");
 
 STATISTIC(NumUnsupportedValOps, "unsupported value operands");
 
+cl::opt<bool> ShareBoundsOpt(
+    "mi-share-bounds",
+    cl::desc(
+        "Materialize bounds so that multiple targets can have the same bounds"),
+    cl::init(true));
+
 } // namespace
 
 void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
@@ -169,7 +175,17 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   // Get the location right at the beginning of the function. We want to place
   // witnesses for arguments, global values and constants here.
   auto *Fun = Target->getLocation()->getParent()->getParent();
-  auto *EntryLoc = Fun->getEntryBlock().getFirstNonPHI();
+  auto &EntryBB = Fun->getEntryBlock();
+
+  Instruction *EntryLoc = nullptr;
+  // Skip instructions that we might have inserted for byval arguments
+  for (auto &I : EntryBB) {
+    if (! hasByvalHandling(&I)) {
+      EntryLoc = &I;
+      break;
+    }
+  }
+  assert(EntryLoc != nullptr);
 
   if (isa<Argument>(Target->getInstrumentee())) {
     requireSource(Node, Target->getInstrumentee(), EntryLoc);
@@ -214,7 +230,11 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     // We just use the witness of the single requirement, nothing to combine.
     auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
-    Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
+    if (ShareBoundsOpt) {
+      Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
+    } else {
+      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(), *Node->Target);
+    }
     return;
   }
 

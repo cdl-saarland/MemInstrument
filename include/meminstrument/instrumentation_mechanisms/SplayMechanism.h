@@ -14,6 +14,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 
+#include <map>
+
 namespace meminstrument {
 
 class GlobalConfig;
@@ -46,11 +48,15 @@ public:
 
   virtual void insertWitness(ITarget &Target) const override;
 
+  virtual void relocCloneWitness(Witness &W, ITarget &Target) const override;
+
   virtual void insertCheck(ITarget &Target) const override;
 
-  virtual void materializeBounds(ITarget &Target) const override;
+  virtual void materializeBounds(ITarget &Target) override;
 
   virtual llvm::Constant *getFailFunction(void) const override;
+
+  virtual llvm::Constant *getExtCheckCounterFunction(void) const override;
 
   virtual llvm::Constant *getVerboseFailFunction(void) const override;
 
@@ -77,6 +83,7 @@ private:
   llvm::Constant *GetUpperBoundFunction = nullptr;
   llvm::Constant *GetLowerBoundFunction = nullptr;
   llvm::Constant *FailFunction = nullptr;
+  llvm::Constant *ExtCheckCounterFunction = nullptr;
   llvm::Constant *VerboseFailFunction = nullptr;
   llvm::Constant *WarningFunction = nullptr;
 
@@ -85,6 +92,9 @@ private:
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
   llvm::Type *SizeType = nullptr;
+
+  // Map mapping location/instrumentee tuples to materialized lower and upper bounds
+  std::map<const std::pair<const llvm::Instruction*, const llvm::Value*>, std::pair<llvm::Value*, llvm::Value *>> MaterializedBounds;
 
   void initTypes(llvm::LLVMContext &Ctx);
   void insertFunctionDeclarations(llvm::Module &M);

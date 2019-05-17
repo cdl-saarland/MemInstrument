@@ -24,6 +24,8 @@ STATISTIC(SplayNumWitnessPhis, "The # of witness phis inserted");
 STATISTIC(SplayNumWitnessSelects, "The # of witness selects inserted");
 STATISTIC(SplayNumWitnessLookups, "The # of witness lookups inserted");
 STATISTIC(SplayNumGlobals, "The # of globals registered");
+STATISTIC(SplayNumNonSizedGlobals,
+          "The # of globals non-sized globals ignored");
 STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
 STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
@@ -62,6 +64,15 @@ void SplayMechanism::insertWitness(ITarget &Target) const {
   ++SplayNumWitnessLookups;
 }
 
+void SplayMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
+  auto *SW = dyn_cast<SplayWitness>(&W);
+  assert(SW != nullptr);
+
+  Target.setBoundWitness(
+      std::shared_ptr<SplayWitness>(new SplayWitness(SW->WitnessValue, Target.getLocation())));
+  ++SplayNumWitnessLookups;
+}
+
 void SplayMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
@@ -78,13 +89,20 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   Value *NameVal = nullptr;
   if (Verbose) {
     std::string Name;
+    raw_string_ostream ss(Name);
+    ss << *Target.getLocation() << "(";
     if (DILocation *Loc = Target.getLocation()->getDebugLoc()) {
       unsigned Line = Loc->getLine();
       StringRef File = Loc->getFilename();
-      Name = (File + ": " + std::to_string(Line)).str();
+      ss << (File + ": " + std::to_string(Line)).str();
     } else {
-      Name = "unknown location";
+      ss << "unknown location";
     }
+    ss << ", idx:";
+    static uint64_t i = 0;
+    ss << i++;
+    ss << ")";
+    ss.str();
 
     auto *Str = insertStringLiteral(*M, Name);
     NameVal = insertCast(PtrArgType, Str, Builder);
@@ -95,24 +113,24 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
                      ? ConstantInt::get(SizeType, Target.getAccessSize())
                      : Target.getAccessSizeVal();
     if (Verbose) {
-      insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size,
-                 NameVal);
+      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size,
+                 NameVal});
     } else {
-      insertCall(Builder, CheckDereferenceFunction, WitnessVal, CastVal, Size);
+      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size});
     }
     ++SplayNumDereferenceChecks;
   } else {
     assert(Target.is(ITarget::Kind::Invariant));
     if (Verbose) {
-      insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal, NameVal);
+      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal, NameVal});
     } else {
-      insertCall(Builder, CheckInboundsFunction, WitnessVal, CastVal);
+      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal});
     }
     ++SplayNumInboundsChecks;
   }
 }
 
-void SplayMechanism::materializeBounds(ITarget &Target) const {
+void SplayMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 
@@ -124,25 +142,41 @@ void SplayMechanism::materializeBounds(ITarget &Target) const {
 
   auto *WitnessVal = Witness->WitnessValue;
 
+  const auto key = std::pair<const Instruction*, Value*>(Target.getLocation(), Target.getInstrumentee());
+  const auto& lookup = MaterializedBounds.find(key);
+  if (lookup != MaterializedBounds.end()) {
+    auto& map_value = lookup->second;
+    Value* lower = map_value.first;
+    Value* upper = map_value.second;
+    Witness->LowerBound = lower;
+    Witness->UpperBound = upper;
+    return;
+  }
+
   IRBuilder<> Builder(Witness->getInsertionLocation());
 
   if (Target.hasUpperBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_upper";
     auto *UpperVal =
-        insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetUpperBoundFunction, WitnessVal, "upper_bound");
     Witness->UpperBound = UpperVal;
   }
   if (Target.hasLowerBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_lower";
     auto *LowerVal =
-        insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
+        insertCall(Builder, GetLowerBoundFunction, WitnessVal, "lower_bound");
     Witness->LowerBound = LowerVal;
   }
+
+  MaterializedBounds.emplace(std::make_pair(Target.getLocation(), Target.getInstrumentee()), std::make_pair(Witness->LowerBound, Witness->UpperBound));
+
   ++SplayNumBounds;
 }
 
 llvm::Constant *SplayMechanism::getFailFunction(void) const {
   return FailFunction;
+}
+
+llvm::Constant *SplayMechanism::getExtCheckCounterFunction(void) const {
+  return ExtCheckCounterFunction;
 }
 
 llvm::Constant *SplayMechanism::getVerboseFailFunction(void) const {
@@ -163,12 +197,21 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
     CheckDereferenceFunction =
         insertFunDecl(M, "__splay_check_dereference_named", VoidTy, WitnessType,
                       PtrArgType, SizeType, StringTy);
+    GlobalAllocFunction =
+        insertFunDecl(M, "__splay_alloc_or_merge_with_msg", VoidTy, PtrArgType,
+                      SizeType, PtrArgType);
+    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace_with_msg",
+                                  VoidTy, PtrArgType, SizeType, PtrArgType);
   } else {
     CheckInboundsFunction = insertFunDecl(M, "__splay_check_inbounds", VoidTy,
                                           WitnessType, PtrArgType);
     CheckDereferenceFunction =
         insertFunDecl(M, "__splay_check_dereference", VoidTy, WitnessType,
                       PtrArgType, SizeType);
+    GlobalAllocFunction = insertFunDecl(M, "__splay_alloc_or_merge", VoidTy,
+                                        PtrArgType, SizeType);
+    AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
+                                  PtrArgType, SizeType);
   }
 
   GetLowerBoundFunction =
@@ -176,14 +219,11 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   GetUpperBoundFunction =
       insertFunDecl(M, "__splay_get_upper_as_ptr", PtrArgType, WitnessType);
 
-  GlobalAllocFunction =
-      insertFunDecl(M, "__splay_alloc_or_merge", VoidTy, PtrArgType, SizeType);
-  AllocFunction = insertFunDecl(M, "__splay_alloc_or_replace", VoidTy,
-                                PtrArgType, SizeType);
-
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
+
+  ExtCheckCounterFunction = insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
 
   VerboseFailFunction =
       insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
@@ -191,7 +231,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   WarningFunction = insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
 
   if (_CFG.hasUseNoop()) {
-    ConfigFunction = insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
+    ConfigFunction =
+        insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
   }
 }
 
@@ -215,10 +256,24 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 
     auto *PtrType = cast<PointerType>(GV.getType());
     auto *PointeeType = PtrType->getElementType();
+    if (!PointeeType->isSized()) {
+      DEBUG(dbgs() << "Found unsized global variable: " << GV << "\n";);
+      ++SplayNumNonSizedGlobals;
+      continue;
+    }
     uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
     auto *Size = ConstantInt::get(SizeType, sz);
 
-    insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    if (_CFG.hasInstrumentVerbose()) {
+      std::string insn = "";
+      raw_string_ostream ss(insn);
+      ss << GV;
+      auto *Arr = insertStringLiteral(M, ss.str());
+      auto *Str = insertCast(PtrArgType, Arr, Builder);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+    } else {
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
+    }
     ++SplayNumGlobals;
   }
 
@@ -232,7 +287,16 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
 
     auto *Size = ConstantInt::get(SizeType, 1);
 
-    insertCall(Builder, GlobalAllocFunction, PtrArg, Size);
+    if (_CFG.hasInstrumentVerbose()) {
+      std::string insn = "";
+      raw_string_ostream ss(insn);
+      ss << "Function " << F.getName();
+      auto *Arr = insertStringLiteral(M, ss.str());
+      auto *Str = insertCast(PtrArgType, Arr, Builder);
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+    } else {
+      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
+    }
     ++SplayNumFunctions;
   }
   Builder.CreateRetVoid();
@@ -249,11 +313,20 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
 
   if (AI->isArrayAllocation()) {
     Size = Builder.CreateMul(AI->getArraySize(), Size,
-                             AI->getName() + "_byte_size", /*hasNUW*/ true,
+                             "", /*hasNUW*/ true,
                              /*hasNSW*/ false);
   }
 
-  insertCall(Builder, AllocFunction, PtrArg, Size);
+  if (_CFG.hasInstrumentVerbose()) {
+    std::string insn = "";
+    raw_string_ostream ss(insn);
+    ss << *AI;
+    auto *Arr = insertStringLiteral(M, ss.str());
+    auto *Str = insertCast(PtrArgType, Arr, Builder);
+    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+  } else {
+    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
+  }
   ++SplayNumAllocas;
 }
 
@@ -266,7 +339,8 @@ void SplayMechanism::initTypes(llvm::LLVMContext &Ctx) {
 void SplayMechanism::setupInitCall(Module &M) {
   auto &Ctx = M.getContext();
   auto FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
-  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage, "__mi_init_callback__", &M);
+  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage,
+                               "__mi_init_callback__", &M);
   setNoInstrument(Fun);
 
   auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
@@ -275,10 +349,10 @@ void SplayMechanism::setupInitCall(Module &M) {
   Constant *TimeVal = nullptr;
   Constant *IndexVal = nullptr;
 
-#define ADD_TIME_VAL(i, x) \
-  IndexVal = ConstantInt::get(SizeType, i); \
-  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time()); \
-  insertCall(Builder, ConfigFunction, IndexVal, TimeVal);
+#define ADD_TIME_VAL(i, x)                                                     \
+  IndexVal = ConstantInt::get(SizeType, i);                                    \
+  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time());               \
+  insertCall(Builder, ConfigFunction, std::vector<Value*>{IndexVal, TimeVal});
 
   ADD_TIME_VAL(0, DerefCheck)
   ADD_TIME_VAL(1, InvarCheck)
@@ -312,12 +386,30 @@ bool SplayMechanism::initialize(llvm::Module &M) {
                      << "'\n");
         auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
 
+        if (auto *I = dyn_cast<Instruction>(PtrArg)) {
+          setByvalHandling(I);
+        }
+
         auto *PtrType = cast<PointerType>(Arg.getType());
         auto *PointeeType = PtrType->getElementType();
         uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
         auto *Size = ConstantInt::get(SizeType, sz);
 
-        insertCall(Builder, AllocFunction, PtrArg, Size);
+        if (_CFG.hasInstrumentVerbose()) {
+          std::string insn = "";
+          raw_string_ostream ss(insn);
+          ss << "byval";
+          auto *Arr = insertStringLiteral(M, ss.str());
+          auto *Str = insertCast(PtrArgType, Arr, Builder);
+          if (auto *I = dyn_cast<Instruction>(Str)) {
+            setByvalHandling(I);
+          }
+          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+          setByvalHandling(Call);
+        } else {
+          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
+          setByvalHandling(Call);
+        }
         ++SplayNumByValArgs;
       }
     }
@@ -340,9 +432,9 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
 
   IRBuilder<> builder(Phi);
 
-  auto Name = Phi->getName() + "_witness";
+  // auto Name = Phi->getName() + "_witness";
   auto *NewPhi =
-      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
+      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi, Phi));
   ++SplayNumWitnessPhis;
@@ -370,9 +462,9 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   auto *TrueVal = cast<SplayWitness>(TrueWitness.get())->WitnessValue;
   auto *FalseVal = cast<SplayWitness>(FalseWitness.get())->WitnessValue;
 
-  auto Name = Sel->getName() + "_witness";
+  // auto Name = Sel->getName() + "_witness";
   auto *NewSel =
-      builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
+      builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal);
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel, Sel));
   ++SplayNumWitnessSelects;

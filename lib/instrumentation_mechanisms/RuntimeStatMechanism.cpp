@@ -55,6 +55,10 @@ void RuntimeStatMechanism::insertWitness(ITarget &Target) const {
   Target.setBoundWitness(std::make_shared<RuntimeStatWitness>());
 }
 
+void RuntimeStatMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
+  Target.setBoundWitness(std::shared_ptr<RuntimeStatWitness>(new RuntimeStatWitness()));
+}
+
 void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());
@@ -107,11 +111,11 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     }
   }
   auto *tableID = Builder.CreateLoad(StatTableID, "stat_table_id");
-  insertCall(Builder, StatIncFunction, tableID,
-             ConstantInt::get(SizeType, idx));
+  insertCall(Builder, StatIncFunction, std::vector<Value*>{tableID,
+             ConstantInt::get(SizeType, idx)});
 }
 
-void RuntimeStatMechanism::materializeBounds(ITarget &Target) const {
+void RuntimeStatMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
@@ -236,8 +240,8 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
       std::string &name = P.second.str;
       llvm::Value *Str = insertStringLiteral(M, name);
       Str = insertCast(StringType, Str, Builder);
-      insertCall(Builder, InitEntryFun, call, ConstantInt::get(SizeType, idx),
-                 Str);
+      insertCall(Builder, InitEntryFun, std::vector<Value*>{call, ConstantInt::get(SizeType, idx),
+                 Str});
     }
   } else {
     auto *call = insertCall(Builder, InitFun, ConstantInt::get(SizeType, 25));
@@ -245,8 +249,7 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
     auto addEntry = [&](uint64_t idx, StringRef text) {
       llvm::Value *Str = insertStringLiteral(M, text.str().c_str());
       Str = insertCast(StringType, Str, Builder);
-      insertCall(Builder, InitEntryFun, call, ConstantInt::get(SizeType, idx),
-                 Str);
+      insertCall(Builder, InitEntryFun, std::vector<Value*>{call, ConstantInt::get(SizeType, idx), Str});
     };
 
     addEntry(0, "others");

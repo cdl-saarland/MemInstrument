@@ -40,9 +40,13 @@ void setNoInstrument(llvm::Constant *C);
 
 void setNoInstrument(llvm::Instruction *I);
 
+void setByvalHandling(llvm::Instruction *I);
+
 bool hasNoInstrument(llvm::GlobalObject *O);
 
 bool hasNoInstrument(llvm::Instruction *I);
+
+bool hasByvalHandling(llvm::Instruction *I);
 
 bool hasPointerAccessSize(llvm::Value *V);
 

@@ -92,6 +92,22 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
+set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+# Search for lifetimekiller
+find_path(LIFETIMEKILLER_BASE "include/lifetimekiller/LifeTimeKillerPass.h" PATHS "${LLVM_MAIN_SRC_DIR}/projects" PATH_SUFFIXES "/lifetimekiller")
+if(LIFETIMEKILLER_BASE)
+  message(STATUS "Found LifeTimeKiller in ${LIFETIMEKILLER_BASE}")
+else()
+  message(FATAL_ERROR "LifeTimeKiller not found ${LIFETIMEKILLER_BASE}")
+endif()
+
+include_directories(
+  BEFORE
+  ${LIFETIMEKILLER_BASE}/include
+)
+
 if(MEMINSTRUMENT_USE_PMDA)
   message(STATUS "Looking for PMDA + CheckOptimizer...")
 
@@ -114,6 +130,7 @@ if(MEMINSTRUMENT_USE_PMDA)
   include_directories(
     BEFORE
     ${CO_BASE}/include
+    ${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include
     ${PMDA_BASE}/include
     ${ISL_INCLUDE_PATH}
     ${ISL_BUILD_INCLUDE_PATH}
@@ -121,8 +138,20 @@ if(MEMINSTRUMENT_USE_PMDA)
 
 endif(MEMINSTRUMENT_USE_PMDA)
 
-set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+# See if we have an installation of sqlite3, this is necessary for reading
+# performance data.
+find_path(SQLITE3_INCLUDE_PATH "sqlite3.h")
+
+if(SQLITE3_INCLUDE_PATH)
+  message(STATUS "Found sqlite3 in ${SQLITE3_INCLUDE_PATH}")
+  if(NOT EXISTS ${SQLITE3_INCLUDE_PATH}/sqlite3.h)
+    message(FATAL_ERROR "Cannot find sqlite3.h in ${SQLITE3_INCLUDE_PATH}.")
+  endif()
+  set(HAS_SQLITE3 1)
+else()
+  message(STATUS "sqlite3 not found. Reading performance data is disabled.")
+  set(HAS_SQLITE3 0)
+endif()
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH

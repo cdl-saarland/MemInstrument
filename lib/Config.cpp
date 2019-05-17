@@ -164,6 +164,8 @@ WitnessStrategy *createWitnessStrategy(GlobalConfig &cfg, WSKind k) {
 
 const char *getModeName(MIMode M) {
   switch (M) {
+  case MIMode::NOTHING:
+    return "Nothing";
   case MIMode::SETUP:
     return "Setup";
   case MIMode::GATHER_ITARGETS:
@@ -184,6 +186,9 @@ const char *getModeName(MIMode M) {
 cl::opt<MIMode> MIModeOpt(
     "mi-mode",
     cl::desc("Override until which stage instrumentation should be performed:"),
+    cl::values(clEnumValN(MIMode::NOTHING, "nothing",
+                          "don't do anything for instrumentation, just have "
+                          "the required passes run")),
     cl::values(clEnumValN(MIMode::SETUP, "setup", "only until setup is done")),
     cl::values(clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
                           "only until ITarget gathering is done")),
@@ -233,54 +238,60 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
-
 cl::opt<int> DefaultTime("mi-noop-time-default",
-                            cl::desc("default time in microseconds that operations should take as a noop if not overwritten"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(0) // default
+                         cl::desc("default time that operations should take as "
+                                  "a noop if not overwritten"),
+                         cl::cat(MemInstrumentCat),
+                         cl::init(0) // default
 );
 
+cl::opt<int>
+    GenBoundsTime("mi-noop-time-gen-bounds",
+                  cl::desc("time that generating bounds should take as a noop"),
+                  cl::cat(MemInstrumentCat),
+                  cl::init(-1) // default
+    );
 
-cl::opt<int> GenBoundsTime("mi-noop-time-gen-bounds",
-                            cl::desc("time in microseconds that generating bounds should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
+cl::opt<int> DerefCheckTime(
+    "mi-noop-time-deref-check",
+    cl::desc("time that a dereference check should take as a noop"),
+    cl::cat(MemInstrumentCat),
+    cl::init(-1) // default
 );
 
-cl::opt<int> DerefCheckTime("mi-noop-time-deref-check",
-                            cl::desc("time in microseconds that a dereference check should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
+cl::opt<int> InvarCheckTime(
+    "mi-noop-time-invar-check",
+    cl::desc("time that an inbounds check should take as a noop"),
+    cl::cat(MemInstrumentCat),
+    cl::init(-1) // default
 );
 
-cl::opt<int> InvarCheckTime("mi-noop-time-invar-check",
-                            cl::desc("time in microseconds that an inbounds check should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
+cl::opt<int> StackAllocTime(
+    "mi-noop-time-stack-alloc",
+    cl::desc("time that a stack allocation should take as a noop"),
+    cl::cat(MemInstrumentCat),
+    cl::init(-1) // default
 );
 
-cl::opt<int> StackAllocTime("mi-noop-time-stack-alloc",
-                            cl::desc("time in microseconds that a stack allocation should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
+cl::opt<int>
+    HeapAllocTime("mi-noop-time-heap-alloc",
+                  cl::desc("time that a heap allocation should take as a noop"),
+                  cl::cat(MemInstrumentCat),
+                  cl::init(-1) // default
+    );
+
+cl::opt<int> GlobalAllocTime(
+    "mi-noop-time-global-alloc",
+    cl::desc("time that a global allocation should take as a noop"),
+    cl::cat(MemInstrumentCat),
+    cl::init(-1) // default
 );
 
-cl::opt<int> HeapAllocTime("mi-noop-time-heap-alloc",
-                            cl::desc("time in microseconds that a heap allocation should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
-);
-
-cl::opt<int> GlobalAllocTime("mi-noop-time-global-alloc",
-                            cl::desc("time in microseconds that a global allocation should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
-);
-
-cl::opt<int> HeapFreeTime("mi-noop-time-heap-free",
-                            cl::desc("time in microseconds that a heap deallocation should take as a noop"),
-                            cl::cat(MemInstrumentCat),
-                            cl::init(-1) // default
+cl::opt<int> HeapFreeTime(
+    "mi-noop-time-heap-free",
+    cl::desc("time that a heap deallocation should take as a noop"),
+    cl::cat(MemInstrumentCat),
+    cl::init(-1) // default
 );
 
 uint32_t getNoopValOrDefault(int32_t v) {
@@ -487,10 +498,10 @@ GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
   delete Cfg;
 }
 
-#define GET_NOOP_METHOD(x) \
-uint32_t GlobalConfig::getNoop##x##Time(void) { \
-  return getNoopValOrDefault(x##Time); \
-}
+#define GET_NOOP_METHOD(x)                                                     \
+  uint32_t GlobalConfig::getNoop##x##Time(void) {                              \
+    return getNoopValOrDefault(x##Time);                                       \
+  }
 
 GET_NOOP_METHOD(GenBounds)
 GET_NOOP_METHOD(DerefCheck)

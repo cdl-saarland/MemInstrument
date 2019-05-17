@@ -16,6 +16,7 @@ add_meminstrument_library(meminstrument
   pass/CheckGeneration.cpp
   pass/ITarget.cpp
   pass/Util.cpp
+  pass/PerfData.cpp
   pass/WitnessGraph.cpp
   pass/DummyExternalChecksPass.cpp
   pass/ExternalChecksInterface.cpp
@@ -53,7 +54,11 @@ if (BUILD_SHARED_LIBS)
   )
 endif()
 
-target_link_libraries(meminstrument sqlite3)
+target_link_libraries(meminstrument lifetimekiller)
+
+if(HAS_SQLITE3)
+  target_link_libraries(meminstrument sqlite3)
+endif()
 
 if (MEMINSTRUMENT_USE_PMDA)
 target_link_libraries(meminstrument checkoptimizer)

@@ -22,74 +22,57 @@ STATISTIC(NoopMechanismAnnotated, "The number of full bound checks placed");
 using namespace llvm;
 using namespace meminstrument;
 
+llvm::Value *NoopWitness::getLowerBound(void) const { return nullptr; }
 
-llvm::Value *NoopWitness::getLowerBound(void) const { return Lower; }
+llvm::Value *NoopWitness::getUpperBound(void) const { return nullptr; }
 
-llvm::Value *NoopWitness::getUpperBound(void) const { return Upper; }
-
-NoopWitness::NoopWitness(llvm::Instruction *Location, llvm::Value *Lower, llvm::Value *Upper) :
-  Witness(WK_Noop), Location(Location), Lower(Lower), Upper(Upper) {}
-
-llvm::Instruction *NoopWitness::getInsertionLocation() const {
-  auto *Res = Location;
-  while (isa<PHINode>(Res)) {
-    Res = Res->getNextNode();
-  }
-  return Res;
-}
-
-bool NoopWitness::hasBoundsMaterialized(void) const {
-  return hasBounds;
-}
-
-void NoopWitness::setBoundsMaterialized(void) {
-  hasBounds = true;
-}
-
-void NoopMechanism::insertSleepCall(Instruction *Loc, uint32_t USecs) const {
-  if (USecs == 0) {
-    return;
-  }
-  IRBuilder<> Builder(Loc);
-  auto USecVal = ConstantInt::get(I32Type, USecs);
-  insertCall(Builder, SleepFunction, USecVal);
-}
+NoopWitness::NoopWitness(void) : Witness(WK_Noop) {}
 
 void NoopMechanism::insertWitness(ITarget &Target) const {
   assert(Target.isValid());
-  // insertSleepCall(Target.getLocation(), gen_witness_time);
-  Target.setBoundWitness(
-      std::make_shared<NoopWitness>(Target.getLocation(), LowerBoundVal, UpperBoundVal));
+  Target.setBoundWitness(std::make_shared<NoopWitness>());
+}
+
+void NoopMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
+  Target.setBoundWitness(std::shared_ptr<NoopWitness>(new NoopWitness()));
 }
 
 void NoopMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());
+  IRBuilder<> Builder(Target.getLocation());
 
-  insertSleepCall(Target.getLocation(), check_time);
+  // TODO more efficient checks might be conceivable (e.g. with just one cmp)
+
+  auto *Ptr2Int = Builder.CreatePtrToInt(Target.getInstrumentee(), SizeType);
+
+  auto *Lower = Builder.CreateLoad(LowerBoundLocation, /* isVolatile */ true);
+  auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
+
+  Value *AccessUpper = nullptr;
+  if (Target.is(ITarget::Kind::ConstSizeCheck)) {
+    AccessUpper = Builder.CreateAdd(
+        Ptr2Int, ConstantInt::get(SizeType, Target.getAccessSize()));
+  } else {
+    AccessUpper = Builder.CreateAdd(Ptr2Int, Target.getAccessSizeVal());
+  }
+
+  auto *Upper = Builder.CreateLoad(UpperBoundLocation, /* isVolatile */ true);
+  auto *CmpUpper = Builder.CreateICmpUGT(AccessUpper, Upper);
+
+  auto *Or = Builder.CreateOr(CmpLower, CmpUpper);
+
+  auto Unreach = SplitBlockAndInsertIfThen(Or, Target.getLocation(), true);
+  Builder.SetInsertPoint(Unreach);
+  Builder.CreateStore(ConstantInt::get(SizeType, 1), CheckResultLocation,
+                      /* isVolatile */ true);
+  Builder.CreateCall(getFailFunction());
 
   ++NoopMechanismAnnotated;
 }
 
-void NoopMechanism::materializeBounds(ITarget &Target) const {
-  assert(Target.isValid());
-  assert(Target.requiresExplicitBounds());
-
-  if (!Target.hasBoundWitness()) {
-    insertSleepCall(Target.getLocation(), gen_bounds_time);
-    ++NoopMechanismAnnotated;
-    return;
-  }
-
-  auto *Witness = cast<NoopWitness>(Target.getBoundWitness().get());
-
-  if (Witness->hasBoundsMaterialized()) {
-    return;
-  }
-
-  insertSleepCall(Witness->getInsertionLocation(), gen_bounds_time);
-  Witness->setBoundsMaterialized();
-  ++NoopMechanismAnnotated;
+void NoopMechanism::materializeBounds(ITarget &Target) {
+  llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
 llvm::Constant *NoopMechanism::getFailFunction(void) const {
@@ -99,65 +82,48 @@ llvm::Constant *NoopMechanism::getFailFunction(void) const {
 bool NoopMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
 
-  I32Type = Type::getInt32Ty(Ctx);
-
   SizeType = Type::getInt64Ty(Ctx);
-
-  llvm::Type *PtrArgType = Type::getInt8PtrTy(Ctx);
 
   size_t numbits = 64;
 
   llvm::APInt lowerVal = APInt::getNullValue(numbits);
-  LowerBoundVal = ConstantExpr::getIntToPtr(ConstantInt::get(SizeType, lowerVal), PtrArgType);
+
+  LowerBoundLocation = new GlobalVariable(
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
+      ConstantInt::get(SizeType, lowerVal), "mi_lower_bound_location");
 
   llvm::APInt upperVal = APInt::getAllOnesValue(numbits);
-  UpperBoundVal = ConstantExpr::getIntToPtr(ConstantInt::get(SizeType, upperVal), PtrArgType);
+
+  UpperBoundLocation = new GlobalVariable(
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
+      ConstantInt::get(SizeType, upperVal), "mi_upper_bound_location");
+
+  CheckResultLocation = new GlobalVariable(
+      M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
+      ConstantInt::get(SizeType, 0), "mi_check_result_location");
 
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction =
       M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx));
 
-  SleepFunction = M.getOrInsertFunction("usleep", I32Type, I32Type);
-
-  // gen_witness_time = _CFG.getNoopGenWitnessTime();
-  gen_bounds_time = _CFG.getNoopGenBoundsTime();
-  check_time = _CFG.getNoopDerefCheckTime();
-  // alloca_time = getValOrDefault(AllocaTime);
-  // heapalloc_time = getValOrDefault(HeapAllocTime);
-  // heapfree_time = getValOrDefault(HeapFreeTime);
-
-  // TODO add sleeps for allocas and calls to memory management functions
-  // for (auto &BB : F) {
-  //   for (auto &I : BB) {
-  //     if (isa<AllocaInst>(I)) {
-  //       insertSleepCall(&I, alloca_time);
-  //     } else if (auto CI = dyn_Cast<CallInst>(&I)) {
-  //       // TODO use target library info for finding malloc/free/... calls
-  //     }
-  //   }
-  // }
-
   return true;
 }
 
-std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &Target) const {
-  assert(Target.isValid());
-  auto *Phi = cast<PHINode>(Target.getInstrumentee());
-  Target.setBoundWitness(std::make_shared<NoopWitness>(Phi, LowerBoundVal, UpperBoundVal));
-  return Target.getBoundWitness();
+std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &) const {
+  llvm_unreachable("Phis are not supported by this mechanism!");
+  return std::shared_ptr<Witness>(nullptr);
 }
 
 void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
                                             std::shared_ptr<Witness> &,
                                             llvm::BasicBlock *) const {
+  llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
 std::shared_ptr<Witness>
-NoopMechanism::insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &,
+NoopMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
                                    std::shared_ptr<Witness> &) const {
-  assert(Target.isValid());
-  auto *Sel = cast<SelectInst>(Target.getInstrumentee());
-  Target.setBoundWitness(std::make_shared<NoopWitness>(Sel, LowerBoundVal, UpperBoundVal));
-  return Target.getBoundWitness();
+  llvm_unreachable("Selects are not supported by this mechanism!");
+  return std::shared_ptr<Witness>(nullptr);
 }

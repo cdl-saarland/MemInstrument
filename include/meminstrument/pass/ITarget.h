@@ -17,6 +17,7 @@
 #include "meminstrument/pass/Witness.h"
 
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
@@ -38,6 +39,10 @@ size_t getNumITargets(const ITargetVector &IV,
                       const std::function<bool(const ITarget &)> &Predicate);
 
 size_t getNumValidITargets(const ITargetVector &IV);
+
+/// check whether each instrumentee instruction is strictly dominated by its
+/// location, return true iff this is the case
+bool validateITargets(const llvm::DominatorTree &dt, const ITargetVector &IV);
 
 class ITarget {
 public:

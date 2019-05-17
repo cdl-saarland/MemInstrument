@@ -30,6 +30,7 @@ namespace meminstrument {
 class Config;
 
 enum class MIMode {
+  NOTHING,
   SETUP,
   GATHER_ITARGETS,
   FILTER_ITARGETS,
