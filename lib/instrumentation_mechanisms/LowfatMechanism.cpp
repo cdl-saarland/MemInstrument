@@ -23,10 +23,6 @@ STATISTIC(LowfatNumBounds, "The # of bound(pairs) materialized");
 STATISTIC(LowfatNumWitnessPhis, "The # of witness phis inserted");
 STATISTIC(LowfatNumWitnessSelects, "The # of witness selects inserted");
 STATISTIC(LowfatNumWitnessLookups, "The # of witness lookups inserted");
-STATISTIC(LowfatNumGlobals, "The # of globals registered");
-STATISTIC(LowfatNumFunctions, "The # of functions registered");
-STATISTIC(LowfatNumAllocas, "The # of allocas registered");
-STATISTIC(LowfatNumByValArgs, "The # of byval arguments registered");
 
 using namespace llvm;
 using namespace meminstrument;
