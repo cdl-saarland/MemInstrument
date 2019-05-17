@@ -70,16 +70,16 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
         auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
                      ? ConstantInt::get(SizeType, Target.getAccessSize())
                      : Target.getAccessSizeVal();
-        insertCall(Builder, CheckDerefFunction, WitnessVal, CastVal, Size);
+        insertCall(Builder, CheckDerefFunction, std::vector<Value*>{WitnessVal, CastVal, Size});
         ++LowfatNumDereferenceChecks;
     } else {
         assert(Target.is(ITarget::Kind::Invariant));
-        insertCall(Builder, CheckOOBFunction, WitnessVal, CastVal);
+        insertCall(Builder, CheckOOBFunction, std::vector<Value*>{WitnessVal, CastVal});
         ++LowfatNumInboundsChecks;
     }
 }
 
-void LowfatMechanism::materializeBounds(ITarget &Target) const {
+void LowfatMechanism::materializeBounds(ITarget &Target) {
     assert(Target.isValid());
     assert(Target.requiresExplicitBounds());
 
@@ -95,14 +95,12 @@ void LowfatMechanism::materializeBounds(ITarget &Target) const {
 
     if (Target.hasUpperBoundFlag()) {
         auto Name = Target.getInstrumentee()->getName() + "_upper";
-        auto *UpperVal =
-                insertCall(Builder, GetUpperBoundFunction, Name, WitnessVal);
+        auto *UpperVal = insertCall(Builder, GetUpperBoundFunction, std::vector<Value*>{WitnessVal}, Name);
         Witness->UpperBound = UpperVal;
     }
     if (Target.hasLowerBoundFlag()) {
         auto Name = Target.getInstrumentee()->getName() + "_lower";
-        auto *LowerVal =
-                insertCall(Builder, GetLowerBoundFunction, Name, WitnessVal);
+        auto *LowerVal = insertCall(Builder, GetLowerBoundFunction, std::vector<Value*>{WitnessVal}, Name);
         Witness->LowerBound = LowerVal;
     }
     ++LowfatNumBounds;

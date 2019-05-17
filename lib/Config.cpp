@@ -96,7 +96,7 @@ InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
   case IMKind::noop:
     return new NoopMechanism(cfg);
   case IMKind::lowfat:
-      return new LowfatMechanism(cfg);
+    return new LowfatMechanism(cfg);
   case IMKind::default_val:
     return nullptr;
   }
