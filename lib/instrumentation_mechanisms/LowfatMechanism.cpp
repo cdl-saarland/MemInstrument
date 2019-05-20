@@ -125,8 +125,8 @@ void LowfatMechanism::insertFunctionDeclarations(llvm::Module &M) {
 
     CheckDerefFunction = insertFunDecl(M, "__lowfat_check_deref", VoidTy, WitnessType, PtrArgType, SizeType);
     CheckOOBFunction = insertFunDecl(M, "__lowfat_check_oob", VoidTy, WitnessType, PtrArgType);
-    GetUpperBoundFunction = insertFunDecl(M, "__lowfat_get_upper_bound", SizeType, PtrArgType);
-    GetLowerBoundFunction = insertFunDecl(M, "__lowfat_get_lower_bound", SizeType, PtrArgType);
+    GetUpperBoundFunction = insertFunDecl(M, "__lowfat_get_upper_bound", PtrArgType, WitnessType);
+    GetLowerBoundFunction = insertFunDecl(M, "__lowfat_get_lower_bound", PtrArgType, WitnessType);
 
     llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
     FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
