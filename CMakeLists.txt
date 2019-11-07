@@ -2,7 +2,7 @@
 
 message(STATUS "Configuring meminstrument...")
 
-option(MEMINSTRUMENT_USE_PMDA "Use PMDA CheckOptimizer to elimintate checks" 0)
+option(MEMINSTRUMENT_USE_PMDA "Use PMDA CheckOptimizer to eliminate checks" 0)
 
 if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   project(meminstrument)
@@ -25,7 +25,7 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   # Add the llvm header path.
   include_directories(${LLVM_INSTALL_ROOT}/include/)
 
-  # Get the system librarys that will link into LLVM.
+  # Get the system libraries that will link into LLVM.
   function(get_system_libs return_var)
     # Returns in `return_var' a list of system libraries used by LLVM.
     if( NOT MSVC )
