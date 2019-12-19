@@ -23,7 +23,7 @@ Clone this repository into `llvm/projects`.
 Create a new folder `build` in your project root folder and `cd` into it. Create build files via `cmake` with the following command:
 
 ```
-cmake -G <build tool> <additional flags> -DLLVM_TOOL_COMPILER_RT_BUILD=1 ../llvm/
+cmake -G <build tool> <additional flags> ../llvm/
 ```
 
 where `<build tool>` is your preferred build tool (e.g. `Ninja`).
