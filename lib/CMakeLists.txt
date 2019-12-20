@@ -1,14 +1,6 @@
-set(LLVM_NO_RTTI 1)
-
-set(MEMINSTRUMENT_HEADER_FILES)
-if (MSVC_IDE OR XCODE)
-  file(GLOB_RECURSE MEMINSTRUMENT_HEADER_FILES "${MEMINSTRUMENT_SOURCE_DIR}/include/meminstrument/*.h")
-endif ()
-
-configure_file("../include/meminstrument/Definitions.h.in" "../include/meminstrument/Definitions.h" )
-
 # add all source files of the project that should be linked together
-add_meminstrument_library(meminstrument
+add_library(
+  meminstrumentobjlib OBJECT
   pass/MemInstrumentPass.cpp
   pass/ITargetGathering.cpp
   pass/ITargetFilters.cpp
@@ -33,65 +25,83 @@ add_meminstrument_library(meminstrument
   witness_strategies/AfterInflowStrategy.cpp
   witness_strategies/NoneStrategy.cpp
   RegisterPasses.cpp
-  Config.cpp
-)
+  Config.cpp)
 
-# List external library dependencies that need to be linked to your library
-# (see project/myproject level CMakelists to enforce that these libraries are found)
+configure_file("../include/meminstrument/Definitions.h.in"
+               "../include/meminstrument/Definitions.h")
 
-if (BUILD_SHARED_LIBS)
-  target_link_libraries(meminstrument
+# This function exports properties of your library and defines target specifics.
+# We will always build two libraries. This function is used to apply the effects
+# on both libraries consistently.
+function(setup_meminstrument_library name)
+
+  # List external library dependencies that need to be linked to your library
+  # (see project/myproject level CMakelists to enforce that these libraries are
+  # found)
+  target_link_libraries(${name} PUBLIC lifetimekiller)
+  if(MEMINSTRUMENT_USE_PICO)
+    target_link_libraries(${name} PUBLIC PMDA checkoptimizer)
+
+    target_include_directories(
+      ${name} BEFORE
+      PUBLIC
+        $<BUILD_INTERFACE:${CO_BASE}/include>
+        $<BUILD_INTERFACE:${PMDA_BASE}/include>
+        $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}/include>
+        $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include>
+    )
+  endif()
+
+  if(HAS_SQLITE3)
+    target_link_libraries(${name} PUBLIC sqlite3)
+  endif()
+
+  set_target_properties(${name} PROPERTIES LINKER_LANGUAGE CXX PREFIX "")
+
+  target_include_directories(
+    ${name} BEFORE
+    PUBLIC $<BUILD_INTERFACE:${MEMINSTRUMENT_SOURCE_DIR}/include>
+           $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/include>
+           $<BUILD_INTERFACE:${LIFETIMEKILLER_BASE}/include>
+           $<INSTALL_INTERFACE:include>)
+
+  # LLVM globally defines whether RTTI + exceptions should be used, stick to
+  # that.
+  if(NOT LLVM_ENABLE_RTTI)
+    target_compile_options(${name} PRIVATE -fno-exceptions -fno-rtti)
+  endif()
+
+  target_compile_options(${name} PRIVATE -fno-common -Woverloaded-virtual
+                                         -Wno-long-long -Wall -Wextra -pedantic)
+  install(
+    TARGETS ${name}
+    EXPORT LLVMExports
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX}
+    INCLUDES DESTINATION include)
+  set_property(GLOBAL APPEND PROPERTY LLVM_EXPORTS ${name})
+
+  add_dependencies(${name} intrinsics_gen)
+
+endfunction(setup_meminstrument_library)
+
+# The generated object files can now be used to create the kind of library
+# determined by BUILD_SHARED_LIBS (defined outside of the project) and the
+# MODULE library.
+add_library(meminstrument $<TARGET_OBJECTS:meminstrumentobjlib>)
+setup_meminstrument_library(meminstrument)
+
+add_library(LLVMmeminstrument MODULE $<TARGET_OBJECTS:meminstrumentobjlib>)
+setup_meminstrument_library(LLVMmeminstrument)
+
+if(BUILD_SHARED_LIBS)
+  target_link_libraries(
+    meminstrument
     LLVMSupport
     LLVMCore
     LLVMTransformUtils
     LLVMAnalysis
     LLVMipo
-    LLVMMC
-  )
-  link_directories(
-    ${LLVM_LIBRARY_DIR}
-  )
+    LLVMMC)
+  link_directories(${LLVM_LIBRARY_DIR})
 endif()
-
-target_link_libraries(meminstrument lifetimekiller)
-
-if(HAS_SQLITE3)
-  target_link_libraries(meminstrument sqlite3)
-endif()
-
-if (MEMINSTRUMENT_USE_PMDA)
-target_link_libraries(meminstrument checkoptimizer)
-endif()
-
-link_directories(
-  ${LLVM_LIBRARY_DIR}
-)
-
-# Build a monolithic meminstrument.a and a thin module LLVMMEMINSTRUMENT.moduleext that links to
-# that static library.
-if (MSVC)
-  # Add dummy target, because loadable modules are not supported on Windows
-  add_custom_target(LLVMmeminstrument)
-  set_target_properties(LLVMmeminstrument PROPERTIES FOLDER "meminstrument")
-else ()
-  # Specify the files clang needs for the pass manager
-  add_meminstrument_loadable_module(LLVMmeminstrument
-    pass/MemInstrumentPass.cpp
-    pass/ExternalChecksInterface.cpp
-    RegisterPasses.cpp
-    Config.cpp
-  )
-
-  target_link_libraries(LLVMmeminstrument meminstrument)
-
-  set_target_properties(LLVMmeminstrument
-    PROPERTIES
-    LINKER_LANGUAGE CXX
-    PREFIX "")
-endif ()
-
-if (TARGET intrinsics_gen)
-  # Check if we are building as part of an LLVM build
-  add_dependencies(meminstrument intrinsics_gen)
-endif()
-

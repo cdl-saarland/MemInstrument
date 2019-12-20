@@ -15,7 +15,7 @@
 
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
-#if MEMINSTRUMENT_USE_PMDA
+#if MEMINSTRUMENT_USE_PICO
 #include "CheckOptimizer/CheckOptimizerPass.h"
 #endif
 
@@ -64,7 +64,7 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
   PM.add(new MemInstrumentPass());
 }
 
-// #if MEMINSTRUMENT_USE_PMDA
+// #if MEMINSTRUMENT_USE_PICO
 static llvm::RegisterStandardPasses
     RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
                               registerMeminstrumentPass);

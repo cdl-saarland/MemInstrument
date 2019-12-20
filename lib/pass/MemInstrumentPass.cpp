@@ -23,7 +23,7 @@
 
 #include "meminstrument/pass/Util.h"
 
-#if MEMINSTRUMENT_USE_PMDA
+#if MEMINSTRUMENT_USE_PICO
 #include "CheckOptimizer/CheckOptimizerPass.h"
 #include "PMDA/PMDA.h"
 #include "llvm/Analysis/ScalarEvolution.h"
@@ -32,7 +32,7 @@
 using namespace meminstrument;
 using namespace llvm;
 
-#if MEMINSTRUMENT_USE_PMDA
+#if MEMINSTRUMENT_USE_PICO
 namespace {
 cl::opt<bool>
     NoCheckOpt("mi-no-checkopt",
@@ -101,7 +101,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                << "`\n";);
 
   ExternalChecksInterface *ECP = nullptr;
-#if MEMINSTRUMENT_USE_PMDA
+#if MEMINSTRUMENT_USE_PICO
   if (!(NoPMDA || NoCheckOpt)){
     ECP = &getAnalysis<checkoptimizer::CheckOptimizerPass>();
   }
@@ -217,7 +217,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
 void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
-#if MEMINSTRUMENT_USE_PMDA
+#if MEMINSTRUMENT_USE_PICO
   AU.addRequired<ScalarEvolutionWrapperPass>();
   if (NoPMDA) {
     return;
