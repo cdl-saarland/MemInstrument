@@ -250,14 +250,14 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     if (hasNoInstrument(&GV) || GV.getName().startswith("llvm.")) {
       continue;
     }
-    DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
-                 << "'\n");
+    LLVM_DEBUG(dbgs() << "Creating splay init code for GlobalVariable `" << GV
+                      << "'\n");
     auto *PtrArg = insertCast(PtrArgType, &GV, Builder);
 
     auto *PtrType = cast<PointerType>(GV.getType());
     auto *PointeeType = PtrType->getElementType();
     if (!PointeeType->isSized()) {
-      DEBUG(dbgs() << "Found unsized global variable: " << GV << "\n";);
+      LLVM_DEBUG(dbgs() << "Found unsized global variable: " << GV << "\n";);
       ++SplayNumNonSizedGlobals;
       continue;
     }
@@ -282,7 +282,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     if (hasNoInstrument(&F) || F.isIntrinsic()) {
       continue;
     }
-    DEBUG(dbgs() << "Creating splay init code for Function `" << F << "'\n");
+    LLVM_DEBUG(dbgs() << "Creating splay init code for Function `" << F << "'\n");
     auto *PtrArg = insertCast(PtrArgType, &F, Builder);
 
     auto *Size = ConstantInt::get(SizeType, 1);
@@ -307,8 +307,8 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   auto *PtrArg = insertCast(PtrArgType, AI, Builder);
 
   uint64_t sz = M.getDataLayout().getTypeAllocSize(AI->getAllocatedType());
-  DEBUG(dbgs() << "Registering alloca `"; AI->dump();
-        dbgs() << "` with size " << sz << "\n";);
+  LLVM_DEBUG(dbgs() << "Registering alloca `"; AI->dump();
+             dbgs() << "` with size " << sz << "\n";);
   Value *Size = ConstantInt::get(SizeType, sz);
 
   if (AI->isArrayAllocation()) {
@@ -382,7 +382,7 @@ bool SplayMechanism::initialize(llvm::Module &M) {
     for (auto &Arg : F.args()) {
       if (Arg.hasByValAttr()) {
         // byval parameters are implicitly copied
-        DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
+        LLVM_DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
                      << "'\n");
         auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
 

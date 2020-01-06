@@ -70,7 +70,7 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
       break;
     default:
       ++NumUnsupportedConstExprs;
-      DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -79,7 +79,7 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
   }
 
   ++NumUnsupportedConstVals;
-  DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
+  LLVM_DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
   _CFG.noteError();
   return;
 }
@@ -166,7 +166,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       ++NumPtrVectorInstructions; // fallthrough
     default:
       ++NumUnsupportedInsns;
-      DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -206,7 +206,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   }
 
   ++NumUnsupportedValOps;
-  DEBUG(dbgs() << "Unsupported value operand:\n"
+  LLVM_DEBUG(dbgs() << "Unsupported value operand:\n"
                << *Target->getInstrumentee() << "\n\n";);
   _CFG.noteError();
   return;

@@ -80,7 +80,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
   if (M.getName().endswith("tools/timeit.c")) {
     // small hack to avoid unnecessary work in the lnt tests
-    DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
                  << "`\n";);
     return false;
   }
@@ -92,12 +92,12 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   if (Mode == MIMode::NOTHING)
     return true;
 
-  DEBUG(dbgs() << "Dumped module:\n"; M.dump();
+  LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
         dbgs() << "\nEnd of dumped module.\n";);
 
   labelAccesses(M);
 
-  DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
+  LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
                << "`\n";);
 
   ExternalChecksInterface *ECP = nullptr;
@@ -110,15 +110,15 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 #endif
 
   if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-    DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
                     "checks\n";);
     ECP->prepareModule(*this, M);
   }
 
-  DEBUG(dbgs() << "Dumped module:\n"; M.dump();
+  LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
         dbgs() << "\nEnd of dumped module.\n";);
 
-  DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
+  LLVM_DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
   auto &IM = CFG->getInstrumentationMechanism();
   IM.initialize(M);
@@ -134,24 +134,24 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     }
     if (F.isVarArg()) {
       ++NumVarArgs;
-      DEBUG(dbgs() << "MemInstrumentPass: skip function `" << F.getName().str()
+      LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip function `" << F.getName().str()
                    << "` because of varargs\n";);
       continue;
     }
 
     auto &Targets = TargetMap[&F];
 
-    DEBUG(dbgs() << "MemInstrumentPass: processing function `"
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing function `"
                  << F.getName().str() << "`\n";);
 
-    DEBUG(dbgs() << "MemInstrumentPass: gathering ITargets\n";);
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: gathering ITargets\n";);
 
     gatherITargets(*CFG, Targets, F);
 
     if (Mode == MIMode::GATHER_ITARGETS || CFG->hasErrors())
       continue;
 
-    DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
                     "filters\n";);
 
     filterITargets(*CFG, this, Targets, F);
@@ -174,7 +174,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     auto &Targets = TargetMap[&F];
 
     if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-      DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with external pass\n";);
+      LLVM_DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with external pass\n";);
       ECP->updateITargetsForFunction(*this, Targets, F);
 
       DEBUG_ALSO_WITH_TYPE(
@@ -189,7 +189,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
       continue;
 
-    DEBUG(dbgs() << "MemInstrumentPass: generating Witnesses\n";);
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: generating Witnesses\n";);
 
     generateWitnesses(*CFG, Targets, F);
 
@@ -197,7 +197,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       continue;
 
     if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-      DEBUG(
+      LLVM_DEBUG(
           dbgs() << "MemInstrumentPass: generating external checks'\n";);
       ECP->materializeExternalChecksForFunction(*this, Targets, F);
     }
@@ -205,12 +205,12 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (Mode == MIMode::GENERATE_EXTERNAL_CHECKS || CFG->hasErrors())
       continue;
 
-    DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);
 
     generateChecks(*CFG, Targets, F);
   }
 
-  DEBUG(M.dump(););
+  LLVM_DEBUG(M.dump(););
 
   return true;
 }
