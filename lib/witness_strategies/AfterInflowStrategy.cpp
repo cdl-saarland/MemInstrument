@@ -70,7 +70,8 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
       break;
     default:
       ++NumUnsupportedConstExprs;
-      DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n"
+                        << *CE << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -79,7 +80,7 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
   }
 
   ++NumUnsupportedConstVals;
-  DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
+  LLVM_DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
   _CFG.noteError();
   return;
 }
@@ -166,7 +167,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       ++NumPtrVectorInstructions; // fallthrough
     default:
       ++NumUnsupportedInsns;
-      DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -180,7 +181,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   Instruction *EntryLoc = nullptr;
   // Skip instructions that we might have inserted for byval arguments
   for (auto &I : EntryBB) {
-    if (! hasByvalHandling(&I)) {
+    if (!hasByvalHandling(&I)) {
       EntryLoc = &I;
       break;
     }
@@ -206,8 +207,8 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   }
 
   ++NumUnsupportedValOps;
-  DEBUG(dbgs() << "Unsupported value operand:\n"
-               << *Target->getInstrumentee() << "\n\n";);
+  LLVM_DEBUG(dbgs() << "Unsupported value operand:\n"
+                    << *Target->getInstrumentee() << "\n\n";);
   _CFG.noteError();
   return;
 }
@@ -233,7 +234,8 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     if (ShareBoundsOpt) {
       Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
     } else {
-      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(), *Node->Target);
+      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(),
+                           *Node->Target);
     }
     return;
   }

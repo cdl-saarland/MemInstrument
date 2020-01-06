@@ -4,14 +4,15 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/Definitions.h"
 #include "lifetimekiller/LifeTimeKillerPass.h"
+#include "meminstrument/Definitions.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Utils.h"
 
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"

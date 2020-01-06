@@ -26,7 +26,7 @@ using namespace meminstrument;
 #define BYVAL_HANDLING_MD "byval_handling"
 
 namespace {
-bool hasMDStrImpl(const char* ref, MDNode *N) {
+bool hasMDStrImpl(const char *ref, MDNode *N) {
   if (!N || N->getNumOperands() < 1) {
     return false;
   }
@@ -43,27 +43,22 @@ bool hasMDStrImpl(const char* ref, MDNode *N) {
 
 namespace meminstrument {
 
-void setNoInstrument(GlobalObject *O) {
-  auto &Ctx = O->getContext();
+void setNoInstrument(llvm::Value *V) {
+  auto &Ctx = V->getContext();
   MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, NOINSTRUMENT_MD));
-  O->setMetadata(MEMINSTRUMENT_MD, N);
-}
-
-void setNoInstrument(Instruction *I) {
-  auto &Ctx = I->getContext();
-  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, NOINSTRUMENT_MD));
-  I->setMetadata(MEMINSTRUMENT_MD, N);
+  if (auto *O = llvm::dyn_cast<GlobalObject>(V)) {
+    O->setMetadata(MEMINSTRUMENT_MD, N);
+  } else if (auto *I = llvm::dyn_cast<Instruction>(V)) {
+    I->setMetadata(MEMINSTRUMENT_MD, N);
+  } else {
+    llvm_unreachable("Value not supported for setting metadata!");
+  }
 }
 
 void setByvalHandling(Instruction *I) {
   auto &Ctx = I->getContext();
   MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, BYVAL_HANDLING_MD));
   I->setMetadata(BYVAL_HANDLING_MD, N);
-}
-
-void setNoInstrument(Constant *C) {
-  auto O = cast<GlobalObject>(C);
-  setNoInstrument(O);
 }
 
 bool hasNoInstrument(GlobalObject *O) {

@@ -34,7 +34,7 @@ InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
 bool InstrumentationPolicy::validateSize(llvm::Value *Ptr) {
   if (!hasPointerAccessSize(Ptr)) {
     ++NumUnsizedTypes;
-    DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
+    LLVM_DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
     _CFG.noteError();
     return false;
   }

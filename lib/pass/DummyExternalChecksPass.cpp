@@ -23,7 +23,7 @@ DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
 
 bool DummyExternalChecksPass::runOnModule(Module &M) {
 
-  DEBUG(dbgs() << "Running External Checks Pass\n";);
+  LLVM_DEBUG(dbgs() << "Running External Checks Pass\n";);
 
   return false;
 }
@@ -69,7 +69,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
     }
   }
   size_t Num = meminstrument::getNumValidITargets(Vec);
-  DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
+  LLVM_DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
   // add new targets to the ITarget vector
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }

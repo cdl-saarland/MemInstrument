@@ -35,7 +35,8 @@ void DummyMechanism::insertWitness(ITarget &Target) const {
 
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
-  auto *WitnessVal = insertCall(Builder, CreateWitnessFunction, CastVal, "witness");
+  auto *WitnessVal =
+      insertCall(Builder, CreateWitnessFunction, CastVal, "witness");
   Target.setBoundWitness(std::make_shared<DummyWitness>(WitnessVal));
 }
 
@@ -46,7 +47,6 @@ void DummyMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
   Target.setBoundWitness(
       std::shared_ptr<DummyWitness>(new DummyWitness(SW->WitnessValue)));
 }
-
 
 void DummyMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
@@ -61,7 +61,8 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
                    ? ConstantInt::get(SizeType, Target.getAccessSize())
                    : Target.getAccessSizeVal();
 
-  insertCall(Builder, CheckAccessFunction, std::vector<Value*>{CastVal, WitnessVal, Size}, "check");
+  insertCall(Builder, CheckAccessFunction,
+             std::vector<Value *>{CastVal, WitnessVal, Size}, "check");
 }
 
 void DummyMechanism::materializeBounds(ITarget &Target) {
@@ -85,7 +86,7 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-llvm::Constant *DummyMechanism::getFailFunction(void) const {
+llvm::Value *DummyMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 

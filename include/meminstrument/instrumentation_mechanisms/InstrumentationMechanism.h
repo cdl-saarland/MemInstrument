@@ -28,13 +28,13 @@ public:
 
   virtual void materializeBounds(ITarget &Target) = 0;
 
-  virtual llvm::Constant *getFailFunction(void) const = 0;
+  virtual llvm::Value *getFailFunction(void) const = 0;
 
-  virtual llvm::Constant *getExtCheckCounterFunction(void) const {
+  virtual llvm::Value *getExtCheckCounterFunction(void) const {
     llvm_unreachable("Not supported!");
   }
 
-  virtual llvm::Constant *getVerboseFailFunction(void) const {
+  virtual llvm::Value *getVerboseFailFunction(void) const {
     llvm_unreachable("Not supported!");
   }
 
@@ -64,16 +64,15 @@ protected:
 
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
-  static llvm::Constant *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
-                                            llvm::Module &M,
-                                            llvm::StringRef Name,
-                                            llvm::AttributeList AList,
-                                            llvm::Type *RetTy);
+  static llvm::Value *insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
+                                         llvm::Module &M, llvm::StringRef Name,
+                                         llvm::AttributeList AList,
+                                         llvm::Type *RetTy);
 
   /// Recursive case for the implementation of the insertFunDecl helper
   /// function.
   template <typename... Args>
-  static llvm::Constant *
+  static llvm::Value *
   insertFunDecl_impl(std::vector<llvm::Type *> &Vec, llvm::Module &M,
                      llvm::StringRef Name, llvm::AttributeList AList,
                      llvm::Type *RetTy, llvm::Type *Ty, Args... args) {
@@ -89,8 +88,8 @@ protected:
   /// Inserts a function declaration into a Module and marks it for no
   /// instrumentation.
   template <typename... Args>
-  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
-                                       llvm::Type *RetTy, Args... args) {
+  static llvm::Value *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
+                                    llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
     // create an empty AttributeList
     llvm::ArrayRef<std::pair<unsigned, llvm::AttributeSet>> ar;
@@ -99,24 +98,26 @@ protected:
   }
 
   template <typename... Args>
-  static llvm::Constant *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
-                                       llvm::AttributeList AList,
-                                       llvm::Type *RetTy, Args... args) {
+  static llvm::Value *insertFunDecl(llvm::Module &M, llvm::StringRef Name,
+                                    llvm::AttributeList AList,
+                                    llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
     return insertFunDecl_impl(Vec, M, Name, AList, RetTy, args...);
   }
 
-  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 const std::vector<llvm::Value*>&& args, const llvm::Twine& Name);
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
+                                       const std::vector<llvm::Value *> &&args,
+                                       const llvm::Twine &Name);
 
-  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 llvm::Value* arg, const llvm::Twine& Name);
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
+                                       llvm::Value *arg,
+                                       const llvm::Twine &Name);
 
-  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 const std::vector<llvm::Value*>&& args);
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
+                                       const std::vector<llvm::Value *> &&args);
 
-  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
-                                 llvm::Value* arg);
+  static llvm::Instruction *insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
+                                       llvm::Value *arg);
 
   static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
                                  llvm::IRBuilder<> &Builder,

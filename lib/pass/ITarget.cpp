@@ -36,21 +36,22 @@ size_t meminstrument::getNumValidITargets(const ITargetVector &IV) {
   return getNumITargets(IV, [](const ITarget &IT) { return IT.isValid(); });
 }
 
-bool meminstrument::validateITargets(const DominatorTree &dt, const ITargetVector &IV) {
-    for (const auto &t : IV) {
-        if (!t->isValid()) {
-            continue;
-        }
-        if (const auto *insn = dyn_cast<Instruction>(t->getInstrumentee())) {
-            if (insn == t->getLocation()) {
-                return false;
-            }
-            if (!dt.dominates(insn, t->getLocation())) {
-                return false;
-            }
-        }
+bool meminstrument::validateITargets(const DominatorTree &dt,
+                                     const ITargetVector &IV) {
+  for (const auto &t : IV) {
+    if (!t->isValid()) {
+      continue;
     }
-    return true;
+    if (const auto *insn = dyn_cast<Instruction>(t->getInstrumentee())) {
+      if (insn == t->getLocation()) {
+        return false;
+      }
+      if (!dt.dominates(insn, t->getLocation())) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 bool ITarget::is(Kind k) const { return this->getKind() == k; }

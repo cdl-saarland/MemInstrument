@@ -419,26 +419,26 @@ public:
 /// A configuration to perform instrumentation based on low fat pointers
 class LowfatConfig : public Config {
 public:
-    virtual ~LowfatConfig(void) {}
+  virtual ~LowfatConfig(void) {}
 
-    virtual IPKind getInstrumentationPolicy(void) const override {
-        return IPKind::beforeOutflow;
-    }
-    virtual IMKind getInstrumentationMechanism(void) const override {
-        return IMKind::lowfat;
-    }
-    virtual WSKind getWitnessStrategy(void) const override {
-        return WSKind::after_inflow;
-    }
-    virtual MIMode getMIMode(void) const override {
-        return MIMode::GENERATE_CHECKS;
-    }
-    virtual bool hasUseFilters(void) const override { return true; }
-    virtual bool hasUseExternalChecks(void) const override { return false; }
-    virtual bool hasPrintWitnessGraph(void) const override { return false; }
-    virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
-    virtual bool hasInstrumentVerbose(void) const override { return false; }
-    virtual const char *getName(void) const override { return "Lowfat"; }
+  virtual IPKind getInstrumentationPolicy(void) const override {
+    return IPKind::beforeOutflow;
+  }
+  virtual IMKind getInstrumentationMechanism(void) const override {
+    return IMKind::lowfat;
+  }
+  virtual WSKind getWitnessStrategy(void) const override {
+    return WSKind::after_inflow;
+  }
+  virtual MIMode getMIMode(void) const override {
+    return MIMode::GENERATE_CHECKS;
+  }
+  virtual bool hasUseFilters(void) const override { return true; }
+  virtual bool hasUseExternalChecks(void) const override { return false; }
+  virtual bool hasPrintWitnessGraph(void) const override { return false; }
+  virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
+  virtual bool hasInstrumentVerbose(void) const override { return false; }
+  virtual const char *getName(void) const override { return "Lowfat"; }
 };
 
 Config *Config::create(ConfigKind k) {
@@ -526,7 +526,8 @@ bool GlobalConfig::hasUseNoop(void) {
 std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {
   auto GlobalCfg = std::unique_ptr<GlobalConfig>(
       new GlobalConfig(Config::create(ConfigKindOpt), M));
-  DEBUG(dbgs() << "Creating MemInstrument Config:\n"; GlobalCfg->dump(dbgs()););
+  LLVM_DEBUG(dbgs() << "Creating MemInstrument Config:\n";
+             GlobalCfg->dump(dbgs()););
   return GlobalCfg;
 }
 
