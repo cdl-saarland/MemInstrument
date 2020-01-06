@@ -7,6 +7,7 @@
 #include "meminstrument/Config.h"
 
 #include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/LowfatMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/NoopMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
@@ -38,6 +39,7 @@ enum class ConfigKind {
   rt_stat,
   external_only,
   noop,
+  lowfat,
   default_val,
 };
 
@@ -53,6 +55,8 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(ConfigKind::noop, "noop",
                    "noop instrumentation that just adds runtime overheads")),
+    cl::values(clEnumValN(ConfigKind::lowfat, "lowfat",
+                          "low fat pointer based instrumentation")),
     cl::cat(MemInstrumentCat), cl::init(ConfigKind::default_val));
 
 enum class IMKind {
@@ -60,6 +64,7 @@ enum class IMKind {
   splay,
   rt_stat,
   noop,
+  lowfat,
   default_val,
 };
 
@@ -75,6 +80,8 @@ cl::opt<IMKind>
           cl::values(
               clEnumValN(IMKind::rt_stat, "rt_stat",
                          "only instrument for collecting run-time statistics")),
+          cl::values(clEnumValN(IMKind::lowfat, "lowfat",
+                                "use low fat pointers for instrumentation")),
           cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
 
 InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
@@ -88,6 +95,8 @@ InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
     return new RuntimeStatMechanism(cfg);
   case IMKind::noop:
     return new NoopMechanism(cfg);
+  case IMKind::lowfat:
+    return new LowfatMechanism(cfg);
   case IMKind::default_val:
     return nullptr;
   }
@@ -407,6 +416,31 @@ public:
   virtual const char *getName(void) const override { return "Noop"; }
 };
 
+/// A configuration to perform instrumentation based on low fat pointers
+class LowfatConfig : public Config {
+public:
+    virtual ~LowfatConfig(void) {}
+
+    virtual IPKind getInstrumentationPolicy(void) const override {
+        return IPKind::beforeOutflow;
+    }
+    virtual IMKind getInstrumentationMechanism(void) const override {
+        return IMKind::lowfat;
+    }
+    virtual WSKind getWitnessStrategy(void) const override {
+        return WSKind::after_inflow;
+    }
+    virtual MIMode getMIMode(void) const override {
+        return MIMode::GENERATE_CHECKS;
+    }
+    virtual bool hasUseFilters(void) const override { return true; }
+    virtual bool hasUseExternalChecks(void) const override { return false; }
+    virtual bool hasPrintWitnessGraph(void) const override { return false; }
+    virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
+    virtual bool hasInstrumentVerbose(void) const override { return false; }
+    virtual const char *getName(void) const override { return "Lowfat"; }
+};
+
 Config *Config::create(ConfigKind k) {
   switch (k) {
   case ConfigKind::splay:
@@ -417,6 +451,8 @@ Config *Config::create(ConfigKind k) {
     return new NoopConfig();
   case ConfigKind::external_only:
     return new ExternalOnlyConfig();
+  case ConfigKind::lowfat:
+    return new LowfatConfig();
   case ConfigKind::default_val:
     return new DEFAULT_CONFIG();
   }
