@@ -11,19 +11,19 @@
 
 ### 1. Setting up LLVM
 
-Start in your project root folder. Clone the [LLVM sources](https://github.com/llvm-mirror/llvm) as `llvm`. Next, clone the [Clang sources](https://github.com/llvm-mirror/clang) into `llvm/tools`. Make sure to checkout the same branch/commit in both of these repositories (currently supported: `release_60`).
+Start in your project root folder. Clone the [LLVM sources from the monorepo](https://github.com/llvm/llvm-project) as `llvm-project` and checkout the required branch (currently supported: `release/9.x`).
 
 ### 2. Setting up meminstrument
 
-Clone this repository into `llvm/projects`.
+Clone this repository and the `lifetimekiller` pass into `llvm-project/llvm/projects`.
+
 
 ### 3. Building LLVM+Clang+meminstrument
-
 
 Create a new folder `build` in your project root folder and `cd` into it. Create build files via `cmake` with the following command:
 
 ```
-cmake -G <build tool> <additional flags> ../llvm/
+cmake -G <build tool> -DLLVM_ENABLE_PROJECTS='clang' <additional flags> ../llvm-project/llvm/
 ```
 
 where `<build tool>` is your preferred build tool (e.g. `Ninja`).
@@ -36,6 +36,7 @@ Interesting additional flags for development are:
   * `-DCMAKE_BUILD_TYPE=Debug` to enable a debug build for better error messages and debugging capabilities
   * `-DLLVM_PARALLEL_LINK_JOBS=<n>` to limit the number of concurrent link jobs to `<n>`. This should be rather low for systems with less than 8GB of RAM as linking `clang` can require considerable amounts of memory (especially when building a debug build)
   * `-DLLVM_TARGETS_TO_BUILD=X86` to reduce build time by building only the X86 backend
+  * `-DCMAKE_INSTALL_PREFIX=</path/to/install/directory>` to specify an installation directory for llvm
 
 When the build files are generated, use your build system to build the project (e.g. by typing `ninja`). This might take a while.
 
