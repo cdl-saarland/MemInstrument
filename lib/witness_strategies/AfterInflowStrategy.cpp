@@ -70,7 +70,8 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
       break;
     default:
       ++NumUnsupportedConstExprs;
-      LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n" << *CE << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n"
+                        << *CE << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -180,7 +181,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   Instruction *EntryLoc = nullptr;
   // Skip instructions that we might have inserted for byval arguments
   for (auto &I : EntryBB) {
-    if (! hasByvalHandling(&I)) {
+    if (!hasByvalHandling(&I)) {
       EntryLoc = &I;
       break;
     }
@@ -207,7 +208,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
   ++NumUnsupportedValOps;
   LLVM_DEBUG(dbgs() << "Unsupported value operand:\n"
-               << *Target->getInstrumentee() << "\n\n";);
+                    << *Target->getInstrumentee() << "\n\n";);
   _CFG.noteError();
   return;
 }
@@ -233,7 +234,8 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     if (ShareBoundsOpt) {
       Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
     } else {
-      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(), *Node->Target);
+      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(),
+                           *Node->Target);
     }
     return;
   }

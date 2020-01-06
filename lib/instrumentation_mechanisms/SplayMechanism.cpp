@@ -68,8 +68,8 @@ void SplayMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
   auto *SW = dyn_cast<SplayWitness>(&W);
   assert(SW != nullptr);
 
-  Target.setBoundWitness(
-      std::shared_ptr<SplayWitness>(new SplayWitness(SW->WitnessValue, Target.getLocation())));
+  Target.setBoundWitness(std::shared_ptr<SplayWitness>(
+      new SplayWitness(SW->WitnessValue, Target.getLocation())));
   ++SplayNumWitnessLookups;
 }
 
@@ -113,18 +113,21 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
                      ? ConstantInt::get(SizeType, Target.getAccessSize())
                      : Target.getAccessSizeVal();
     if (Verbose) {
-      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size,
-                 NameVal});
+      insertCall(Builder, CheckDereferenceFunction,
+                 std::vector<Value *>{WitnessVal, CastVal, Size, NameVal});
     } else {
-      insertCall(Builder, CheckDereferenceFunction, std::vector<Value*>{WitnessVal, CastVal, Size});
+      insertCall(Builder, CheckDereferenceFunction,
+                 std::vector<Value *>{WitnessVal, CastVal, Size});
     }
     ++SplayNumDereferenceChecks;
   } else {
     assert(Target.is(ITarget::Kind::Invariant));
     if (Verbose) {
-      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal, NameVal});
+      insertCall(Builder, CheckInboundsFunction,
+                 std::vector<Value *>{WitnessVal, CastVal, NameVal});
     } else {
-      insertCall(Builder, CheckInboundsFunction, std::vector<Value*>{WitnessVal, CastVal});
+      insertCall(Builder, CheckInboundsFunction,
+                 std::vector<Value *>{WitnessVal, CastVal});
     }
     ++SplayNumInboundsChecks;
   }
@@ -142,12 +145,13 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
 
   auto *WitnessVal = Witness->WitnessValue;
 
-  const auto key = std::pair<const Instruction*, Value*>(Target.getLocation(), Target.getInstrumentee());
-  const auto& lookup = MaterializedBounds.find(key);
+  const auto key = std::pair<const Instruction *, Value *>(
+      Target.getLocation(), Target.getInstrumentee());
+  const auto &lookup = MaterializedBounds.find(key);
   if (lookup != MaterializedBounds.end()) {
-    auto& map_value = lookup->second;
-    Value* lower = map_value.first;
-    Value* upper = map_value.second;
+    auto &map_value = lookup->second;
+    Value *lower = map_value.first;
+    Value *upper = map_value.second;
     Witness->LowerBound = lower;
     Witness->UpperBound = upper;
     return;
@@ -166,7 +170,9 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
     Witness->LowerBound = LowerVal;
   }
 
-  MaterializedBounds.emplace(std::make_pair(Target.getLocation(), Target.getInstrumentee()), std::make_pair(Witness->LowerBound, Witness->UpperBound));
+  MaterializedBounds.emplace(
+      std::make_pair(Target.getLocation(), Target.getInstrumentee()),
+      std::make_pair(Witness->LowerBound, Witness->UpperBound));
 
   ++SplayNumBounds;
 }
@@ -223,7 +229,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
 
-  ExtCheckCounterFunction = insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
+  ExtCheckCounterFunction =
+      insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
 
   VerboseFailFunction =
       insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
@@ -270,9 +277,11 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
       ss << GV;
       auto *Arr = insertStringLiteral(M, ss.str());
       auto *Str = insertCast(PtrArgType, Arr, Builder);
-      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+      insertCall(Builder, GlobalAllocFunction,
+                 std::vector<Value *>{PtrArg, Size, Str});
     } else {
-      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
+      insertCall(Builder, GlobalAllocFunction,
+                 std::vector<Value *>{PtrArg, Size});
     }
     ++SplayNumGlobals;
   }
@@ -282,7 +291,8 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
     if (hasNoInstrument(&F) || F.isIntrinsic()) {
       continue;
     }
-    LLVM_DEBUG(dbgs() << "Creating splay init code for Function `" << F << "'\n");
+    LLVM_DEBUG(dbgs() << "Creating splay init code for Function `" << F
+                      << "'\n");
     auto *PtrArg = insertCast(PtrArgType, &F, Builder);
 
     auto *Size = ConstantInt::get(SizeType, 1);
@@ -293,9 +303,11 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
       ss << "Function " << F.getName();
       auto *Arr = insertStringLiteral(M, ss.str());
       auto *Str = insertCast(PtrArgType, Arr, Builder);
-      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+      insertCall(Builder, GlobalAllocFunction,
+                 std::vector<Value *>{PtrArg, Size, Str});
     } else {
-      insertCall(Builder, GlobalAllocFunction, std::vector<Value*>{PtrArg, Size});
+      insertCall(Builder, GlobalAllocFunction,
+                 std::vector<Value *>{PtrArg, Size});
     }
     ++SplayNumFunctions;
   }
@@ -312,8 +324,7 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   Value *Size = ConstantInt::get(SizeType, sz);
 
   if (AI->isArrayAllocation()) {
-    Size = Builder.CreateMul(AI->getArraySize(), Size,
-                             "", /*hasNUW*/ true,
+    Size = Builder.CreateMul(AI->getArraySize(), Size, "", /*hasNUW*/ true,
                              /*hasNSW*/ false);
   }
 
@@ -323,9 +334,9 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
     ss << *AI;
     auto *Arr = insertStringLiteral(M, ss.str());
     auto *Str = insertCast(PtrArgType, Arr, Builder);
-    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+    insertCall(Builder, AllocFunction, std::vector<Value *>{PtrArg, Size, Str});
   } else {
-    insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
+    insertCall(Builder, AllocFunction, std::vector<Value *>{PtrArg, Size});
   }
   ++SplayNumAllocas;
 }
@@ -352,7 +363,7 @@ void SplayMechanism::setupInitCall(Module &M) {
 #define ADD_TIME_VAL(i, x)                                                     \
   IndexVal = ConstantInt::get(SizeType, i);                                    \
   TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time());               \
-  insertCall(Builder, ConfigFunction, std::vector<Value*>{IndexVal, TimeVal});
+  insertCall(Builder, ConfigFunction, std::vector<Value *>{IndexVal, TimeVal});
 
   ADD_TIME_VAL(0, DerefCheck)
   ADD_TIME_VAL(1, InvarCheck)
@@ -382,8 +393,8 @@ bool SplayMechanism::initialize(llvm::Module &M) {
     for (auto &Arg : F.args()) {
       if (Arg.hasByValAttr()) {
         // byval parameters are implicitly copied
-        LLVM_DEBUG(dbgs() << "Creating splay init code for byval Argument`" << Arg
-                     << "'\n");
+        LLVM_DEBUG(dbgs() << "Creating splay init code for byval Argument`"
+                          << Arg << "'\n");
         auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
 
         if (auto *I = dyn_cast<Instruction>(PtrArg)) {
@@ -404,10 +415,12 @@ bool SplayMechanism::initialize(llvm::Module &M) {
           if (auto *I = dyn_cast<Instruction>(Str)) {
             setByvalHandling(I);
           }
-          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size, Str});
+          auto *Call = insertCall(Builder, AllocFunction,
+                                  std::vector<Value *>{PtrArg, Size, Str});
           setByvalHandling(Call);
         } else {
-          auto *Call = insertCall(Builder, AllocFunction, std::vector<Value*>{PtrArg, Size});
+          auto *Call = insertCall(Builder, AllocFunction,
+                                  std::vector<Value *>{PtrArg, Size});
           setByvalHandling(Call);
         }
         ++SplayNumByValArgs;
@@ -433,8 +446,7 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
   IRBuilder<> builder(Phi);
 
   // auto Name = Phi->getName() + "_witness";
-  auto *NewPhi =
-      builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
+  auto *NewPhi = builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi, Phi));
   ++SplayNumWitnessPhis;
@@ -463,8 +475,7 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   auto *FalseVal = cast<SplayWitness>(FalseWitness.get())->WitnessValue;
 
   // auto Name = Sel->getName() + "_witness";
-  auto *NewSel =
-      builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal);
+  auto *NewSel = builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal);
 
   Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel, Sel));
   ++SplayNumWitnessSelects;

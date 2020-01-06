@@ -93,8 +93,11 @@ private:
   llvm::Type *PtrArgType = nullptr;
   llvm::Type *SizeType = nullptr;
 
-  // Map mapping location/instrumentee tuples to materialized lower and upper bounds
-  std::map<const std::pair<const llvm::Instruction*, const llvm::Value*>, std::pair<llvm::Value*, llvm::Value *>> MaterializedBounds;
+  // Map mapping location/instrumentee tuples to materialized lower and upper
+  // bounds
+  std::map<const std::pair<const llvm::Instruction *, const llvm::Value *>,
+           std::pair<llvm::Value *, llvm::Value *>>
+      MaterializedBounds;
 
   void initTypes(llvm::LLVMContext &Ctx);
   void insertFunctionDeclarations(llvm::Module &M);

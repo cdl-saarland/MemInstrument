@@ -10,8 +10,8 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/pass/CheckGeneration.h"
-#include "meminstrument/pass/ExternalChecksInterface.h"
 #include "meminstrument/pass/DummyExternalChecksPass.h"
+#include "meminstrument/pass/ExternalChecksInterface.h"
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/ITargetFilters.h"
 #include "meminstrument/pass/ITargetGathering.h"
@@ -36,12 +36,12 @@ using namespace llvm;
 namespace {
 cl::opt<bool>
     NoCheckOpt("mi-no-checkopt",
-                cl::desc("run the instrumentation and PMDA but not checkopt"),
-                         cl::init(false));
+               cl::desc("run the instrumentation and PMDA but not checkopt"),
+               cl::init(false));
 cl::opt<bool>
     NoPMDA("mi-no-pmda",
-               cl::desc("run the instrumentation but neither PMDA nor checkopt"),
-               cl::init(false));
+           cl::desc("run the instrumentation but neither PMDA nor checkopt"),
+           cl::init(false));
 } // namespace
 
 #endif
@@ -81,7 +81,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   if (M.getName().endswith("tools/timeit.c")) {
     // small hack to avoid unnecessary work in the lnt tests
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
-                 << "`\n";);
+                      << "`\n";);
     return false;
   }
 
@@ -93,16 +93,16 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     return true;
 
   LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
-        dbgs() << "\nEnd of dumped module.\n";);
+             dbgs() << "\nEnd of dumped module.\n";);
 
   labelAccesses(M);
 
-  LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `" << M.getName().str()
-               << "`\n";);
+  LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `"
+                    << M.getName().str() << "`\n";);
 
   ExternalChecksInterface *ECP = nullptr;
 #if MEMINSTRUMENT_USE_PICO
-  if (!(NoPMDA || NoCheckOpt)){
+  if (!(NoPMDA || NoCheckOpt)) {
     ECP = &getAnalysis<checkoptimizer::CheckOptimizerPass>();
   }
 #else
@@ -110,15 +110,17 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 #endif
 
   if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-    LLVM_DEBUG(dbgs() << "MemInstrumentPass: running preparatory code for external "
-                    "checks\n";);
+    LLVM_DEBUG(
+        dbgs() << "MemInstrumentPass: running preparatory code for external "
+                  "checks\n";);
     ECP->prepareModule(*this, M);
   }
 
   LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
-        dbgs() << "\nEnd of dumped module.\n";);
+             dbgs() << "\nEnd of dumped module.\n";);
 
-  LLVM_DEBUG(dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
+  LLVM_DEBUG(
+      dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
   auto &IM = CFG->getInstrumentationMechanism();
   IM.initialize(M);
@@ -134,15 +136,15 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     }
     if (F.isVarArg()) {
       ++NumVarArgs;
-      LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip function `" << F.getName().str()
-                   << "` because of varargs\n";);
+      LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip function `"
+                        << F.getName().str() << "` because of varargs\n";);
       continue;
     }
 
     auto &Targets = TargetMap[&F];
 
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing function `"
-                 << F.getName().str() << "`\n";);
+                      << F.getName().str() << "`\n";);
 
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: gathering ITargets\n";);
 
@@ -152,7 +154,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       continue;
 
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: filtering ITargets with internal "
-                    "filters\n";);
+                         "filters\n";);
 
     filterITargets(*CFG, this, Targets, F);
 
@@ -174,7 +176,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     auto &Targets = TargetMap[&F];
 
     if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-      LLVM_DEBUG(dbgs() << "MemInstrumentPass: updating ITargets with external pass\n";);
+      LLVM_DEBUG(
+          dbgs()
+              << "MemInstrumentPass: updating ITargets with external pass\n";);
       ECP->updateITargetsForFunction(*this, Targets, F);
 
       DEBUG_ALSO_WITH_TYPE(
@@ -184,7 +188,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
                : Targets) { dbgs() << "  " << *Target << "\n"; });
     }
 
-    assert(validateITargets(getAnalysis<DominatorTreeWrapperPass>(F).getDomTree(), Targets));
+    assert(validateITargets(
+        getAnalysis<DominatorTreeWrapperPass>(F).getDomTree(), Targets));
 
     if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
       continue;
@@ -197,8 +202,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       continue;
 
     if (CFG->hasUseExternalChecks() && ECP != nullptr) {
-      LLVM_DEBUG(
-          dbgs() << "MemInstrumentPass: generating external checks'\n";);
+      LLVM_DEBUG(dbgs() << "MemInstrumentPass: generating external checks'\n";);
       ECP->materializeExternalChecksForFunction(*this, Targets, F);
     }
 

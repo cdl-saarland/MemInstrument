@@ -164,8 +164,8 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
   case Instruction::AtomicCmpXchg:
   case Instruction::AtomicRMW:
     // TODO implement
-    LLVM_DEBUG(dbgs() << "skipping unimplemented instruction " << Location->getName()
-                 << "\n";);
+    LLVM_DEBUG(dbgs() << "skipping unimplemented instruction "
+                      << Location->getName() << "\n";);
     break;
 
   default:

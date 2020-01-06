@@ -26,7 +26,7 @@ using namespace meminstrument;
 #define BYVAL_HANDLING_MD "byval_handling"
 
 namespace {
-bool hasMDStrImpl(const char* ref, MDNode *N) {
+bool hasMDStrImpl(const char *ref, MDNode *N) {
   if (!N || N->getNumOperands() < 1) {
     return false;
   }
