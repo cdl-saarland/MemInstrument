@@ -34,11 +34,7 @@
 
 namespace meminstrument {
 
-void setNoInstrument(llvm::GlobalObject *O);
-
-void setNoInstrument(llvm::Constant *C);
-
-void setNoInstrument(llvm::Instruction *I);
+void setNoInstrument(llvm::Value *V);
 
 void setByvalHandling(llvm::Instruction *I);
 

@@ -119,7 +119,7 @@ void RuntimeStatMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-llvm::Constant *RuntimeStatMechanism::getFailFunction(void) const {
+llvm::Value *RuntimeStatMechanism::getFailFunction(void) const {
   llvm_unreachable("FailFunction calls are not supported by this mechanism!");
   return nullptr;
 }
@@ -216,9 +216,9 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
       new GlobalVariable(M, SizeType, false, GlobalValue::InternalLinkage,
                          Constant::getNullValue(SizeType), "MI_StatID");
 
-  llvm::Constant *InitFun =
+  llvm::Value *InitFun =
       insertFunDecl(M, "__mi_stat_init", SizeType, SizeType);
-  llvm::Constant *InitEntryFun = insertFunDecl(
+  llvm::Value *InitEntryFun = insertFunDecl(
       M, "__mi_stat_init_entry", VoidTy, SizeType, SizeType, StringType);
 
   auto Fun =

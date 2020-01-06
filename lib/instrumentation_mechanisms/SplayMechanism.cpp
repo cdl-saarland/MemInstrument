@@ -171,15 +171,15 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
   ++SplayNumBounds;
 }
 
-llvm::Constant *SplayMechanism::getFailFunction(void) const {
+llvm::Value *SplayMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 
-llvm::Constant *SplayMechanism::getExtCheckCounterFunction(void) const {
+llvm::Value *SplayMechanism::getExtCheckCounterFunction(void) const {
   return ExtCheckCounterFunction;
 }
 
-llvm::Constant *SplayMechanism::getVerboseFailFunction(void) const {
+llvm::Value *SplayMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;
 }
 

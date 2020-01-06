@@ -54,11 +54,11 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Constant *getFailFunction(void) const override;
+  virtual llvm::Value *getFailFunction(void) const override;
 
-  virtual llvm::Constant *getExtCheckCounterFunction(void) const override;
+  virtual llvm::Value *getExtCheckCounterFunction(void) const override;
 
-  virtual llvm::Constant *getVerboseFailFunction(void) const override;
+  virtual llvm::Value *getVerboseFailFunction(void) const override;
 
   virtual std::shared_ptr<Witness>
   insertWitnessPhi(ITarget &Target) const override;
@@ -76,18 +76,18 @@ public:
   virtual const char *getName(void) const override { return "Splay"; }
 
 private:
-  llvm::Constant *GlobalAllocFunction = nullptr;
-  llvm::Constant *AllocFunction = nullptr;
-  llvm::Constant *CheckInboundsFunction = nullptr;
-  llvm::Constant *CheckDereferenceFunction = nullptr;
-  llvm::Constant *GetUpperBoundFunction = nullptr;
-  llvm::Constant *GetLowerBoundFunction = nullptr;
-  llvm::Constant *FailFunction = nullptr;
-  llvm::Constant *ExtCheckCounterFunction = nullptr;
-  llvm::Constant *VerboseFailFunction = nullptr;
-  llvm::Constant *WarningFunction = nullptr;
+  llvm::Value *GlobalAllocFunction = nullptr;
+  llvm::Value *AllocFunction = nullptr;
+  llvm::Value *CheckInboundsFunction = nullptr;
+  llvm::Value *CheckDereferenceFunction = nullptr;
+  llvm::Value *GetUpperBoundFunction = nullptr;
+  llvm::Value *GetLowerBoundFunction = nullptr;
+  llvm::Value *FailFunction = nullptr;
+  llvm::Value *ExtCheckCounterFunction = nullptr;
+  llvm::Value *VerboseFailFunction = nullptr;
+  llvm::Value *WarningFunction = nullptr;
 
-  llvm::Constant *ConfigFunction = nullptr;
+  llvm::Value *ConfigFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

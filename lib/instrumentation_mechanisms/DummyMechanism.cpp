@@ -85,7 +85,7 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-llvm::Constant *DummyMechanism::getFailFunction(void) const {
+llvm::Value *DummyMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 

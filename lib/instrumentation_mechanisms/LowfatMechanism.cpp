@@ -111,11 +111,11 @@ void LowfatMechanism::materializeBounds(ITarget &Target) {
     ++LowfatNumBounds;
 }
 
-llvm::Constant *LowfatMechanism::getFailFunction(void) const {
+llvm::Value *LowfatMechanism::getFailFunction(void) const {
     return FailFunction;
 }
 
-llvm::Constant *LowfatMechanism::getVerboseFailFunction(void) const {
+llvm::Value *LowfatMechanism::getVerboseFailFunction(void) const {
     return VerboseFailFunction;
 }
 

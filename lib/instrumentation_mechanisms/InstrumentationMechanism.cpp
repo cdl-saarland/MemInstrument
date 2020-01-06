@@ -109,33 +109,33 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
   return GV;
 }
 
-llvm::Constant *InstrumentationMechanism::insertFunDecl_impl(
+llvm::Value *InstrumentationMechanism::insertFunDecl_impl(
     std::vector<llvm::Type *> &Vec, llvm::Module &M, llvm::StringRef Name,
     llvm::AttributeList AList, llvm::Type *RetTy) {
   auto *FunTy = FunctionType::get(RetTy, Vec, /*isVarArg*/ false);
-  auto *Res = M.getOrInsertFunction(Name, FunTy, AList);
+  auto *Res = M.getOrInsertFunction(Name, FunTy, AList).getCallee();
   setNoInstrument(Res);
   return Res;
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
                                const std::vector<llvm::Value*>&& args, const llvm::Twine& Name) {
   auto *Res = B.CreateCall(Fun, args);
   setNoInstrument(Res);
   return Res;
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
                                  llvm::Value* arg, const llvm::Twine& Name) {
   return insertCall(B, Fun, std::vector<Value*>{arg}, Name);
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
                                const std::vector<llvm::Value*>&& args) {
   return insertCall(B, Fun, std::move(args), "inserted_call");
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Constant *Fun,
+llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
                                  llvm::Value* arg) {
   return insertCall(B, Fun, arg, "inserted_call");
 }

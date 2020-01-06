@@ -11,6 +11,7 @@
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "llvm/Transforms/Scalar.h"

@@ -40,7 +40,7 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Constant *getFailFunction(void) const override;
+  virtual llvm::Value *getFailFunction(void) const override;
 
   virtual std::shared_ptr<Witness>
   insertWitnessPhi(ITarget &Target) const override;
@@ -74,7 +74,7 @@ private:
 
   llvm::Type *SizeType;
 
-  llvm::Constant *StatIncFunction = nullptr;
+  llvm::Value *StatIncFunction = nullptr;
 
   llvm::Constant *StatTableID = nullptr;
 
