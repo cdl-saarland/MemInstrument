@@ -80,7 +80,7 @@ endif()
 find_path(MEMINSTRUMENT_RT_LIB_PATH libsplay.a)
 
 if(NOT MEMINSTRUMENT_RT_LIB_PATH)
-  message(STATUS "Cannot find meminstrument runtime libs")
+  message(WARNING "Cannot find meminstrument runtime libs")
 else()
   set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
   set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/LLVMmeminstrument.so")
