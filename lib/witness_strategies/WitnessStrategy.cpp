@@ -1,6 +1,6 @@
 //===---------------------------------------------------------------------===///
 ///
-/// \file TODO doku
+/// \file See corresponding header for more descriptions.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -40,6 +40,7 @@ void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
   auto &WG = Node->Graph;
   auto *NewNode = getInternalNode(WG, Req, Loc);
   NewNode->HasAllRequirements = true;
-  if (NewNode != Node) // FIXME?
+  if (NewNode != Node) {
     Node->addRequirement(NewNode);
+  }
 }

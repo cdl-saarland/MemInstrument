@@ -1,12 +1,7 @@
-//===------------- pass/Util.cpp -- MemSafety Instrumentation -------------===//
-//
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
 //===---------------------------------------------------------------------===///
-/// \file TODO doku
+///
+/// \file  See corresponding header for more descriptions.
+///
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/pass/Util.h"

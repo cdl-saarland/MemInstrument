@@ -1,10 +1,3 @@
-//===------- meminstrument/pass/Witness.h -- MemSafety Instr. -*- C++ -*---===//
-//
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
 //===----------------------------------------------------------------------===//
 ///
 /// \file TODO doku
@@ -19,7 +12,11 @@
 
 namespace meminstrument {
 
-/// TODO document
+/// A Witness is the information that an instrumentation needs to verify that
+/// an access to a pointer is valid. This is typically a set of LLVM values that
+/// hold some kind of bounds information.
+/// Witnesses are closely related to InstructionMechanisms and should be
+/// implemented with them.
 struct Witness {
 public:
   /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)

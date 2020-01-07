@@ -1,10 +1,3 @@
-//===------ meminstrument/pass/ITarget.h -- MemSafety Instr. -*- C++ -*----===//
-//
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
 //===----------------------------------------------------------------------===//
 ///
 /// \file TODO doku
@@ -44,14 +37,16 @@ size_t getNumValidITargets(const ITargetVector &IV);
 /// location, return true iff this is the case
 bool validateITargets(const llvm::DominatorTree &dt, const ITargetVector &IV);
 
+/// ITargets are indicators that a Value needs some treatment at a specific
+/// location. The Kind specifies, which treatment.
 class ITarget {
 public:
   enum class Kind {
-    Bounds,
-    ConstSizeCheck,
-    VarSizeCheck,
-    Intermediate,
-    Invariant,
+    Bounds,         /// explicit bounds need to be available
+    ConstSizeCheck, /// inbounds check with a compile-time constant size
+    VarSizeCheck,   /// inbounds check with a compile-time variable size
+    Intermediate,   /// witnesses need to be propagated
+    Invariant,      /// an invariant needs to be checked
   };
 
   bool is(Kind k) const;
