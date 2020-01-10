@@ -34,13 +34,12 @@ using namespace llvm;
 
 #if MEMINSTRUMENT_USE_PICO
 namespace {
-cl::opt<bool>
-    NoCheckOpt("mi-no-checkopt",
-               cl::desc("run the instrumentation and PMDA but not checkopt"),
-               cl::init(false));
+cl::opt<bool> NoPICO("mi-no-pico",
+                     cl::desc("run the instrumentation and PMDA but not PICO"),
+                     cl::init(false));
 cl::opt<bool>
     NoPMDA("mi-no-pmda",
-           cl::desc("run the instrumentation but neither PMDA nor checkopt"),
+           cl::desc("run the instrumentation but neither PMDA nor PICO"),
            cl::init(false));
 } // namespace
 
@@ -102,7 +101,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
   ExternalChecksInterface *ECP = nullptr;
 #if MEMINSTRUMENT_USE_PICO
-  if (!(NoPMDA || NoCheckOpt)) {
+  if (!(NoPMDA || NoPICO)) {
     ECP = &getAnalysis<checkoptimizer::CheckOptimizerPass>();
   }
 #else
@@ -227,7 +226,7 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
     return;
   }
   AU.addRequired<pmda::PMDA>();
-  if (NoCheckOpt) {
+  if (NoPICO) {
     return;
   }
   AU.addRequired<checkoptimizer::CheckOptimizerPass>();

@@ -31,17 +31,17 @@ endif()
 include_directories(BEFORE ${LIFETIMEKILLER_BASE}/include)
 
 if(MEMINSTRUMENT_USE_PICO)
-  message(STATUS "Looking for PMDA + CheckOptimizer...")
+  message(STATUS "Looking for PMDA + PICO...")
 
   find_path(
-    CO_BASE "include/CheckOptimizer/CheckOptimizerPass.h"
+    PICO_BASE "include/CheckOptimizer/CheckOptimizerPass.h"
     PATHS "${LLVM_MAIN_SRC_DIR}/projects"
     PATH_SUFFIXES "/CheckOptimizer")
 
-  if(CO_BASE)
-    message(STATUS "Found CheckOptimizer in ${CO_BASE}")
+  if(PICO_BASE)
+    message(STATUS "Found PICO in ${PICO_BASE}")
   else()
-    message(FATAL_ERROR "CheckOptimizer not found ${CO_BASE}")
+    message(FATAL_ERROR "PICO not found ${PICO_BASE}")
   endif()
 
   find_path(
@@ -56,7 +56,7 @@ if(MEMINSTRUMENT_USE_PICO)
   endif()
 
   include_directories(
-    BEFORE ${PMDA_BASE}/include ${CO_BASE}/include
+    BEFORE ${PMDA_BASE}/include ${PICO_BASE}/include
     ${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include ${ISL_INCLUDE_DIR})
 
 endif(MEMINSTRUMENT_USE_PICO)

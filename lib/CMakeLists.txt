@@ -46,7 +46,7 @@ function(setup_meminstrument_library name)
     target_include_directories(
       ${name} BEFORE
       PUBLIC
-        $<BUILD_INTERFACE:${CO_BASE}/include>
+        $<BUILD_INTERFACE:${PICO_BASE}/include>
         $<BUILD_INTERFACE:${PMDA_BASE}/include>
         $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}/include>
         $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include>
