@@ -49,7 +49,7 @@ function(setup_meminstrument_library name)
         $<BUILD_INTERFACE:${PICO_BASE}/include>
         $<BUILD_INTERFACE:${PMDA_BASE}/include>
         $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}/include>
-        $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include>
+        $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/../PICO/include>
     )
   endif()
 
