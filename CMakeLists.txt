@@ -34,9 +34,9 @@ if(MEMINSTRUMENT_USE_PICO)
   message(STATUS "Looking for PMDA + PICO...")
 
   find_path(
-    PICO_BASE "include/CheckOptimizer/CheckOptimizerPass.h"
+    PICO_BASE "include/PICO/PICO.h"
     PATHS "${LLVM_MAIN_SRC_DIR}/projects"
-    PATH_SUFFIXES "/CheckOptimizer")
+    PATH_SUFFIXES "/PICO")
 
   if(PICO_BASE)
     message(STATUS "Found PICO in ${PICO_BASE}")
@@ -57,7 +57,7 @@ if(MEMINSTRUMENT_USE_PICO)
 
   include_directories(
     BEFORE ${PMDA_BASE}/include ${PICO_BASE}/include
-    ${MEMINSTRUMENT_BINARY_DIR}/../CheckOptimizer/include ${ISL_INCLUDE_DIR})
+    ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
 
 endif(MEMINSTRUMENT_USE_PICO)
 

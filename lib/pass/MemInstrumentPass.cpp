@@ -24,7 +24,7 @@
 #include "meminstrument/pass/Util.h"
 
 #if MEMINSTRUMENT_USE_PICO
-#include "CheckOptimizer/CheckOptimizerPass.h"
+#include "PICO/PICO.h"
 #include "PMDA/PMDA.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #endif
@@ -102,7 +102,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   ExternalChecksInterface *ECP = nullptr;
 #if MEMINSTRUMENT_USE_PICO
   if (!(NoPMDA || NoPICO)) {
-    ECP = &getAnalysis<checkoptimizer::CheckOptimizerPass>();
+    ECP = &getAnalysis<pico::PICO>();
   }
 #else
   ECP = &getAnalysis<DummyExternalChecksPass>();
@@ -229,7 +229,7 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
   if (NoPICO) {
     return;
   }
-  AU.addRequired<checkoptimizer::CheckOptimizerPass>();
+  AU.addRequired<pico::PICO>();
 #else
   AU.addRequired<DummyExternalChecksPass>();
 #endif

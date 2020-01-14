@@ -17,7 +17,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #if MEMINSTRUMENT_USE_PICO
-#include "CheckOptimizer/CheckOptimizerPass.h"
+#include "PICO/PICO.h"
 #endif
 
 using namespace meminstrument;

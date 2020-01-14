@@ -41,7 +41,7 @@ function(setup_meminstrument_library name)
   # found)
   target_link_libraries(${name} PUBLIC lifetimekiller)
   if(MEMINSTRUMENT_USE_PICO)
-    target_link_libraries(${name} PUBLIC PMDA checkoptimizer)
+    target_link_libraries(${name} PUBLIC PMDA PICO)
 
     target_include_directories(
       ${name} BEFORE
