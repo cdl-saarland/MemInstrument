@@ -2,7 +2,7 @@
 // RUN: %t0 2> %t1.log
 // RUN: grep -e "\.c - l 12 - c 10 - unmarked store .* : 20" %t1.log
 // RUN: grep -e "\.c - l 18 - c 12 - unmarked load .* : 20" %t1.log
-// REQUIRES: no_pmda
+// REQUIRES: no_pico
 // XFAIL: *
 
 int main(void) {

@@ -17,9 +17,9 @@ def is_set(option):
     return option.lower() in ['1', 'on']
 
 if is_set('@MEMINSTRUMENT_USE_PICO@'):
-    config.available_features.add("pmda")
+    config.available_features.add("pico")
 else:
-    config.available_features.add("no_pmda")
+    config.available_features.add("no_pico")
 
 if is_set('@LLVM_ENABLE_ASSERTIONS@'):
   config.available_features.add("asserts")

@@ -4,7 +4,7 @@
 ; RUN: fgrep "generating external checks" %t2.log
 ; RUN: %clink -ldl -l:libsplay.a -o %t3 %t1.ll
 ; RUN: %t3
-; REQUIRES: no_pmda
+; REQUIRES: no_pico
 
 define i32 @main() {
 test_bb:
