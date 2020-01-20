@@ -2,6 +2,7 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=filteritargets -debug-only meminstrument-itargetfilter %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "if.then::foo" %t1.log
 ; RUN: %not fgrep "if.then::foo" %t2.log
+; REQUIRES: asserts
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"

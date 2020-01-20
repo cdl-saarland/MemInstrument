@@ -6,6 +6,7 @@
 ; RUN: fgrep "<dereference check with constant size 8B for x at entry::[store,7]>" %t.log
 ; RUN: fgrep "<invariant check for i1 at entry::[store,7]>" %t.log
 ; RUN: fgrep "<invariant check for i2 at entry::call>" %t.log
+; REQUIRES: asserts
 
 ; ModuleID = 'test_subobj.o0.ll'
 source_filename = "test_subobj.c"

@@ -1,4 +1,5 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
+; REQUIRES: asserts
 
 %struct.List = type { %struct.ListItem* }
 %struct.ListItem = type { %struct.ListItem*, i8* }

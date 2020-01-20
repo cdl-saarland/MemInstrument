@@ -13,10 +13,18 @@ config.meminstrument_test_root = "@LLVM_SOURCE_DIR@/projects/meminstrument/test"
 
 config.substitutions.append(('%clink', config.llvm_obj_root + '/bin/clang -L@MEMINSTRUMENT_RT_LIB_PATH@'))
 
-if '@MEMINSTRUMENT_USE_PICO@' in ['1', 'ON']:
+def is_set(option):
+    return option.lower() in ['1', 'on']
+
+if is_set('@MEMINSTRUMENT_USE_PICO@'):
     config.available_features.add("pmda")
 else:
     config.available_features.add("no_pmda")
+
+if is_set('@LLVM_ENABLE_ASSERTIONS@'):
+  config.available_features.add("asserts")
+else:
+  config.available_features.add("noasserts")
 
 config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMmeminstrument.so'))
 
