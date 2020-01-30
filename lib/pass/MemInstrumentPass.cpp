@@ -165,6 +165,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
              : Targets) { dbgs() << "  " << *Target << "\n"; });
   }
 
+  if (Mode == MIMode::GATHER_ITARGETS || CFG->hasErrors())
+    return true;
+
   filterITargetsRandomly(*CFG, TargetMap);
 
   for (auto &F : M) {
