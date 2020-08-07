@@ -18,6 +18,7 @@ add_library(
   instrumentation_mechanisms/LowfatMechanism.cpp
   instrumentation_mechanisms/NoopMechanism.cpp
   instrumentation_mechanisms/RuntimeStatMechanism.cpp
+  instrumentation_mechanisms/SoftBoundMechanism.cpp
   instrumentation_policies/InstrumentationPolicy.cpp
   instrumentation_policies/BeforeOutflowPolicy.cpp
   instrumentation_policies/AccessOnlyPolicy.cpp

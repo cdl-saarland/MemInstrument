@@ -10,6 +10,7 @@
 #include "meminstrument/instrumentation_mechanisms/LowfatMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/NoopMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/SoftBoundMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
 #include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
@@ -40,6 +41,7 @@ enum class ConfigKind {
   external_only,
   noop,
   lowfat,
+  softbound,
   default_val,
 };
 
@@ -55,7 +57,9 @@ cl::opt<ConfigKind> ConfigKindOpt(
         clEnumValN(ConfigKind::noop, "noop",
                    "noop instrumentation that just adds runtime overheads"),
         clEnumValN(ConfigKind::lowfat, "lowfat",
-                   "low fat pointer based instrumentation")),
+                   "low fat pointer based instrumentation"),
+        clEnumValN(ConfigKind::softbound, "softbound",
+                   "SoftBound instrumentation")),
     cl::cat(MemInstrumentCat), cl::init(ConfigKind::default_val));
 
 enum class IMKind {
@@ -64,6 +68,7 @@ enum class IMKind {
   rt_stat,
   noop,
   lowfat,
+  softbound,
   default_val,
 };
 
@@ -81,7 +86,9 @@ cl::opt<IMKind> IMOpt(
         clEnumValN(IMKind::rt_stat, "rt_stat",
                    "only instrument for collecting run-time statistics"),
         clEnumValN(IMKind::lowfat, "lowfat",
-                   "use low fat pointers for instrumentation")),
+                   "use low fat pointers for instrumentation"),
+        clEnumValN(IMKind::softbound, "softbound",
+                   "use SoftBound for instrumentation")),
     cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
 
 InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
@@ -97,6 +104,8 @@ InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
     return new NoopMechanism(cfg);
   case IMKind::lowfat:
     return new LowfatMechanism(cfg);
+  case IMKind::softbound:
+    return new SoftBoundMechanism(cfg);
   case IMKind::default_val:
     return nullptr;
   }
@@ -441,6 +450,36 @@ public:
   virtual const char *getName(void) const override { return "Lowfat"; }
 };
 
+/// A configuration to perform instrumentation using SoftBound
+class SoftBondConfig : public Config {
+public:
+  virtual ~SoftBondConfig(void) {}
+
+  virtual IPKind getInstrumentationPolicy(void) const override {
+    // TODO discuss
+    return IPKind::beforeOutflow;
+  }
+  virtual IMKind getInstrumentationMechanism(void) const override {
+    return IMKind::softbound;
+  }
+  virtual WSKind getWitnessStrategy(void) const override {
+    // TODO discuss
+    return WSKind::after_inflow;
+  }
+  virtual MIMode getMIMode(void) const override {
+    // TODO discuss
+    return MIMode::GENERATE_CHECKS;
+  }
+
+  // TODO discuss all
+  virtual bool hasUseFilters(void) const override { return false; }
+  virtual bool hasUseExternalChecks(void) const override { return false; }
+  virtual bool hasPrintWitnessGraph(void) const override { return false; }
+  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
+  virtual bool hasInstrumentVerbose(void) const override { return true; }
+  virtual const char *getName(void) const override { return "SoftBound"; }
+};
+
 Config *Config::create(ConfigKind k) {
   switch (k) {
   case ConfigKind::splay:
@@ -453,6 +492,8 @@ Config *Config::create(ConfigKind k) {
     return new ExternalOnlyConfig();
   case ConfigKind::lowfat:
     return new LowfatConfig();
+  case ConfigKind::softbound:
+    return new SoftBondConfig();
   case ConfigKind::default_val:
     return new DEFAULT_CONFIG();
   }
