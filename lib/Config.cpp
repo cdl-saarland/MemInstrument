@@ -45,18 +45,17 @@ enum class ConfigKind {
 
 cl::opt<ConfigKind> ConfigKindOpt(
     "mi-config", cl::desc("Choose base configuration"),
-    cl::values(clEnumValN(ConfigKind::splay, "splay",
-                          "splay-tree-based instrumentation")),
-    cl::values(clEnumValN(ConfigKind::external_only, "external_only",
-                          "instrumentation that inserts only external checks")),
     cl::values(
+        clEnumValN(ConfigKind::splay, "splay",
+                   "splay-tree-based instrumentation"),
+        clEnumValN(ConfigKind::external_only, "external_only",
+                   "instrumentation that inserts only external checks"),
         clEnumValN(ConfigKind::rt_stat, "rt_stat",
-                   "instrumentation for collection run-time statistics only")),
-    cl::values(
+                   "instrumentation for collection run-time statistics only"),
         clEnumValN(ConfigKind::noop, "noop",
-                   "noop instrumentation that just adds runtime overheads")),
-    cl::values(clEnumValN(ConfigKind::lowfat, "lowfat",
-                          "low fat pointer based instrumentation")),
+                   "noop instrumentation that just adds runtime overheads"),
+        clEnumValN(ConfigKind::lowfat, "lowfat",
+                   "low fat pointer based instrumentation")),
     cl::cat(MemInstrumentCat), cl::init(ConfigKind::default_val));
 
 enum class IMKind {
@@ -68,21 +67,22 @@ enum class IMKind {
   default_val,
 };
 
-cl::opt<IMKind>
-    IMOpt("mi-imechanism", cl::desc("Override InstructionMechanism:"),
-          cl::values(clEnumValN(IMKind::dummy, "dummy",
-                                "only insert dummy calls for instrumentation")),
-          cl::values(clEnumValN(IMKind::splay, "splay",
-                                "use splay tree for instrumentation")),
-          cl::values(clEnumValN(
-              IMKind::noop, "noop",
-              "use noop instrumentation that just adds performance overhead")),
-          cl::values(
-              clEnumValN(IMKind::rt_stat, "rt_stat",
-                         "only instrument for collecting run-time statistics")),
-          cl::values(clEnumValN(IMKind::lowfat, "lowfat",
-                                "use low fat pointers for instrumentation")),
-          cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
+cl::opt<IMKind> IMOpt(
+    "mi-imechanism", cl::desc("Override InstructionMechanism:"),
+    cl::values(
+        clEnumValN(IMKind::dummy, "dummy",
+                   "only insert dummy calls for instrumentation"),
+        clEnumValN(IMKind::splay, "splay",
+                   "use splay tree for instrumentation"),
+        clEnumValN(
+            IMKind::noop, "noop",
+            "use noop instrumentation that just adds performance overhead"),
+
+        clEnumValN(IMKind::rt_stat, "rt_stat",
+                   "only instrument for collecting run-time statistics"),
+        clEnumValN(IMKind::lowfat, "lowfat",
+                   "use low fat pointers for instrumentation")),
+    cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
 
 InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
                                                          IMKind k) {
@@ -110,17 +110,17 @@ enum class IPKind {
   default_val,
 };
 
-cl::opt<IPKind> IPOpt(
-    "mi-ipolicy", cl::desc("Override InstructionPolicy:"),
-    cl::values(clEnumValN(IPKind::beforeOutflow, "before-outflow",
-                          "check for dereference at loads/stores and for being"
-                          " inbounds when pointers flow out of functions")),
-    cl::values(clEnumValN(IPKind::accessOnly, "access-only",
-                          "check only at loads/stores for dereference")),
-    cl::values(
-        clEnumValN(IPKind::none, "none",
-                   "do not check anything (except for external checks)")),
-    cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
+cl::opt<IPKind>
+    IPOpt("mi-ipolicy", cl::desc("Override InstructionPolicy:"),
+          cl::values(
+              clEnumValN(IPKind::beforeOutflow, "before-outflow",
+                         "check for dereference at loads/stores and for being"
+                         " inbounds when pointers flow out of functions"),
+              clEnumValN(IPKind::accessOnly, "access-only",
+                         "check only at loads/stores for dereference"),
+              clEnumValN(IPKind::none, "none",
+                         "do not check anything (except for external checks)")),
+          cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
 
 InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k,
                                                    const DataLayout &DL) {
@@ -146,8 +146,8 @@ enum class WSKind {
 cl::opt<WSKind> WSOpt(
     "mi-wstrategy", cl::desc("Override WitnessStrategy:"),
     cl::values(clEnumValN(WSKind::after_inflow, "after-inflow",
-                          "place witnesses after inflow of the base value")),
-    cl::values(clEnumValN(WSKind::none, "none", "place no witnesses")),
+                          "place witnesses after inflow of the base value"),
+               clEnumValN(WSKind::none, "none", "place no witnesses")),
     cl::cat(MemInstrumentCat), cl::init(WSKind::default_val));
 
 WitnessStrategy *createWitnessStrategy(GlobalConfig &cfg, WSKind k) {
@@ -188,17 +188,17 @@ cl::opt<MIMode> MIModeOpt(
     cl::desc("Override until which stage instrumentation should be performed:"),
     cl::values(clEnumValN(MIMode::NOTHING, "nothing",
                           "don't do anything for instrumentation, just have "
-                          "the required passes run")),
-    cl::values(clEnumValN(MIMode::SETUP, "setup", "only until setup is done")),
-    cl::values(clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
-                          "only until ITarget gathering is done")),
-    cl::values(clEnumValN(MIMode::FILTER_ITARGETS, "filteritargets",
-                          "only until ITarget filtering is done")),
-    cl::values(clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
-                          "only until witness generation is done")),
-    cl::values(clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS, "genextchecks",
-                          "only until external check generation is done")),
-    cl::values(clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",
+                          "the required passes run"),
+               clEnumValN(MIMode::SETUP, "setup", "only until setup is done"),
+               clEnumValN(MIMode::GATHER_ITARGETS, "gatheritargets",
+                          "only until ITarget gathering is done"),
+               clEnumValN(MIMode::FILTER_ITARGETS, "filteritargets",
+                          "only until ITarget filtering is done"),
+               clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
+                          "only until witness generation is done"),
+               clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS, "genextchecks",
+                          "only until external check generation is done"),
+               clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",
                           "the full pipeline")),
     cl::cat(MemInstrumentCat), cl::init(MIMode::DEFAULT));
 

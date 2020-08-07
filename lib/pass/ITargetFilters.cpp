@@ -80,9 +80,9 @@ enum FilterOrdering {
 
 cl::opt<FilterOrdering> FilterOrderingOpt(
     "mi-filter-ordering", cl::desc("strategy for filtering arbitrary checks"),
-    cl::values(clEnumValN(FO_random, "random", "filter checks randomly")),
-    cl::values(clEnumValN(FO_hottest, "hottest", "filter hottest checks")),
-    cl::values(clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
+    cl::values(clEnumValN(FO_random, "random", "filter checks randomly"),
+               clEnumValN(FO_hottest, "hottest", "filter hottest checks"),
+               clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
     cl::init(FO_random) // default
 );
 
