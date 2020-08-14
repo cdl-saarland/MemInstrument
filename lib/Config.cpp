@@ -451,27 +451,25 @@ public:
 };
 
 /// A configuration to perform instrumentation using SoftBound
-class SoftBondConfig : public Config {
+class SoftBoundConfig : public Config {
 public:
-  virtual ~SoftBondConfig(void) {}
+  virtual ~SoftBoundConfig(void) {}
 
   virtual IPKind getInstrumentationPolicy(void) const override {
-    // TODO discuss
+    // TODO Implement new policy
     return IPKind::beforeOutflow;
   }
   virtual IMKind getInstrumentationMechanism(void) const override {
     return IMKind::softbound;
   }
   virtual WSKind getWitnessStrategy(void) const override {
-    // TODO discuss
+    // TODO discuss after implementing the policy
     return WSKind::after_inflow;
   }
   virtual MIMode getMIMode(void) const override {
-    // TODO discuss
     return MIMode::GENERATE_CHECKS;
   }
 
-  // TODO discuss all
   virtual bool hasUseFilters(void) const override { return false; }
   virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
@@ -493,7 +491,7 @@ Config *Config::create(ConfigKind k) {
   case ConfigKind::lowfat:
     return new LowfatConfig();
   case ConfigKind::softbound:
-    return new SoftBondConfig();
+    return new SoftBoundConfig();
   case ConfigKind::default_val:
     return new DEFAULT_CONFIG();
   }
