@@ -31,6 +31,11 @@ class GlobalConfig;
 /// issues.
 class InstrumentationMechanism {
 public:
+  /// Set-Up code that is executed once in the beginning before using the
+  /// instrumentation. Classical uses are inserting necessary Functions and/or
+  /// declarations and creating relevant LLVM types for later use.
+  virtual void initialize(llvm::Module &M) = 0;
+
   /// Generates a Witness for the instrumentee of the Target at the location of
   /// the Target and store it in the target.
   /// Typically used to get witnesses for sources of pointer computations in a
@@ -42,32 +47,6 @@ public:
   /// This is an unelegant hack to force the instrumentation to materialize
   /// bounds at specific locations.
   virtual void relocCloneWitness(Witness &W, ITarget &Target) const = 0;
-
-  /// Insert a check to check whether the instrumentee of Target is valid
-  /// according to the witness stored in Target at the location of Target.
-  virtual void insertCheck(ITarget &Target) const = 0;
-
-  /// Make sure that explicit bounds are available in the witness for the
-  /// instrumentee of the Target at the location of Target.
-  virtual void materializeBounds(ITarget &Target) = 0;
-
-  /// Provides an llvm Function in the module that can be called to abort the
-  /// execution of the instrumented program.
-  virtual llvm::Value *getFailFunction(void) const = 0;
-
-  /// Provides a function to call in the instrumented program to increment a
-  /// run-time counter (for statistics).
-  /// Optional.
-  virtual llvm::Value *getExtCheckCounterFunction(void) const {
-    llvm_unreachable("Not supported!");
-  }
-
-  /// Provides an llvm Function in the module that can be called to abort the
-  /// execution of the instrumented program with a custom error message.
-  /// Optional.
-  virtual llvm::Value *getVerboseFailFunction(void) const {
-    llvm_unreachable("Not supported!");
-  }
 
   /// Insert phis for all Values necessary for the Witness for Target at the
   /// location of Target without filling in phi operands.
@@ -91,10 +70,31 @@ public:
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
                       std::shared_ptr<Witness> &FalseWitness) const = 0;
 
-  /// Set-Up code that is executed once in the beginning before using the
-  /// instrumentation. Classical uses are inserting necessary Functions and/or
-  /// declarations and creating relevant LLVM types for later use.
-  virtual void initialize(llvm::Module &M) = 0;
+  /// Make sure that explicit bounds are available in the witness for the
+  /// instrumentee of the Target at the location of Target.
+  virtual void materializeBounds(ITarget &Target) = 0;
+
+  /// Insert a check to check whether the instrumentee of Target is valid
+  /// according to the witness stored in Target at the location of Target.
+  virtual void insertCheck(ITarget &Target) const = 0;
+
+  /// Provides an llvm Function in the module that can be called to abort the
+  /// execution of the instrumented program.
+  virtual llvm::Value *getFailFunction(void) const = 0;
+
+  /// Provides an llvm Function in the module that can be called to abort the
+  /// execution of the instrumented program with a custom error message.
+  /// Optional.
+  virtual llvm::Value *getVerboseFailFunction(void) const {
+    llvm_unreachable("Not supported!");
+  }
+
+  /// Provides a function to call in the instrumented program to increment a
+  /// run-time counter (for statistics).
+  /// Optional.
+  virtual llvm::Value *getExtCheckCounterFunction(void) const {
+    llvm_unreachable("Not supported!");
+  }
 
   /// Returns the name of the instrumentation mechanism for printing and easy
   /// recognition.
