@@ -26,19 +26,11 @@ class SoftBoundMechanism : public InstrumentationMechanism {
 public:
   SoftBoundMechanism(GlobalConfig &);
 
+  virtual void initialize(llvm::Module &) override;
+
   virtual void insertWitness(ITarget &) const override;
 
   virtual void relocCloneWitness(Witness &, ITarget &) const override;
-
-  virtual void insertCheck(ITarget &) const override;
-
-  virtual void materializeBounds(ITarget &) override;
-
-  virtual auto getFailFunction() const -> llvm::Value * override;
-
-  virtual auto getExtCheckCounterFunction() const -> llvm::Value * override;
-
-  virtual auto getVerboseFailFunction() const -> llvm::Value * override;
 
   virtual auto insertWitnessPhi(ITarget &) const
       -> std::shared_ptr<Witness> override;
@@ -52,22 +44,21 @@ public:
                                    std::shared_ptr<Witness> &FalseWitness) const
       -> std::shared_ptr<Witness> override;
 
-  virtual void initialize(llvm::Module &) override;
+  virtual void materializeBounds(ITarget &) override;
+
+  virtual void insertCheck(ITarget &) const override;
+
+  virtual auto getFailFunction() const -> llvm::Value * override;
+
+  virtual auto getVerboseFailFunction() const -> llvm::Value * override;
+
+  virtual auto getExtCheckCounterFunction() const -> llvm::Value * override;
 
   virtual auto getName() const -> const char * override;
-};
 
-//===----------------------------------------------------------------------===//
-// TODO: Different file would be nicer
-
-class SoftBoundWitness : public Witness {
-
-public:
-  virtual auto getLowerBound() const -> llvm::Value * override;
-
-  virtual auto getUpperBound() const -> llvm::Value * override;
-
-  static bool classof(const Witness *W);
+private:
+  /// Insert the declarations for SoftBound metadata propagation functions
+  void insertFunDecls(llvm::Module &);
 };
 
 } // namespace meminstrument

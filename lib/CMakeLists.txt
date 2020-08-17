@@ -19,6 +19,9 @@ add_library(
   instrumentation_mechanisms/NoopMechanism.cpp
   instrumentation_mechanisms/RuntimeStatMechanism.cpp
   instrumentation_mechanisms/SoftBoundMechanism.cpp
+  instrumentation_mechanisms/softbound/InternalSoftBoundConfig.cpp
+  instrumentation_mechanisms/softbound/RunTimePrototypes.cpp
+  instrumentation_mechanisms/softbound/SoftBoundWitness.cpp
   instrumentation_policies/InstrumentationPolicy.cpp
   instrumentation_policies/BeforeOutflowPolicy.cpp
   instrumentation_policies/AccessOnlyPolicy.cpp

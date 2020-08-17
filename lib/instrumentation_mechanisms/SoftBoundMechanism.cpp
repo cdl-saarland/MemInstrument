@@ -13,8 +13,13 @@
 
 #include "meminstrument/instrumentation_mechanisms/SoftBoundMechanism.h"
 
+#include "meminstrument/Config.h"
+#include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
+#include "meminstrument/instrumentation_mechanisms/softbound/RunTimePrototypes.h"
+
 using namespace llvm;
 using namespace meminstrument;
+using namespace softbound;
 
 //===----------------------------------------------------------------------===//
 //                   Implementation of SoftBoundMechanism
@@ -69,24 +74,27 @@ auto SoftBoundMechanism::insertWitnessSelect(
 }
 
 void SoftBoundMechanism::initialize(Module &M) {
+
+  // Currenlty only spatial safety is implemented, don't do anything if temporal
+  // memory safety is requested.
+  if (!InternalSoftBoundConfig::ensureOnlySpatial()) {
+    globalConfig.noteError();
+    return;
+  }
+
+  // Insert the declarations for basic metadata and check functions
+  insertFunDecls(M);
+
   llvm_unreachable("TODO implement");
 }
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
 
-//===----------------------------------------------------------------------===//
-//                   Implementation of SoftBoundWitness
-//                 (TODO: different file would be nicer)
-//===----------------------------------------------------------------------===//
+//===-------------------------- private -----------------------------------===//
 
-auto SoftBoundWitness::getLowerBound() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
+/// Insert the declarations for SoftBound metadata propagation functions
+void SoftBoundMechanism::insertFunDecls(Module &M) {
 
-auto SoftBoundWitness::getUpperBound() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
-
-bool SoftBoundWitness::classof(const Witness *W) {
-  return W->getKind() == WK_SoftBound;
+  PrototypeInserter protoInserter(M);
+  protoInserter.insertRunTimeProtoypes();
 }
