@@ -202,7 +202,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
   return Counter;
 }
 
-bool RuntimeStatMechanism::initialize(llvm::Module &M) {
+void RuntimeStatMechanism::initialize(llvm::Module &M) {
   Verbose = _CFG.hasInstrumentVerbose();
   auto &Ctx = M.getContext();
 
@@ -287,8 +287,6 @@ bool RuntimeStatMechanism::initialize(llvm::Module &M) {
   }
 
   Builder.CreateRetVoid();
-
-  return true;
 }
 
 std::shared_ptr<Witness>

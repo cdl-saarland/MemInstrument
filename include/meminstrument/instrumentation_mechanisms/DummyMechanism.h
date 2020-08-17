@@ -56,7 +56,7 @@ public:
   insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
                       std::shared_ptr<Witness> &FalseWitness) const override;
 
-  virtual bool initialize(llvm::Module &M) override;
+  virtual void initialize(llvm::Module &M) override;
 
   virtual const char *getName(void) const override { return "Dummy"; }
 

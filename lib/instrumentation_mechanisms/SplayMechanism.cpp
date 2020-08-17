@@ -375,7 +375,7 @@ void SplayMechanism::setupInitCall(Module &M) {
   Builder.CreateRetVoid();
 }
 
-bool SplayMechanism::initialize(llvm::Module &M) {
+void SplayMechanism::initialize(llvm::Module &M) {
   initTypes(M.getContext());
 
   insertFunctionDeclarations(M);
@@ -434,8 +434,6 @@ bool SplayMechanism::initialize(llvm::Module &M) {
       }
     }
   }
-
-  return true;
 }
 
 std::shared_ptr<Witness>

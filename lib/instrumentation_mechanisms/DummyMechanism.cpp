@@ -90,7 +90,7 @@ llvm::Value *DummyMechanism::getFailFunction(void) const {
   return FailFunction;
 }
 
-bool DummyMechanism::initialize(llvm::Module &M) {
+void DummyMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
   initTypes(Ctx);
   auto *VoidTy = Type::getVoidTy(Ctx);
@@ -106,8 +106,6 @@ bool DummyMechanism::initialize(llvm::Module &M) {
   llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
       Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", NoReturnAttr, VoidTy);
-
-  return true;
 }
 
 std::shared_ptr<Witness>

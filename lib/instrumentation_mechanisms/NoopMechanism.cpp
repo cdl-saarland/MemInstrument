@@ -77,7 +77,7 @@ void NoopMechanism::materializeBounds(ITarget &Target) {
 
 llvm::Value *NoopMechanism::getFailFunction(void) const { return FailFunction; }
 
-bool NoopMechanism::initialize(llvm::Module &M) {
+void NoopMechanism::initialize(llvm::Module &M) {
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);
@@ -105,8 +105,6 @@ bool NoopMechanism::initialize(llvm::Module &M) {
   FailFunction =
       M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx))
           .getCallee();
-
-  return true;
 }
 
 std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &) const {

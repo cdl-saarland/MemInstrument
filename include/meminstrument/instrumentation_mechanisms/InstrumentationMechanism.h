@@ -94,7 +94,7 @@ public:
   /// Set-Up code that is executed once in the beginning before using the
   /// instrumentation. Classical uses are inserting necessary Functions and/or
   /// declarations and creating relevant LLVM types for later use.
-  virtual bool initialize(llvm::Module &M) = 0;
+  virtual void initialize(llvm::Module &M) = 0;
 
   /// Returns the name of the instrumentation mechanism for printing and easy
   /// recognition.

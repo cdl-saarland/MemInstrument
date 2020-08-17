@@ -152,10 +152,9 @@ void LowfatMechanism::initTypes(llvm::LLVMContext &Ctx) {
   SizeType = Type::getInt64Ty(Ctx);
 }
 
-bool LowfatMechanism::initialize(llvm::Module &M) {
+void LowfatMechanism::initialize(llvm::Module &M) {
   initTypes(M.getContext());
   insertFunctionDeclarations(M);
-  return true;
 }
 
 std::shared_ptr<Witness>
