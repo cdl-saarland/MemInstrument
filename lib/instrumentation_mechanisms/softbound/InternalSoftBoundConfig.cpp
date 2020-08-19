@@ -57,7 +57,7 @@ auto constexpr InternalSoftBoundConfig::initialize() -> SafetyLevel {
           __SOFTBOUNDCETS_SPATIAL_TEMPORAL,
       "Invalid configuration (one of spatial/temporal/spatial+temporal must be "
       "true). If you modified SBRTInfo.h manually, please revert the "
-      "changes (to change the safety guarantess, configure the C run-time "
+      "changes (to change the safety guarantees, configure the C run-time "
       "appropriately).");
 
   static_assert(
@@ -68,7 +68,7 @@ auto constexpr InternalSoftBoundConfig::initialize() -> SafetyLevel {
       "Invalid configuration (only exactly one of "
       "spatial/temporal/spatial+temporal can be true). If you modified "
       "SBRTInfo.h manually, please revert the changes (to change the safety "
-      "guarantess, configure the C run-time appropriately).");
+      "guarantees, configure the C run-time appropriately).");
 
 #if __SOFTBOUNDCETS_SPATIAL
   return SafetyLevel::SPATIAL_ONLY;
