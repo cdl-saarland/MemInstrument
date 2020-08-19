@@ -7,7 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// TODO
+/// The prototype inserter injects run-time library prototypes into LLVM
+/// modules. Calls to check functions, metadata propagation functions,
+/// initialization functions etc. will be inserted during compilation, the
+/// prototypes ensure that the module compiles although there is no definition
+/// of the function. The definitions are in the C run-time library, which is
+/// build stand-alone and linked later.
 ///
 //===----------------------------------------------------------------------===//
 

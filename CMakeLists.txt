@@ -76,31 +76,35 @@ else()
   set(HAS_SQLITE3 0)
 endif()
 
-# Search for the splay runtime library
-find_path(MEMINSTRUMENT_RT_LIB_PATH libsplay.a)
+# Search for the splay run-time library
+find_path(MEMINSTRUMENT_RT_PATH lib/libsplay.a)
 
-if(NOT MEMINSTRUMENT_RT_LIB_PATH)
-  message(WARNING "Cannot find meminstrument runtime libs")
-else()
-  set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
-  set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/LLVMmeminstrument.so")
-  set(RT_LIBS_PATH ${MEMINSTRUMENT_RT_LIB_PATH})
-
-  configure_file(${MEMINSTRUMENT_SOURCE_DIR}/tools/mi_compile.sh.in
-                 ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh)
-
-  file(
-    COPY ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh
-    DESTINATION ${LLVM_BINARY_DIR}/bin
-    FILE_PERMISSIONS
-      OWNER_READ
-      OWNER_WRITE
-      OWNER_EXECUTE
-      GROUP_READ
-      GROUP_EXECUTE
-      WORLD_READ
-      WORLD_EXECUTE)
+if(NOT MEMINSTRUMENT_RT_PATH)
+  message(FATAL_ERROR "Cannot find meminstrument run-time libs")
 endif()
+
+message(STATUS "Found run-time libraries in ${MEMINSTRUMENT_RT_PATH}")
+
+set(RT_INCLUDE_PATH "${MEMINSTRUMENT_RT_PATH}/include")
+
+set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
+set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/LLVMmeminstrument.so")
+set(RT_LIBS_PATH "${MEMINSTRUMENT_RT_PATH}/lib")
+
+configure_file(${MEMINSTRUMENT_SOURCE_DIR}/tools/mi_compile.sh.in
+               ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh)
+
+file(
+  COPY ${MEMINSTRUMENT_BINARY_DIR}/tools/mi_compile.sh
+  DESTINATION ${LLVM_BINARY_DIR}/bin
+  FILE_PERMISSIONS
+    OWNER_READ
+    OWNER_WRITE
+    OWNER_EXECUTE
+    GROUP_READ
+    GROUP_EXECUTE
+    WORLD_READ
+    WORLD_EXECUTE)
 
 # ------------------------------------------------------------------------------
 # General build requirements
@@ -121,7 +125,7 @@ set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wno-long-long -Wall")
 
 include_directories(BEFORE ${MEMINSTRUMENT_SOURCE_DIR}/include
-                    ${MEMINSTRUMENT_BINARY_DIR}/include)
+                    ${MEMINSTRUMENT_BINARY_DIR}/include ${RT_INCLUDE_PATH})
 # ##############################################################################
 
 add_subdirectory(lib)
