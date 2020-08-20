@@ -14,6 +14,10 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_SOFTBOUNDCONFIG_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_SOFTBOUNDCONFIG_H
 
+namespace llvm {
+class StringRef;
+}
+
 namespace meminstrument {
 
 namespace softbound {
@@ -32,6 +36,8 @@ public:
   static bool ensureOnlyTemporal();
 
   static bool ensureFullSafety();
+
+  static auto getMetadataKind() -> llvm::StringRef;
 
 private:
   static const SafetyLevel level;

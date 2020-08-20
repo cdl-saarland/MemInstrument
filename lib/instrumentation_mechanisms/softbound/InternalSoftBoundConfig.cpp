@@ -18,6 +18,9 @@
 
 #include "meminstrument/softbound/SBRTInfo.h"
 
+#include "llvm/ADT/StringRef.h"
+
+using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
 
@@ -43,6 +46,10 @@ bool InternalSoftBoundConfig::ensureOnlyTemporal() {
 
 bool InternalSoftBoundConfig::ensureFullSafety() {
   return level == FULL_SAFETY;
+}
+
+auto InternalSoftBoundConfig::getMetadataKind() -> StringRef {
+  return "SoftBound";
 }
 
 //===-------------------------- private -----------------------------------===//

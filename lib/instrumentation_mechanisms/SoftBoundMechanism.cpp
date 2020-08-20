@@ -15,6 +15,7 @@
 
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
+#include "meminstrument/instrumentation_mechanisms/softbound/RunTimeHandles.h"
 #include "meminstrument/instrumentation_mechanisms/softbound/RunTimePrototypes.h"
 
 using namespace llvm;
@@ -96,5 +97,6 @@ auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
 void SoftBoundMechanism::insertFunDecls(Module &M) {
 
   PrototypeInserter protoInserter(M);
-  protoInserter.insertRunTimeProtoypes();
+  RunTimeHandles hanldes = protoInserter.insertRunTimeProtoypes();
+  llvm_unreachable("TODO implement missing parts");
 }

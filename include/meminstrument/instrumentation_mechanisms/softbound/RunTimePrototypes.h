@@ -1,4 +1,4 @@
-//===------- meminstrument/RunTimeProtoypes.h - SoftBound -------*- C++ -*-===//
+//===- meminstrument/RunTimeProtoypes.h - SoftBound Prototypes --*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,31 +19,52 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_RUNTIMEPROTOTYPES_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_RUNTIMEPROTOTYPES_H
 
-#include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
-
 #include "llvm/IR/Module.h"
 
 namespace meminstrument {
 
 namespace softbound {
 
+class RunTimeHandles;
+
 class PrototypeInserter {
 
 public:
   PrototypeInserter(llvm::Module &);
 
-  void insertRunTimeProtoypes();
+  auto insertRunTimeProtoypes() -> RunTimeHandles;
 
 private:
   llvm::Module &module;
+  llvm::LLVMContext &context;
 
-  void insertSpatialRunTimeProtoypes();
+  llvm::Type *voidPtrTy = nullptr;
+  llvm::Type *baseTy = nullptr;
+  llvm::Type *boundTy = nullptr;
+  llvm::Type *intTy = nullptr;
+  llvm::Type *sizeTTy = nullptr;
+  llvm::Type *voidTy = nullptr;
+  llvm::Type *basePtrTy = nullptr;
+  llvm::Type *boundPtrTy = nullptr;
 
-  void insertTemporalRunTimeProtoypes();
+  void insertSpatialRunTimeProtoypes(RunTimeHandles &);
 
-  void insertFullSafetyRunTimeProtoypes();
+  void insertSpatialOnlyRunTimeProtoypes(RunTimeHandles &);
 
-  void insertSetupFunctions();
+  void insertTemporalRunTimeProtoypes(RunTimeHandles &);
+
+  void insertTemporalOnlyRunTimeProtoypes(RunTimeHandles &);
+
+  void insertFullSafetyRunTimeProtoypes(RunTimeHandles &);
+
+  void insertSetupFunctions(RunTimeHandles &);
+
+  void insertCommonFunctions(RunTimeHandles &);
+
+  template <typename... ArgsTy>
+  auto createAndInsertPrototype(const llvm::StringRef &name,
+                                llvm::Type *retType, ArgsTy... args)
+      -> llvm::Function *;
 };
 } // namespace softbound
 
