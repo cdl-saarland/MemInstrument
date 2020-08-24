@@ -38,12 +38,12 @@ private:
   llvm::Module &module;
   llvm::LLVMContext &context;
 
-  llvm::Type *voidPtrTy = nullptr;
-  llvm::Type *baseTy = nullptr;
-  llvm::Type *boundTy = nullptr;
   llvm::Type *intTy = nullptr;
   llvm::Type *sizeTTy = nullptr;
   llvm::Type *voidTy = nullptr;
+  llvm::Type *voidPtrTy = nullptr;
+  llvm::Type *baseTy = nullptr;
+  llvm::Type *boundTy = nullptr;
   llvm::Type *basePtrTy = nullptr;
   llvm::Type *boundPtrTy = nullptr;
 

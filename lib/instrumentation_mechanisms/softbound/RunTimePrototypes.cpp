@@ -27,13 +27,16 @@ using namespace softbound;
 PrototypeInserter::PrototypeInserter(Module &module)
     : module(module), context(module.getContext()) {
 
+  // TODO find out if the native width is somehow accessible via DL/TT
+  // The current solution will not properly work for cross-compilation
+  auto byteSize = 8;
+  intTy = IntegerType::getIntNTy(context, sizeof(int) * byteSize);
+  sizeTTy = IntegerType::getIntNTy(context, sizeof(size_t) * byteSize);
+
+  voidTy = Type::getVoidTy(context);
   voidPtrTy = Type::getInt8PtrTy(context);
   baseTy = voidPtrTy;
   boundTy = voidPtrTy;
-  // TODO find out if the native width is somehow accessible via DL/TT
-  intTy = IntegerType::getInt32Ty(context);
-  sizeTTy = intTy;
-  voidTy = Type::getVoidTy(context);
   basePtrTy = PointerType::getUnqual(voidPtrTy);
   boundPtrTy = basePtrTy;
 }
