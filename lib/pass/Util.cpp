@@ -21,12 +21,12 @@ using namespace meminstrument;
 #define BYVAL_HANDLING_MD "byval_handling"
 
 namespace {
-bool hasMDStrImpl(const char *ref, MDNode *N) {
+bool hasMDStrImpl(const char *ref, const MDNode *N) {
   if (!N || N->getNumOperands() < 1) {
     return false;
   }
 
-  if (auto *Str = dyn_cast<MDString>(N->getOperand(0))) {
+  if (const auto *Str = dyn_cast<MDString>(N->getOperand(0))) {
     if (Str->getString().equals(ref)) {
       return true;
     }
@@ -56,20 +56,20 @@ void setByvalHandling(Instruction *I) {
   I->setMetadata(BYVAL_HANDLING_MD, N);
 }
 
-bool hasNoInstrument(GlobalObject *O) {
+bool hasNoInstrument(const GlobalObject *O) {
   return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
 
-bool hasNoInstrument(Instruction *O) {
+bool hasNoInstrument(const Instruction *O) {
   return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
 
-bool hasByvalHandling(Instruction *O) {
+bool hasByvalHandling(const Instruction *O) {
   return hasMDStrImpl(BYVAL_HANDLING_MD, O->getMetadata(BYVAL_HANDLING_MD));
 }
 
-bool hasPointerAccessSize(llvm::Value *V) {
-  auto *Ty = V->getType();
+bool hasPointerAccessSize(const llvm::Value *V) {
+  const auto *Ty = V->getType();
   if (!Ty->isPointerTy()) {
     return false;
   }
