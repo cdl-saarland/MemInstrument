@@ -56,6 +56,11 @@ public:
   llvm::Function *loadInMemoryPtrInfo = nullptr;
   llvm::Function *storeInMemoryPtrInfo = nullptr;
   llvm::Function *copyInMemoryMetadata = nullptr;
+
+  // Argument types
+  llvm::Type *baseTy = nullptr;
+  llvm::Type *boundTy = nullptr;
+  llvm::Type *voidPtrTy = nullptr;
 };
 } // namespace softbound
 

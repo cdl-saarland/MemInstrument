@@ -45,6 +45,10 @@ auto PrototypeInserter::insertRunTimeProtoypes() -> RunTimeHandles {
 
   RunTimeHandles handles;
 
+  handles.baseTy = baseTy;
+  handles.boundTy = boundTy;
+  handles.voidPtrTy = voidPtrTy;
+
   if (InternalSoftBoundConfig::ensureOnlySpatial()) {
     insertSpatialOnlyRunTimeProtoypes(handles);
     insertSpatialRunTimeProtoypes(handles);
