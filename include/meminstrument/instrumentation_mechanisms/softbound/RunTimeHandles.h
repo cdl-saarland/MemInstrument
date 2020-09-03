@@ -58,9 +58,12 @@ public:
   llvm::Function *copyInMemoryMetadata = nullptr;
 
   // Argument types
-  llvm::Type *baseTy = nullptr;
-  llvm::Type *boundTy = nullptr;
-  llvm::Type *voidPtrTy = nullptr;
+  llvm::PointerType *baseTy = nullptr;
+  llvm::PointerType *boundTy = nullptr;
+  llvm::PointerType *voidPtrTy = nullptr;
+
+  llvm::Type *intTy = nullptr;
+  llvm::Type *sizeTTy = nullptr;
 };
 } // namespace softbound
 

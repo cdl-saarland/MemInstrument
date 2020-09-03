@@ -41,11 +41,11 @@ private:
   llvm::Type *intTy = nullptr;
   llvm::Type *sizeTTy = nullptr;
   llvm::Type *voidTy = nullptr;
-  llvm::Type *voidPtrTy = nullptr;
-  llvm::Type *baseTy = nullptr;
-  llvm::Type *boundTy = nullptr;
-  llvm::Type *basePtrTy = nullptr;
-  llvm::Type *boundPtrTy = nullptr;
+  llvm::PointerType *voidPtrTy = nullptr;
+  llvm::PointerType *baseTy = nullptr;
+  llvm::PointerType *boundTy = nullptr;
+  llvm::PointerType *basePtrTy = nullptr;
+  llvm::PointerType *boundPtrTy = nullptr;
 
   void insertSpatialRunTimeProtoypes(RunTimeHandles &);
 
