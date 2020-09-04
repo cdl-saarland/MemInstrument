@@ -223,7 +223,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   LLVM_DEBUG(dbgs() << "Handle initializer " << *glInit << "\n";);
 
   if (isa<BlockAddress>(glInit)) {
-    llvm_unreachable("Block address stored in global variable.");
+    std::tie(base, bound) = getBoundsConst(glInit);
+    return std::make_pair(base, bound);
   }
 
   if (isa<GlobalIndirectSymbol>(glInit)) {
