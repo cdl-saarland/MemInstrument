@@ -232,6 +232,11 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
     return std::make_pair(base, bound);
   }
 
+  // Return null bounds if a nullptr is explicitly stores somewhere
+  if (glInit->isNullValue() || glInit->getType()->isPointerTy()) {
+    return getNullPtrBounds();
+  }
+
   // Constant data are simple types such as int, float, vector of int/float,
   // array of int/float, etc. or zero initializer. No pointers hidden.
   if (isa<ConstantData>(glInit)) {
