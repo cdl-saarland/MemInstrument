@@ -1,9 +1,6 @@
 // RUN: %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -stats -emit-llvm -o - 2>&1 | %fileCheck %s
 
-// CHECK: 39? softbound{{.*}}Number of metadata stores inserted
-// TODO check that the number of stores is correct
-
-// XFAIL: *
+// CHECK: 38 softbound{{.*}}Number of metadata stores inserted
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,5 +71,6 @@ int main(int argc, char **argv) {
 
   // Access the "full" struct (some elements only)
   printf("full:\n\tPS[0].ptr %p \n\tPS[1].ptrptr %p \n\t**PS[1].ptrptr %i \n\tArPS.i %i \n\t*ArPS.Ar[1] %i \n\tStructNest[1].ArPS[0].Ar[1] %p \n\t*StructNest[1].ArPS[1].Ar[1] %i\n\tPtrPS %p \n\tPtrPS->i %i\n\t**(PtrPS->ptrptr) %i \n", full.PS[0].ptr, full.PS[1].ptrptr, **full.PS[1].ptrptr, full.ArPS.i, *full.ArPS.Ar[1], full.StructNest[1].ArPS[0].Ar[1], *full.StructNest[1].ArPS[1].Ar[1], full.PtrPS, full.PtrPS->i, **(full.PtrPS->ptrptr));
+
   return 0;
 }
