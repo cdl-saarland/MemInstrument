@@ -118,6 +118,9 @@ void SoftBoundMechanism::initialize(Module &module) {
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
 
+  // Rename the main function such that it can be linked against the run-time
+  renameMain(module);
+
   // Generate setup function that inserts metadata stores for global variables
   setUpGlobals(module);
 
@@ -135,6 +138,18 @@ void SoftBoundMechanism::insertFunDecls(Module &module) {
 
   PrototypeInserter protoInserter(module);
   handles = protoInserter.insertRunTimeProtoypes();
+}
+
+void SoftBoundMechanism::renameMain(Module &module) {
+
+  Function *mainFun = module.getFunction("main");
+
+  // This module does not have a main function, nothing to do here
+  if (!mainFun) {
+    return;
+  }
+
+  mainFun->setName("softboundcets_pseudo_main");
 }
 
 void SoftBoundMechanism::setUpGlobals(Module &module) {

@@ -69,6 +69,10 @@ private:
   /// Insert the declarations for SoftBound metadata propagation functions
   void insertFunDecls(llvm::Module &);
 
+  /// Rename the main function, such that the run-time main will be executed
+  /// instead, which then calls the renamed main
+  void renameMain(llvm::Module &);
+
   /// Take care of running the SoftBound setup in the very beginning (including
   /// globally initialized variables)
   void setUpGlobals(llvm::Module &);
