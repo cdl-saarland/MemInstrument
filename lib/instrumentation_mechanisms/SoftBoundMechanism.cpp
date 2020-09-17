@@ -247,8 +247,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
     return std::make_pair(base, bound);
   }
 
-  // Return null bounds if a nullptr is explicitly stores somewhere
-  if (glInit->isNullValue() || glInit->getType()->isPointerTy()) {
+  // Return null bounds if a nullptr is explicitly stored somewhere
+  if (glInit->isNullValue() && glInit->getType()->isPointerTy()) {
     return getNullPtrBounds();
   }
 
