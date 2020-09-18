@@ -11,6 +11,7 @@
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Value.h"
 
 namespace meminstrument {
@@ -43,6 +44,18 @@ protected:
   /// pointing to some type with a size. If this is not the case, an error is
   /// noted and false is returned.
   bool validateSize(llvm::Value *Ptr);
+
+  /// Create check targets for the given intrinsic.
+  bool insertCheckTargetsForInstrinsic(ITargetVector &Dest,
+                                       llvm::IntrinsicInst *II);
+
+  /// Create check targets for a load or store instruction.
+  void insertCheckTargetsLoadStore(ITargetVector &Dest,
+                                   llvm::Instruction *Inst);
+
+  /// Iff a pointer is stored to memory, this function will create an invariant
+  /// target for the stored pointer.
+  void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *Inst);
 };
 
 } // namespace meminstrument

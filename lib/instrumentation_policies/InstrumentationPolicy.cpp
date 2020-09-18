@@ -24,7 +24,7 @@ STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
 
 InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
 
-bool InstrumentationPolicy::validateSize(llvm::Value *Ptr) {
+bool InstrumentationPolicy::validateSize(Value *Ptr) {
   if (!hasPointerAccessSize(Ptr)) {
     ++NumUnsizedTypes;
     LLVM_DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
@@ -32,4 +32,55 @@ bool InstrumentationPolicy::validateSize(llvm::Value *Ptr) {
     return false;
   }
   return true;
+}
+
+bool InstrumentationPolicy::insertCheckTargetsForInstrinsic(ITargetVector &Dest,
+                                                            IntrinsicInst *II) {
+  switch (II->getIntrinsicID()) {
+  case Intrinsic::memcpy:
+  case Intrinsic::memmove: {
+    auto *MT = cast<MemTransferInst>(II);
+    auto *Len = MT->getLength();
+    auto *Src = MT->getSource();
+    auto *Dst = MT->getDest();
+    Dest.push_back(ITarget::createSpatialCheckTarget(Src, II, Len));
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
+    return true;
+  }
+  case Intrinsic::memset: {
+    auto *MS = cast<MemSetInst>(II);
+    auto *Len = MS->getLength();
+    auto *Dst = MS->getDest();
+    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
+    return true;
+  }
+  default:
+    return false;
+  }
+}
+
+void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
+                                                        Instruction *Inst) {
+
+  assert(isa<LoadInst>(Inst) || isa<StoreInst>(Inst));
+
+  auto PtrOp = isa<LoadInst>(Inst) ? cast<LoadInst>(Inst)->getPointerOperand()
+                                   : cast<StoreInst>(Inst)->getPointerOperand();
+
+  if (!validateSize(PtrOp)) {
+    return;
+  }
+
+  Dest.push_back(ITarget::createSpatialCheckTarget(PtrOp, Inst));
+}
+
+void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
+                                                       StoreInst *Inst) {
+
+  auto *StoreOperand = Inst->getValueOperand();
+  if (!StoreOperand->getType()->isPointerTy()) {
+    return;
+  }
+
+  Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Inst));
 }

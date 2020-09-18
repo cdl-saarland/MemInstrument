@@ -10,7 +10,11 @@
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/Util.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Module.h"
+
+STATISTIC(NumITargetsGathered,
+          "The # of instrumentation targets initially gathered");
 
 using namespace meminstrument;
 using namespace llvm;
@@ -27,6 +31,8 @@ void meminstrument::gatherITargets(GlobalConfig &CFG,
       IP.classifyTargets(Destination, &I);
     }
   }
+
+  NumITargetsGathered += Destination.size();
 
   DEBUG_ALSO_WITH_TYPE(
       "meminstrument-itargetprovider",
