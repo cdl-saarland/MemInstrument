@@ -57,12 +57,12 @@ bool ITarget::isCheck() const {
   return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck);
 }
 
-llvm::Value *ITarget::getInstrumentee(void) const {
+Value *ITarget::getInstrumentee(void) const {
   assert(isValid());
   return _Instrumentee;
 }
 
-llvm::Instruction *ITarget::getLocation(void) const {
+Instruction *ITarget::getLocation(void) const {
   assert(isValid());
   return _Location;
 }
@@ -73,7 +73,7 @@ size_t ITarget::getAccessSize(void) const {
   return _AccessSize;
 }
 
-llvm::Value *ITarget::getAccessSizeVal(void) const {
+Value *ITarget::getAccessSizeVal(void) const {
   assert(isValid());
   assert(is(Kind::VarSizeCheck));
   return _AccessSizeVal;
@@ -170,8 +170,8 @@ bool ITarget::joinFlags(const ITarget &other) {
   return Changed;
 }
 
-ITargetPtr ITarget::createBoundsTarget(llvm::Value *Instrumentee,
-                                       llvm::Instruction *Location) {
+ITargetPtr ITarget::createBoundsTarget(Value *Instrumentee,
+                                       Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Bounds);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -181,24 +181,24 @@ ITargetPtr ITarget::createBoundsTarget(llvm::Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createInvariantTarget(llvm::Value *Instrumentee,
-                                          llvm::Instruction *Location) {
+ITargetPtr ITarget::createInvariantTarget(Value *Instrumentee,
+                                          Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Invariant);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location) {
-  llvm::Module *M = Location->getModule();
+ITargetPtr ITarget::createSpatialCheckTarget(Value *Instrumentee,
+                                             Instruction *Location) {
+  Module *M = Location->getModule();
   const auto &DL = M->getDataLayout();
   size_t acc_size = getPointerAccessSize(DL, Instrumentee);
   return ITarget::createSpatialCheckTarget(Instrumentee, Location, acc_size);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location,
+ITargetPtr ITarget::createSpatialCheckTarget(Value *Instrumentee,
+                                             Instruction *Location,
                                              size_t Size) {
   ITarget *R = new ITarget(ITarget::Kind::ConstSizeCheck);
   R->_Instrumentee = Instrumentee;
@@ -209,9 +209,9 @@ ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location,
-                                             llvm::Value *Size) {
+ITargetPtr ITarget::createSpatialCheckTarget(Value *Instrumentee,
+                                             Instruction *Location,
+                                             Value *Size) {
   ITarget *R = new ITarget(ITarget::Kind::VarSizeCheck);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
@@ -221,15 +221,16 @@ ITargetPtr ITarget::createSpatialCheckTarget(llvm::Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location) {
+ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
+                                             Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
   R->_Location = Location;
   return std::shared_ptr<ITarget>(R);
 }
-ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location,
+
+ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
+                                             Instruction *Location,
                                              const ITarget &other) {
   ITarget *R = new ITarget(ITarget::Kind::Intermediate);
   R->_Instrumentee = Instrumentee;
@@ -241,28 +242,28 @@ ITargetPtr ITarget::createIntermediateTarget(llvm::Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
-void ITarget::printLocation(llvm::raw_ostream &Stream) const {
+void ITarget::printLocation(raw_ostream &Stream) const {
   auto *L = this->getLocation();
   std::string LocName = L->getName().str();
   if (LocName.empty()) {
     switch (L->getOpcode()) {
-    case llvm::Instruction::Store:
+    case Instruction::Store:
       LocName = "[store";
       break;
 
-    case llvm::Instruction::Ret:
+    case Instruction::Ret:
       LocName = "[ret";
       break;
 
-    case llvm::Instruction::Br:
+    case Instruction::Br:
       LocName = "[br";
       break;
 
-    case llvm::Instruction::Switch:
+    case Instruction::Switch:
       LocName = "[switch";
       break;
 
-    case llvm::Instruction::Call:
+    case Instruction::Call:
       LocName = "[anon call";
       break;
 
@@ -285,8 +286,7 @@ void ITarget::printLocation(llvm::raw_ostream &Stream) const {
   Stream << BB->getName() << "::" << LocName;
 }
 
-llvm::raw_ostream &meminstrument::operator<<(llvm::raw_ostream &Stream,
-                                             const ITarget &IT) {
+raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
   if (!IT.isValid()) {
     Stream << "<invalidated itarget>";
     return Stream;
