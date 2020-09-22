@@ -27,7 +27,7 @@ struct WitnessGraphNode {
 
   /// Gets a vector of nodes that are required by this node.
   ///
-  /// Allows traversal from actual instrumentation targets to the defintions
+  /// Allows traversal from actual instrumentation targets to the definitions
   /// of the contributing pointers.
   const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiredNodes() const {
     return _Requirements;
@@ -35,7 +35,7 @@ struct WitnessGraphNode {
 
   /// Gets a vector of nodes that require this node.
   ///
-  /// Allows traversal from the defintions of the contributing pointers to
+  /// Allows traversal from the definitions of the contributing pointers to
   /// actual instrumentation targets.
   const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiringNodes() const {
     return _RequiredBy;
