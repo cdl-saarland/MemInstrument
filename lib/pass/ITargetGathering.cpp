@@ -23,6 +23,10 @@ void meminstrument::gatherITargets(GlobalConfig &CFG,
                                    ITargetVector &Destination, Function &F) {
   auto &IP = CFG.getInstrumentationPolicy();
 
+  for (auto &Arg : F.args()) {
+    IP.classifyTargetsArg(Destination, &Arg);
+  }
+
   for (auto &BB : F) {
     for (auto &I : BB) {
       if (hasNoInstrument(&I)) {

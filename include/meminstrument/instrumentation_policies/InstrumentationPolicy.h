@@ -29,6 +29,10 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) = 0;
 
+  /// Add the ITargets necessary for the function argument Arg to Dest.
+  virtual void classifyTargetsArg(std::vector<std::shared_ptr<ITarget>> &Dest,
+                                  llvm::Argument *Arg);
+
   /// Returns the name of the instrumentation policy for printing and easy
   /// recognition.
   virtual const char *getName(void) const = 0;
