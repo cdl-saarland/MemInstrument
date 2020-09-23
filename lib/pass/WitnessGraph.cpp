@@ -45,20 +45,21 @@ WitnessGraphNode *WitnessGraph::getInternalNode(ITargetPtr Target) {
 WitnessGraphNode *WitnessGraph::createNewInternalNode(ITargetPtr Target) {
   assert(getInternalNodeOrNull(Target) == nullptr &&
          "Internal node already exists!");
-  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
+
   auto *NewNode = new WitnessGraphNode(*this, Target);
-  InternalNodes.insert(std::make_pair(Key, NewNode));
+  InternalNodes.push_back(NewNode);
 
   return NewNode;
 }
 
 WitnessGraphNode *WitnessGraph::getInternalNodeOrNull(ITargetPtr Target) {
-  auto Key = std::make_pair(Target->getInstrumentee(), Target->getLocation());
-  auto It = InternalNodes.find(Key);
-  if (It != InternalNodes.end()) {
-    auto *Node = It->getSecond();
-    return Node;
+
+  for (auto *WGN : InternalNodes) {
+    if (*WGN->Target == *Target) {
+      return WGN;
+    }
   }
+
   return nullptr;
 }
 
@@ -115,8 +116,7 @@ void WitnessGraph::printDotGraph(
     stream << ", color=blue];\n";
   }
 
-  for (const auto &P : InternalNodes) {
-    const auto &Node = P.getSecond();
+  for (const auto &Node : InternalNodes) {
     stream << "  n" << Node->id << " [label=\"" << *(Node->Target) << "\"";
     if (Node->getRequiredNodes().size() == 0) {
       stream << ", color=red";
@@ -132,8 +132,7 @@ void WitnessGraph::printDotGraph(
     }
   }
 
-  for (const auto &P : InternalNodes) {
-    const auto &Node = P.getSecond();
+  for (const auto &Node : InternalNodes) {
     for (const auto *Other : Node->getRequiredNodes()) {
       stream << "  n" << Node->id << " -> n" << Other->id << ";\n";
     }
@@ -178,8 +177,7 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
     PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
-  for (auto &Pair : InternalNodes) {
-    auto *Node = Pair.getSecond();
+  for (auto *Node : InternalNodes) {
     auto &Target = Node->Target;
     assert(Target->hasBoundWitness());
     PrintMap[Target->getBoundWitness().get()].insert(Target.get());
@@ -235,11 +233,11 @@ void WitnessGraph::removeDeadNodes(void) {
   }
 
   for (auto it = InternalNodes.begin(); it != InternalNodes.end();) {
-    if (DoNotRemove.find(it->second) != DoNotRemove.end()) {
+    if (DoNotRemove.find(*it) != DoNotRemove.end()) {
       ++it;
     } else {
-      delete (it->second);
-      InternalNodes.erase(it++);
+      delete *it;
+      it = InternalNodes.erase(it);
     }
   }
 }
@@ -248,7 +246,7 @@ void WitnessGraph::map(const std::function<void(WitnessGraphNode *)> &f) {
   for (auto &N : ExternalNodes) {
     f(N);
   }
-  for (auto &Pair : InternalNodes) {
-    f(Pair.second);
+  for (auto &E : InternalNodes) {
+    f(E);
   }
 }

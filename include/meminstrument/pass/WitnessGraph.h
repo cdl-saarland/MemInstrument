@@ -105,8 +105,8 @@ public:
     for (auto &N : ExternalNodes) {
       delete N;
     }
-    for (auto &P : InternalNodes) {
-      delete (P.second);
+    for (auto &N : InternalNodes) {
+      delete N;
     }
   }
 
@@ -149,12 +149,11 @@ public:
 private:
   const llvm::Function &Func;
   const WitnessStrategy &Strategy;
-  typedef std::pair<llvm::Value *, llvm::Instruction *> KeyType;
 
-  /// A map of artificial nodes that correspond to temporary intermediate
+  /// Artificial nodes that correspond to temporary intermediate
   /// targets that are inserted to generate witnesses for the externally
   /// required nodes.
-  llvm::DenseMap<KeyType, WitnessGraphNode *> InternalNodes;
+  std::vector<WitnessGraphNode *> InternalNodes;
 
   /// A vector of nodes that are required externally and which need witnesses.
   std::vector<WitnessGraphNode *> ExternalNodes;
