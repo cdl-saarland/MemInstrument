@@ -23,17 +23,9 @@ using namespace llvm;
 void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
                                           Instruction *Location) {
   switch (Location->getOpcode()) {
-  case Instruction::Ret: {
-    ReturnInst *I = cast<ReturnInst>(Location);
-
-    auto *Operand = I->getReturnValue();
-    if (!Operand || !Operand->getType()->isPointerTy()) {
-      return;
-    }
-
-    Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
+  case Instruction::Ret:
+    insertInvariantTargetReturn(Dest, cast<ReturnInst>(Location));
     break;
-  }
   case Instruction::Call: {
     CallInst *I = cast<CallInst>(Location);
 

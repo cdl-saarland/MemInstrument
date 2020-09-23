@@ -59,7 +59,15 @@ protected:
 
   /// Iff a pointer is stored to memory, this function will create an invariant
   /// target for the stored pointer.
-  void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *Inst);
+  void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *);
+
+  /// Iff a pointer is loaded from memory, this function will create an
+  /// invariant target for the loaded pointer.
+  void insertInvariantTargetLoad(ITargetVector &Dest, llvm::LoadInst *);
+
+  /// Iff a pointer is returned from a function, create an
+  /// invariant target for the returned pointer.
+  void insertInvariantTargetReturn(ITargetVector &Dest, llvm::ReturnInst *);
 };
 
 } // namespace meminstrument

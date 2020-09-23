@@ -78,12 +78,32 @@ void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
 }
 
 void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
-                                                       StoreInst *Inst) {
+                                                       StoreInst *Store) {
 
-  auto *StoreOperand = Inst->getValueOperand();
+  auto *StoreOperand = Store->getValueOperand();
   if (!StoreOperand->getType()->isPointerTy()) {
     return;
   }
 
-  Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Inst));
+  Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Store));
+}
+
+void InstrumentationPolicy::insertInvariantTargetLoad(ITargetVector &Dest,
+                                                      LoadInst *Load) {
+  if (!Load->getType()->isPointerTy()) {
+    return;
+  }
+
+  Dest.push_back(ITarget::createInvariantTarget(Load, Load));
+}
+
+void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
+                                                        llvm::ReturnInst *Ret) {
+
+  auto *Operand = Ret->getReturnValue();
+  if (!Operand || !Operand->getType()->isPointerTy()) {
+    return;
+  }
+
+  Dest.push_back(ITarget::createInvariantTarget(Operand, Ret));
 }
