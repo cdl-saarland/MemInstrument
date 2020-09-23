@@ -47,11 +47,10 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
-      if (!validateSize(I->getCalledValue())) {
+      if (!validateSize(I->getCalledOperand())) {
         return;
       }
-      Dest.push_back(
-          ITarget::createSpatialCheckTarget(I->getCalledValue(), Location, 1));
+      Dest.push_back(ITarget::createCallCheckTarget(I->getCalledOperand(), I));
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
       // skip debug information pseudo-calls

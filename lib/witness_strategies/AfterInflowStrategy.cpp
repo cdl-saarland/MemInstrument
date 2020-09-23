@@ -90,13 +90,15 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
+  auto &Target = Node->Target;
+  assert(Target->hasInstrumentee());
+  Instruction *Instrumentee = dyn_cast<Instruction>(Target->getInstrumentee());
   Node->HasAllRequirements = true;
 
   auto &WG = Node->Graph;
 
-  auto &Target = Node->Target;
-  if (auto *I = dyn_cast<Instruction>(Target->getInstrumentee())) {
-    switch (I->getOpcode()) {
+  if (Instrumentee) {
+    switch (Instrumentee->getOpcode()) {
     case Instruction::Alloca:
     case Instruction::Call:
     case Instruction::LandingPad:
@@ -105,15 +107,15 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
-      requireSource(Node, I, I->getNextNode());
+      requireSource(Node, Instrumentee, Instrumentee->getNextNode());
       return;
     }
     case Instruction::Invoke: {
       // We cannot insert witnesses after invokes as these are terminators.
       // Therefore, use the first non-phi instruction of the 'normal' successor.
-      auto *II = dyn_cast<InvokeInst>(I);
+      auto *II = dyn_cast<InvokeInst>(Instrumentee);
       auto *Loc = II->getNormalDest()->getFirstNonPHI();
-      requireSource(Node, I, Loc);
+      requireSource(Node, II, Loc);
       return;
     }
 
@@ -121,7 +123,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       // Introduce a target for the phi. This breaks loops consistently.
       // Setting the location to I (and not after I) makes sure that this
       // particular internal Node is only "gotten" when handling Phis here.
-      auto *PhiNode = getInternalNode(WG, I, I);
+      auto *PhiNode = getInternalNode(WG, Instrumentee, Instrumentee);
       Node->addRequirement(PhiNode);
       if (PhiNode->HasAllRequirements) {
         return;
@@ -129,7 +131,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       PhiNode->HasAllRequirements = true;
 
       // The phi target requires witnesses of its incoming values.
-      auto *PtrPhi = cast<PHINode>(I);
+      auto *PtrPhi = cast<PHINode>(Instrumentee);
       unsigned NumOperands = PtrPhi->getNumIncomingValues();
       for (unsigned i = 0; i < NumOperands; ++i) {
         auto *InVal = PtrPhi->getIncomingValue(i);
@@ -141,23 +143,24 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
     case Instruction::Select: {
       // A select target needs witnesses of both its arguments.
-      auto *PtrSelect = cast<SelectInst>(I);
-      requireRecursively(Node, PtrSelect->getTrueValue(), I);
-      requireRecursively(Node, PtrSelect->getFalseValue(), I);
+      auto *PtrSelect = cast<SelectInst>(Instrumentee);
+      requireRecursively(Node, PtrSelect->getTrueValue(), Instrumentee);
+      requireRecursively(Node, PtrSelect->getFalseValue(), Instrumentee);
       return;
     }
 
     case Instruction::GetElementPtr: {
       // A GEP target requires only the witness of its argument.
-      auto *Operand = cast<GetElementPtrInst>(I)->getPointerOperand();
-      requireRecursively(Node, Operand, I);
+      auto *Operand =
+          cast<GetElementPtrInst>(Instrumentee)->getPointerOperand();
+      requireRecursively(Node, Operand, Instrumentee);
       return;
     }
 
     case Instruction::BitCast: {
       // A bitcast target requires only the witness of its argument.
-      auto *Operand = cast<BitCastInst>(I)->getOperand(0);
-      requireRecursively(Node, Operand, I);
+      auto *Operand = cast<BitCastInst>(Instrumentee)->getOperand(0);
+      requireRecursively(Node, Operand, Instrumentee);
       return;
     }
 
@@ -167,7 +170,8 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       ++NumPtrVectorInstructions; // fallthrough
     default:
       ++NumUnsupportedInsns;
-      LLVM_DEBUG(dbgs() << "Unsupported instruction:\n" << *I << "\n\n";);
+      LLVM_DEBUG(dbgs() << "Unsupported instruction:\n"
+                        << *Instrumentee << "\n\n";);
       _CFG.noteError();
       return;
     }
@@ -215,7 +219,9 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
                                         WitnessGraphNode *Node) const {
-  if (Node->Target->hasBoundWitness()) {
+
+  auto &Target = Node->Target;
+  if (Target->hasBoundWitness()) {
     // We already handled this node.
     return;
   }
@@ -223,7 +229,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   if (Node->getRequiredNodes().size() == 0) {
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
-    IM.insertWitness(*(Node->Target));
+    IM.insertWitness(*(Target));
     return;
   }
 
@@ -232,15 +238,17 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
     if (ShareBoundsOpt) {
-      Node->Target->setBoundWitness(Requirement->Target->getBoundWitness());
+      Target->setBoundWitness(Requirement->Target->getBoundWitness());
     } else {
-      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(),
-                           *Node->Target);
+      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(), *Target);
     }
     return;
   }
 
-  auto *Instrumentee = Node->Target->getInstrumentee();
+  assert(Target->hasInstrumentee());
+  Instruction *Instrumentee = dyn_cast<Instruction>(Target->getInstrumentee());
+  assert(Instrumentee);
+
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
     // Insert new phis that use the witnesses of the operands of the
     // instrumentee. This has to happen in two separate steps to break loops.

@@ -47,14 +47,19 @@ public:
     VarSizeCheck,   /// inbounds check with a compile-time variable size
     Intermediate,   /// witnesses need to be propagated
     Invariant,      /// an invariant needs to be checked
+    CallCheck,      /// a function call needs to be checked
+    CallInvariant,  /// a function call invariant needs to be checked
   };
 
   bool is(Kind k) const;
 
   Kind getKind(void) const;
 
-  /// returns true iff the target is a (const or var size) check
+  /// returns true iff the target is a (const, var size or call) check
   bool isCheck() const;
+
+  /// returns true iff the target is a (call) invariant
+  bool isInvariant() const;
 
   /// value that should be checked by the instrumentation
   llvm::Value *getInstrumentee(void) const;
@@ -65,6 +70,9 @@ public:
   size_t getAccessSize(void) const;
 
   llvm::Value *getAccessSizeVal(void) const;
+
+  /// returns true iff the target has an instrumentee
+  bool hasInstrumentee(void) const;
 
   /// indicator whether instrumentee should be checked against its upper bound
   bool hasUpperBoundFlag(void) const;
@@ -132,6 +140,16 @@ public:
 
   static ITargetPtr createIntermediateTarget(llvm::Value *Instrumentee,
                                              llvm::Instruction *Location);
+
+  /// Static factory method for creating an ITarget for a called function
+  /// pointer (Instrumentee) at the location Call. The result will have the kind
+  /// ITarget::Kind::CallCheck.
+  static ITargetPtr createCallCheckTarget(llvm::Value *Instrumentee,
+                                          llvm::CallInst *Call);
+
+  /// Static factory method for creating an ITarget for a call invariant. The
+  /// result will have the kind ITarget::Kind::CallInvariant.
+  static ITargetPtr createCallInvariantTarget(llvm::CallInst *Call);
 
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);

@@ -109,9 +109,21 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   }
 
   if (Target.isCheck()) {
-    auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
-                     ? ConstantInt::get(SizeType, Target.getAccessSize())
-                     : Target.getAccessSizeVal();
+
+    // Determine the access width depending on the target kind
+    Value *Size = nullptr;
+    if (Target.is(ITarget::Kind::CallCheck)) {
+      Size = ConstantInt::get(SizeType, 1);
+    }
+    if (Target.is(ITarget::Kind::ConstSizeCheck)) {
+      Size = ConstantInt::get(SizeType, Target.getAccessSize());
+    }
+    if (Target.is(ITarget::Kind::VarSizeCheck)) {
+      Size = Target.getAccessSizeVal();
+    }
+
+    assert(Size);
+
     if (Verbose) {
       insertCall(Builder, CheckDereferenceFunction,
                  std::vector<Value *>{WitnessVal, CastVal, Size, NameVal});

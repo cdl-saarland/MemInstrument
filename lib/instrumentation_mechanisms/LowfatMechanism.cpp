@@ -75,9 +75,20 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
   if (Target.isCheck()) {
-    auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
-                     ? ConstantInt::get(SizeType, Target.getAccessSize())
-                     : Target.getAccessSizeVal();
+
+    // Determine the access width depending on the target kind
+    Value *Size = nullptr;
+    if (Target.is(ITarget::Kind::CallCheck)) {
+      Size = ConstantInt::get(SizeType, 1);
+    }
+    if (Target.is(ITarget::Kind::ConstSizeCheck)) {
+      Size = ConstantInt::get(SizeType, Target.getAccessSize());
+    }
+    if (Target.is(ITarget::Kind::VarSizeCheck)) {
+      Size = Target.getAccessSizeVal();
+    }
+
+    assert(Size);
     insertCall(Builder, CheckDerefFunction,
                std::vector<Value *>{WitnessVal, CastVal, Size});
     ++LowfatNumDereferenceChecks;

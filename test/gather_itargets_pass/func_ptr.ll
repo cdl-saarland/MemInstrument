@@ -1,5 +1,5 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
-; RUN: fgrep "<dereference check with constant size 1B for arg at bar_bb::res>" %t.log
+; RUN: fgrep "<call check for arg at bar_bb::res>" %t.log
 ; RUN: fgrep "<invariant check for a at bar_bb::res>" %t.log
 ; RUN: fgrep "<invariant check for b at bar_bb::res>" %t.log
 ; RUN: fgrep "<invariant check for baz at foo_bb::res>" %t.log

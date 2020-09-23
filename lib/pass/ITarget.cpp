@@ -34,7 +34,7 @@ size_t meminstrument::getNumValidITargets(const ITargetVector &IV) {
 bool meminstrument::validateITargets(const DominatorTree &dt,
                                      const ITargetVector &IV) {
   for (const auto &t : IV) {
-    if (!t->isValid()) {
+    if (!t->isValid() || !t->hasInstrumentee()) {
       continue;
     }
     if (const auto *insn = dyn_cast<Instruction>(t->getInstrumentee())) {
@@ -54,11 +54,17 @@ bool ITarget::is(Kind k) const { return this->getKind() == k; }
 ITarget::Kind ITarget::getKind(void) const { return _Kind; }
 
 bool ITarget::isCheck() const {
-  return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck);
+  return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck) ||
+         is(Kind::CallCheck);
+}
+
+bool ITarget::isInvariant() const {
+  return is(Kind::Invariant) || is(Kind::CallInvariant);
 }
 
 Value *ITarget::getInstrumentee(void) const {
   assert(isValid());
+  assert(hasInstrumentee());
   return _Instrumentee;
 }
 
@@ -77,6 +83,11 @@ Value *ITarget::getAccessSizeVal(void) const {
   assert(isValid());
   assert(is(Kind::VarSizeCheck));
   return _AccessSizeVal;
+}
+
+bool ITarget::hasInstrumentee(void) const {
+  assert(isValid());
+  return _Instrumentee;
 }
 
 bool ITarget::hasUpperBoundFlag(void) const {
@@ -121,6 +132,9 @@ void ITarget::invalidate(void) { _Invalidated = true; }
 bool ITarget::subsumes(const ITarget &other) const {
   assert(isValid());
   assert(other.isValid());
+
+  if (!hasInstrumentee() || !other.hasInstrumentee())
+    return false;
 
   if (getInstrumentee() != other.getInstrumentee())
     return false;
@@ -229,6 +243,28 @@ ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
+ITargetPtr ITarget::createCallCheckTarget(Value *Instrumentee, CallInst *Call) {
+  ITarget *R = new ITarget(ITarget::Kind::CallCheck);
+  R->_Instrumentee = Instrumentee;
+  R->_Location = Call;
+  R->_CheckUpperBoundFlag = false;
+  R->_CheckLowerBoundFlag = false;
+  R->_CheckTemporalFlag = false;
+  R->_RequiresExplicitBounds = false;
+  return std::shared_ptr<ITarget>(R);
+}
+
+ITargetPtr ITarget::createCallInvariantTarget(CallInst *Call) {
+  ITarget *R = new ITarget(ITarget::Kind::CallInvariant);
+  R->_Instrumentee = nullptr;
+  R->_Location = Call;
+  R->_CheckUpperBoundFlag = false;
+  R->_CheckLowerBoundFlag = false;
+  R->_CheckTemporalFlag = false;
+  R->_RequiresExplicitBounds = false;
+  return std::shared_ptr<ITarget>(R);
+}
+
 void ITarget::printLocation(raw_ostream &Stream) const {
   auto *L = this->getLocation();
   std::string LocName = L->getName().str();
@@ -307,8 +343,16 @@ raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
   case ITarget::Kind::Invariant:
     Stream << "invariant check";
     break;
+  case ITarget::Kind::CallCheck:
+    Stream << "call check";
+    break;
+  case ITarget::Kind::CallInvariant:
+    Stream << "call invariant";
   }
-  Stream << " for " << IT.getInstrumentee()->getName() << " at ";
+
+  if (IT.hasInstrumentee()) {
+    Stream << " for " << IT.getInstrumentee()->getName() << " at ";
+  }
   IT.printLocation(Stream);
   if (IT.hasBoundWitness()) {
     Stream << " with witness";
