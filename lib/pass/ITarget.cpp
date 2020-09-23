@@ -229,19 +229,6 @@ ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
   return std::shared_ptr<ITarget>(R);
 }
 
-ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
-                                             Instruction *Location,
-                                             const ITarget &other) {
-  ITarget *R = new ITarget(ITarget::Kind::Intermediate);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
-  R->_CheckUpperBoundFlag = other._CheckUpperBoundFlag;
-  R->_CheckLowerBoundFlag = other._CheckLowerBoundFlag;
-  R->_CheckTemporalFlag = other._CheckTemporalFlag;
-  R->_RequiresExplicitBounds = other._RequiresExplicitBounds;
-  return std::shared_ptr<ITarget>(R);
-}
-
 void ITarget::printLocation(raw_ostream &Stream) const {
   auto *L = this->getLocation();
   std::string LocName = L->getName().str();

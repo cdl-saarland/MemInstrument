@@ -133,10 +133,6 @@ public:
   static ITargetPtr createIntermediateTarget(llvm::Value *Instrumentee,
                                              llvm::Instruction *Location);
 
-  static ITargetPtr createIntermediateTarget(llvm::Value *Instrumentee,
-                                             llvm::Instruction *Location,
-                                             const ITarget &other);
-
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &Stream,
                                        const ITarget &It);
 
