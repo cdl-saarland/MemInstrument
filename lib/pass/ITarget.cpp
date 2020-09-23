@@ -286,6 +286,16 @@ void ITarget::printLocation(raw_ostream &Stream) const {
   Stream << BB->getName() << "::" << LocName;
 }
 
+bool ITarget::operator==(const ITarget &Other) const {
+  assert(isValid() && Other.isValid());
+  return _Instrumentee == Other._Instrumentee && _Location == Other._Location &&
+         _Kind == Other._Kind &&
+         _CheckUpperBoundFlag == Other._CheckUpperBoundFlag &&
+         _CheckLowerBoundFlag == Other._CheckLowerBoundFlag &&
+         _CheckTemporalFlag == Other._CheckTemporalFlag &&
+         _RequiresExplicitBounds == Other._RequiresExplicitBounds;
+}
+
 raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
   if (!IT.isValid()) {
     Stream << "<invalidated itarget>";

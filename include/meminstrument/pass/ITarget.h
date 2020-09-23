@@ -142,6 +142,8 @@ public:
 
   void printLocation(llvm::raw_ostream &Stream) const;
 
+  bool operator==(const ITarget &) const;
+
 private:
   ITarget(Kind k)
       : _Kind(k), _BoundWitness(std::shared_ptr<Witness>(nullptr)) {}
