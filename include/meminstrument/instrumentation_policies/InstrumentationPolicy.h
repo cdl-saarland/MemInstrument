@@ -29,10 +29,6 @@ public:
   virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
                                llvm::Instruction *Loc) = 0;
 
-  /// Add the ITargets necessary for the function argument Arg to Dest.
-  virtual void classifyTargetsArg(std::vector<std::shared_ptr<ITarget>> &Dest,
-                                  llvm::Argument *Arg);
-
   /// Returns the name of the instrumentation policy for printing and easy
   /// recognition.
   virtual const char *getName(void) const = 0;
@@ -60,10 +56,6 @@ protected:
   /// Iff a pointer is stored to memory, this function will create an invariant
   /// target for the stored pointer.
   void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *);
-
-  /// Iff a pointer is loaded from memory, this function will create an
-  /// invariant target for the loaded pointer.
-  void insertInvariantTargetLoad(ITargetVector &Dest, llvm::LoadInst *);
 
   /// Iff a pointer is returned from a function, create an
   /// invariant target for the returned pointer.

@@ -24,9 +24,6 @@ STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
 
 InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
 
-void InstrumentationPolicy::classifyTargetsArg(
-    std::vector<std::shared_ptr<ITarget>> &, Argument *) {}
-
 bool InstrumentationPolicy::validateSize(Value *Ptr) {
   if (!hasPointerAccessSize(Ptr)) {
     ++NumUnsizedTypes;
@@ -86,15 +83,6 @@ void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
   }
 
   Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Store));
-}
-
-void InstrumentationPolicy::insertInvariantTargetLoad(ITargetVector &Dest,
-                                                      LoadInst *Load) {
-  if (!Load->getType()->isPointerTy()) {
-    return;
-  }
-
-  Dest.push_back(ITarget::createInvariantTarget(Load, Load));
 }
 
 void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
