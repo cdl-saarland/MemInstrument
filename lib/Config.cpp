@@ -15,6 +15,7 @@
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
 #include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
 #include "meminstrument/instrumentation_policies/NonePolicy.h"
+#include "meminstrument/instrumentation_policies/PointerBoundsPolicy.h"
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 #include "meminstrument/witness_strategies/NoneStrategy.h"
 
@@ -116,20 +117,23 @@ enum class IPKind {
   beforeOutflow,
   accessOnly,
   none,
+  pointerBounds,
   default_val,
 };
 
-cl::opt<IPKind>
-    IPOpt("mi-ipolicy", cl::desc("Override InstructionPolicy:"),
-          cl::values(
-              clEnumValN(IPKind::beforeOutflow, "before-outflow",
-                         "check for dereference at loads/stores and for being"
-                         " inbounds when pointers flow out of functions"),
-              clEnumValN(IPKind::accessOnly, "access-only",
-                         "check only at loads/stores for dereference"),
-              clEnumValN(IPKind::none, "none",
-                         "do not check anything (except for external checks)")),
-          cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
+cl::opt<IPKind> IPOpt(
+    "mi-ipolicy", cl::desc("Override InstructionPolicy:"),
+    cl::values(clEnumValN(IPKind::beforeOutflow, "before-outflow",
+                          "check for dereference at loads/stores and for being"
+                          " inbounds when pointers flow out of functions"),
+               clEnumValN(IPKind::accessOnly, "access-only",
+                          "check only at loads/stores for dereference"),
+               clEnumValN(IPKind::none, "none",
+                          "do not check anything (except for external checks)"),
+               clEnumValN(IPKind::pointerBounds, "pointer-bounds",
+                          "pointer bounds strategy based targets (loads, "
+                          "stores, calls, function arguments)")),
+    cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
 
 InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k,
                                                    const DataLayout &DL) {
@@ -140,6 +144,8 @@ InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k,
     return new AccessOnlyPolicy(cfg, DL);
   case IPKind::none:
     return new NonePolicy(cfg, DL);
+  case IPKind::pointerBounds:
+    return new PointerBoundsPolicy(cfg);
   case IPKind::default_val:
     return nullptr;
   }
@@ -456,8 +462,7 @@ public:
   virtual ~SoftBoundConfig(void) {}
 
   virtual IPKind getInstrumentationPolicy(void) const override {
-    // TODO Implement new policy
-    return IPKind::beforeOutflow;
+    return IPKind::pointerBounds;
   }
   virtual IMKind getInstrumentationMechanism(void) const override {
     return IMKind::softbound;

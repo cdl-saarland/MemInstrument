@@ -26,6 +26,7 @@ add_library(
   instrumentation_policies/BeforeOutflowPolicy.cpp
   instrumentation_policies/AccessOnlyPolicy.cpp
   instrumentation_policies/NonePolicy.cpp
+  instrumentation_policies/PointerBoundsPolicy.cpp
   witness_strategies/WitnessStrategy.cpp
   witness_strategies/AfterInflowStrategy.cpp
   witness_strategies/NoneStrategy.cpp
