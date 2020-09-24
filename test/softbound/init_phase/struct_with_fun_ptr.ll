@@ -5,8 +5,6 @@
 ; CHECK-NEXT: Base: i8* bitcast (i32 (i32, i32)* @Add to i8*)
 ; CHECK-NEXT: Bound: i8* bitcast (i32 (i32, i32)* @Add to i8*)
 
-; ModuleID = '/home/tina/Tests/tests/SoftBounds/StructWithFunPtr.c'
-source_filename = "/home/tina/Tests/tests/SoftBounds/StructWithFunPtr.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
