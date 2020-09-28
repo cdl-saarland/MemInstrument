@@ -350,9 +350,10 @@ raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
     Stream << "call invariant";
   }
 
-  if (IT.hasInstrumentee()) {
-    Stream << " for " << IT.getInstrumentee()->getName() << " at ";
+  if (IT.hasInstrumentee() && IT.getInstrumentee()->hasName()) {
+    Stream << " for " << IT.getInstrumentee()->getName();
   }
+  Stream << " at ";
   IT.printLocation(Stream);
   if (IT.hasBoundWitness()) {
     Stream << " with witness";
