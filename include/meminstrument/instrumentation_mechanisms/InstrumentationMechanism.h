@@ -22,7 +22,7 @@ class GlobalConfig;
 /// is implemented. This abstract class therefore declares methods to obtain
 /// Witnesses (e.g. load bounds), to propagate witnesses, and to insert check
 /// code.
-/// It further provides handles to usefule instrumentation functions for other
+/// It further provides handles to useful instrumentation functions for other
 /// components, such as a fail function that aborts the instrumented cleanly
 /// with a backtrace when executed.
 ///
