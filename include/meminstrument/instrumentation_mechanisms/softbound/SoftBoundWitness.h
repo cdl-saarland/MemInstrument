@@ -1,4 +1,4 @@
-//===-------- meminstrument/SoftBoundWitness.h - TODO -----------*- C++ -*-===//
+//===----- meminstrument/SoftBoundWitness.h - Bound Witnesses ---*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -21,11 +21,19 @@ namespace meminstrument {
 class SoftBoundWitness : public Witness {
 
 public:
+  SoftBoundWitness(llvm::Value *lowerBound, llvm::Value *upperBound,
+                   llvm::Value *ptr);
+
   virtual auto getLowerBound() const -> llvm::Value * override;
 
   virtual auto getUpperBound() const -> llvm::Value * override;
 
   static bool classof(const Witness *W);
+
+private:
+  llvm::Value *lowerBound = nullptr;
+  llvm::Value *upperBound = nullptr;
+  llvm::Value *ptr = nullptr;
 };
 
 } // namespace meminstrument

@@ -1,4 +1,4 @@
-//===------------------- SoftBoundWitness.cpp - TODO ----------------------===//
+//===- SoftBoundWitness.cpp - Lower+Upper Bound Witnesses for SoftBound ---===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// TODO
+/// Connects a pointer ptr with its lower and upper bound value, lowerBound and
+/// upperBound.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -22,13 +23,16 @@ using namespace meminstrument;
 //                   Implementation of SoftBoundWitness
 //===----------------------------------------------------------------------===//
 
-auto SoftBoundWitness::getLowerBound() const -> Value * {
-  llvm_unreachable("TODO implement");
+SoftBoundWitness::SoftBoundWitness(Value *lowerBound, Value *upperBound,
+                                   Value *ptr)
+    : Witness(WK_SoftBound), lowerBound(lowerBound), upperBound(upperBound),
+      ptr(ptr) {
+  assert(lowerBound && upperBound && ptr);
 }
 
-auto SoftBoundWitness::getUpperBound() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
+auto SoftBoundWitness::getLowerBound() const -> Value * { return lowerBound; }
+
+auto SoftBoundWitness::getUpperBound() const -> Value * { return upperBound; }
 
 bool SoftBoundWitness::classof(const Witness *W) {
   return W->getKind() == WK_SoftBound;

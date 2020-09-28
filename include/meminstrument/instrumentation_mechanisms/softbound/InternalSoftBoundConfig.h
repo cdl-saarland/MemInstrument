@@ -37,7 +37,11 @@ public:
 
   static bool ensureFullSafety();
 
+  /// Definitions of string for metadata nodes used to annotate the generated IR
   static auto getMetadataKind() -> llvm::StringRef;
+  static auto getShadowStackInfoStr() -> llvm::StringRef;
+  static auto getMetadataInfoStr() -> llvm::StringRef;
+  static auto getSetupInfoStr() -> llvm::StringRef;
 
 private:
   static const SafetyLevel level;

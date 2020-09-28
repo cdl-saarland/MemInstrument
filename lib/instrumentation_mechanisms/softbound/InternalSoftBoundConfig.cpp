@@ -52,6 +52,16 @@ auto InternalSoftBoundConfig::getMetadataKind() -> StringRef {
   return "SoftBound";
 }
 
+auto InternalSoftBoundConfig::getShadowStackInfoStr() -> StringRef {
+  return "ShadowStack";
+}
+
+auto InternalSoftBoundConfig::getMetadataInfoStr() -> StringRef {
+  return "Metadata";
+}
+
+auto InternalSoftBoundConfig::getSetupInfoStr() -> StringRef { return "Setup"; }
+
 //===-------------------------- private -----------------------------------===//
 
 const SafetyLevel InternalSoftBoundConfig::level =

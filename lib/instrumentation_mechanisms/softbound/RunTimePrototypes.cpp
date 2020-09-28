@@ -96,9 +96,9 @@ void PrototypeInserter::insertSpatialRunTimeProtoypes(RunTimeHandles &handles) {
 
   // Shadow stack operations
   handles.loadBaseStack = createAndInsertPrototype(
-      "__softboundcets_load_base_shadow_stack", voidTy, intTy);
+      "__softboundcets_load_base_shadow_stack", baseTy, intTy);
   handles.loadBoundStack = createAndInsertPrototype(
-      "__softboundcets_load_bound_shadow_stack", voidTy, intTy);
+      "__softboundcets_load_bound_shadow_stack", boundTy, intTy);
   handles.storeBaseStack = createAndInsertPrototype(
       "__softboundcets_store_base_shadow_stack", voidTy, baseTy, intTy);
   handles.storeBoundStack = createAndInsertPrototype(

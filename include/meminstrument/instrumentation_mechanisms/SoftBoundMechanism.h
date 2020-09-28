@@ -84,7 +84,18 @@ private:
                          std::vector<llvm::Value *> indices) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
-  /// Create bounds information for the given constant value.
+  /// Prepare the shadow stack for a call, i.e. allocate space before the call
+  /// and deallocate it afterwards.
+  void handleCallInvariant(CallInvariantIT &) const;
+
+  /// Add bit casts if the types are not yet those that base and bound should
+  /// have.
+  auto addBitCasts(llvm::IRBuilder<>, llvm::Value *base,
+                   llvm::Value *bound) const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
+  /// Create bounds information for the given value, by creating a GetElementPtr
+  /// to and one past the element.
   auto getBoundsConst(llvm::Constant *) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
@@ -99,14 +110,53 @@ private:
   /// the program execution.
   auto getNullPtrBounds() const -> std::pair<llvm::Value *, llvm::Value *>;
 
+  /// Compute bounds for a constant
+  auto getBoundsForWitness(llvm::Constant *) const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
+  /// Insert a load of the base and bound metadata for ptr.
+  /// The IR builder should provide the correct load location already.
+  auto insertMetadataLoad(llvm::IRBuilder<> &, llvm::Value *ptr) const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
   /// Insert a store of the given base and bound for the given ptr.
   /// The IR builder should provide the correct store location already.
   void insertMetadataStore(llvm::IRBuilder<> &, llvm::Value *ptr,
                            llvm::Value *base, llvm::Value *bound) const;
 
+  /// Load base and bound information from the shadow stack for the given
+  /// index.
+  auto insertShadowStackLoad(llvm::IRBuilder<> &, int index) const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
+  /// Store base and bound information on the shadow stack for the given
+  /// target.
+  void insertShadowStackStore(llvm::IRBuilder<> &, ITarget &) const;
+
+  /// The shadow stack stores bound information for pointers handed over to
+  /// functions and pointers returned from functions.
+  /// The location on the stack is build up follows:
+  ///   retptr, arg0 bounds, arg1 boundes, ..., argn bounds
+  /// As there is nothing to put on the stack for non-pointer values, the
+  /// location on the stack is not the argument number (+1), but rather the
+  /// number of pointers before the requested argument bounds.
+  /// To avoid flaws in the shadow stack location computation, this functions
+  /// provides a consistent look up of the correct index.
+  auto computeShadowStackLocation(const llvm::Value *) const -> int;
+
   /// Currently vectors of pointers are not handled properly. This function
   /// identifies unproblematic vectors.
   bool isSimpleVectorTy(const llvm::VectorType *) const;
+
+  /// Check if the instruction is supported.
+  bool isUnsupportedInstruction(unsigned opCode) const;
+
+  /// Returns true iff the constant contains an integer to pointer cast.
+  bool containsUnsupportedOp(const llvm::Constant *) const;
+
+  /// Check if this module contains any unsupported constructs (e.g. exception
+  /// handling)
+  void checkModule(llvm::Module &);
 };
 
 } // namespace meminstrument

@@ -17,6 +17,7 @@
 #include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
 #include "meminstrument/instrumentation_mechanisms/softbound/RunTimeHandles.h"
 #include "meminstrument/instrumentation_mechanisms/softbound/RunTimePrototypes.h"
+#include "meminstrument/instrumentation_mechanisms/softbound/SoftBoundWitness.h"
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -27,14 +28,25 @@
 
 #define DEBUG_TYPE "softbound"
 
+// The bounds for in-memory pointer are loaded from a separate data structure,
+// keep track of how often this is necessary.
+STATISTIC(MetadataLoadInserted, "Number of metadata loads inserted");
+
 // Stores of pointers into memory require that the base and bound are tracked,
 // such that upon loading and using the pointer afterwards, they can be looked
 // up.
 STATISTIC(MetadataStoresInserted, "Number of metadata stores inserted");
 
+// Number of nullptr bounds stored for pointer. This can happen for actual
+// nullptr in the code, or pointer which we restrict to access (e.g. when they
+// are casted from an integer).
 STATISTIC(NullptrBoundsRequested, "Number of nullptr bounds requested");
+
+// Number of requests for bounds of function pointers.
 STATISTIC(FunctionBoundsRequested, "Number of function bounds requested");
 
+// The setup phase detected code in the module which will prevent the
+// instrumentation from making the program safe.
 STATISTIC(
     SetupErrror,
     "Number of modules for which the setup phase already detected problems");
@@ -58,51 +70,6 @@ static cl::opt<bool> NoCTErrorIntToPtr(
 SoftBoundMechanism::SoftBoundMechanism(GlobalConfig &config)
     : InstrumentationMechanism(config) {}
 
-void SoftBoundMechanism::insertWitness(ITarget &Target) const {
-  llvm_unreachable("TODO implement");
-}
-
-void SoftBoundMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
-  llvm_unreachable("TODO implement");
-}
-
-void SoftBoundMechanism::insertCheck(ITarget &Target) const {
-  llvm_unreachable("TODO implement");
-}
-
-void SoftBoundMechanism::materializeBounds(ITarget &Target) {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::getFailFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::getVerboseFailFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::insertWitnessPhi(ITarget &Target) const
-    -> std::shared_ptr<Witness> {
-  llvm_unreachable("TODO implement");
-}
-
-void SoftBoundMechanism::addIncomingWitnessToPhi(
-    std::shared_ptr<Witness> &Phi, std::shared_ptr<Witness> &Incoming,
-    BasicBlock *InBB) const {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::insertWitnessSelect(
-    ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-    std::shared_ptr<Witness> &FalseWitness) const -> std::shared_ptr<Witness> {
-  llvm_unreachable("TODO implement");
-}
-
 void SoftBoundMechanism::initialize(Module &module) {
 
   // Currently only spatial safety is implemented, don't do anything if temporal
@@ -114,6 +81,10 @@ void SoftBoundMechanism::initialize(Module &module) {
 
   // Store the context to avoid looking it up all the time
   context = &module.getContext();
+
+  // First, check if any unimplemented or problematic constructs are contained
+  // in this module (e.g. exception handling)
+  checkModule(module);
 
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
@@ -127,6 +98,148 @@ void SoftBoundMechanism::initialize(Module &module) {
   if (globalConfig.hasErrors()) {
     ++SetupErrror;
   }
+}
+
+void SoftBoundMechanism::insertWitness(ITarget &target) const {
+
+  LLVM_DEBUG(dbgs() << "Insert witness for: " << target << "\n";);
+
+  assert(isa<IntermediateIT>(&target));
+
+  llvm::IRBuilder<> builder(target.getLocation());
+
+  Value *base = nullptr;
+  Value *bound = nullptr;
+  auto *instrumentee = target.getInstrumentee();
+  LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
+
+  if (isa<Argument>(instrumentee) || isa<CallInst>(instrumentee)) {
+    auto locIndex = computeShadowStackLocation(instrumentee);
+    std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
+  }
+
+  if (AllocaInst *alloc = dyn_cast<AllocaInst>(instrumentee)) {
+    base = builder.CreateConstGEP1_32(alloc, 0);
+    bound = builder.CreateConstGEP1_32(alloc, 1);
+  }
+
+  if (auto constant = dyn_cast<Constant>(instrumentee)) {
+    std::tie(base, bound) = getBoundsForWitness(constant);
+  }
+
+  if (auto load = dyn_cast<LoadInst>(instrumentee)) {
+    std::tie(base, bound) =
+        insertMetadataLoad(builder, load->getPointerOperand());
+  }
+
+  if (globalConfig.hasErrors()) {
+    return;
+  }
+
+  assert(base && bound);
+  std::tie(base, bound) = addBitCasts(builder, base, bound);
+  LLVM_DEBUG({
+    dbgs() << "Created bounds: "
+           << "\n\tBase: " << *base << "\n\tBound: " << *bound << "\n";
+  });
+
+  target.setBoundWitness(
+      std::make_shared<SoftBoundWitness>(base, bound, instrumentee));
+}
+
+void SoftBoundMechanism::relocCloneWitness(Witness &toReloc,
+                                           ITarget &target) const {
+  target.setBoundWitness(std::make_shared<SoftBoundWitness>(
+      toReloc.getLowerBound(), toReloc.getUpperBound(), target.getLocation()));
+}
+
+auto SoftBoundMechanism::insertWitnessPhi(ITarget &target) const
+    -> std::shared_ptr<Witness> {
+  auto *phi = cast<PHINode>(target.getInstrumentee());
+
+  IRBuilder<> builder(phi);
+
+  auto *basePhi =
+      builder.CreatePHI(handles.baseTy, phi->getNumIncomingValues());
+  basePhi->setName("base.phi");
+  auto *boundPhi =
+      builder.CreatePHI(handles.boundTy, phi->getNumIncomingValues());
+  boundPhi->setName("bound.phi");
+
+  target.setBoundWitness(
+      std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi));
+  return target.getBoundWitness();
+}
+
+void SoftBoundMechanism::addIncomingWitnessToPhi(
+    std::shared_ptr<Witness> &phi, std::shared_ptr<Witness> &incoming,
+    BasicBlock *inBB) const {
+
+  auto *lowerPhi = cast<PHINode>(phi->getLowerBound());
+  auto *upperPhi = cast<PHINode>(phi->getUpperBound());
+
+  lowerPhi->addIncoming(incoming->getLowerBound(), inBB);
+  upperPhi->addIncoming(incoming->getUpperBound(), inBB);
+}
+
+auto SoftBoundMechanism::insertWitnessSelect(
+    ITarget &target, std::shared_ptr<Witness> &trueWitness,
+    std::shared_ptr<Witness> &falseWitness) const -> std::shared_ptr<Witness> {
+
+  auto *sel = cast<SelectInst>(target.getInstrumentee());
+  auto *cond = sel->getCondition();
+
+  IRBuilder<> builder(sel);
+  auto *lowerSel = builder.CreateSelect(cond, trueWitness->getLowerBound(),
+                                        falseWitness->getLowerBound());
+  lowerSel->setName("base.sel");
+  auto *upperSel = builder.CreateSelect(cond, trueWitness->getUpperBound(),
+                                        falseWitness->getUpperBound());
+  upperSel->setName("bound.sel");
+
+  target.setBoundWitness(
+      std::make_shared<SoftBoundWitness>(lowerSel, upperSel, sel));
+  return target.getBoundWitness();
+}
+
+void SoftBoundMechanism::materializeBounds(ITarget &) {
+  // The bounds are always materialized, nothing to do
+}
+
+void SoftBoundMechanism::insertCheck(ITarget &target) const {
+
+  if (auto cInvIT = dyn_cast<CallInvariantIT>(&target)) {
+    handleCallInvariant(*cInvIT);
+    return;
+  }
+  llvm_unreachable("TODO implement");
+}
+
+auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
+                                     Value *bound) const
+    -> std::pair<Value *, Value *> {
+
+  if (base->getType() != handles.baseTy) {
+    base = insertCast(handles.baseTy, base, builder);
+  }
+
+  if (bound->getType() != handles.boundTy) {
+    bound = insertCast(handles.boundTy, bound, builder);
+  }
+
+  return std::make_pair(base, bound);
+}
+
+auto SoftBoundMechanism::getFailFunction() const -> Value * {
+  llvm_unreachable("TODO implement");
+}
+
+auto SoftBoundMechanism::getVerboseFailFunction() const -> Value * {
+  llvm_unreachable("TODO implement");
+}
+
+auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
+  llvm_unreachable("TODO implement");
 }
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
@@ -164,7 +277,9 @@ void SoftBoundMechanism::setUpGlobals(Module &module) {
       std::make_pair<StringRef, int>("__softboundcets_globals_setup", 0));
   auto globalSetupFun = (*listOfFuns)[0];
 
-  MDNode *node = MDNode::get(*context, MDString::get(*context, "Setup"));
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getSetupInfoStr()));
   globalSetupFun->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
 
   auto entryBlock = BasicBlock::Create(*context, "entry", globalSetupFun);
@@ -206,6 +321,7 @@ void SoftBoundMechanism::setUpGlobals(Module &module) {
     Indices.push_back(idxThis);
     Value *base = nullptr;
     Value *bound = nullptr;
+    LLVM_DEBUG(dbgs() << "Handle initializer " << *glInit << "\n";);
     std::tie(base, bound) = handleInitializer(glInit, Builder, global, Indices);
 
     // An error already occurred, stop the initialization.
@@ -215,6 +331,9 @@ void SoftBoundMechanism::setUpGlobals(Module &module) {
 
     if (glInit->getType()->isPointerTy()) {
       assert(base && bound);
+      LLVM_DEBUG({
+        dbgs() << "\tBase: " << *base << "\n\tBound: " << *bound << "\n";
+      });
       insertMetadataStore(Builder, &global, base, bound);
     }
   }
@@ -234,8 +353,6 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   if (globalConfig.hasErrors()) {
     return std::make_pair(base, bound);
   }
-
-  LLVM_DEBUG(dbgs() << "Handle initializer " << *glInit << "\n";);
 
   if (isa<BlockAddress>(glInit)) {
     std::tie(base, bound) = getBoundsConst(glInit);
@@ -362,15 +479,24 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   llvm_unreachable("Unimplemented constant global initializer.");
 }
 
+void SoftBoundMechanism::handleCallInvariant(CallInvariantIT &) const {
+
+  // TODO Insert shadow stack allocation + deallocation
+
+  // TODO rename wrapped functions
+
+  // TODO intrinsics might need additional calls for metadata copying
+}
+
 auto SoftBoundMechanism::getBoundsConst(Constant *cons) const
     -> std::pair<Value *, Value *> {
 
-  IRBuilder<> Builder(*context);
-  Value *base = Builder.CreateConstGEP1_32(cons, 0);
-  Value *bound = Builder.CreateConstGEP1_32(cons, 1);
+  IRBuilder<> builder(*context);
+  auto *base = builder.CreateConstGEP1_32(cons, 0);
+  auto *bound = builder.CreateConstGEP1_32(cons, 1);
 
-  LLVM_DEBUG(dbgs() << "Create bounds for: " << *cons << "\n\tBase: " << *base
-                    << "\n\tBound: " << *bound << "\n";);
+  std::tie(base, bound) = addBitCasts(builder, base, bound);
+
   return std::make_pair(base, bound);
 }
 
@@ -397,24 +523,122 @@ auto SoftBoundMechanism::getNullPtrBounds() const
   return std::make_pair(base, bound);
 }
 
-void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &Builder, Value *ptr,
+auto SoftBoundMechanism::getBoundsForWitness(Constant *constant) const
+    -> std::pair<Value *, Value *> {
+
+  // Construct simple bounds with the width of the global variable, block
+  // address or constant aggregate of some sort
+  if (isa<GlobalVariable>(constant) || isa<ConstantAggregate>(constant) ||
+      isa<ConstantDataSequential>(constant) ||
+      isa<ConstantAggregateZero>(constant) || isa<BlockAddress>(constant)) {
+    return getBoundsConst(constant);
+  }
+
+  // Use special bounds for functions
+  if (isa<Function>(constant)) {
+    return getBoundsForFun(constant);
+  }
+
+  // Nullptr are not accessible, therefore the bounds are nullptr as well
+  if (isa<ConstantPointerNull>(constant)) {
+    return getNullPtrBounds();
+  }
+
+  // Disallow accessing undef values
+  if (isa<UndefValue>(constant)) {
+    return getNullPtrBounds();
+  }
+
+  // The bounds for an integer casted to a pointer are requested, we won't allow
+  // the access to it, therefore nullptr bounds are stored
+  if (isa<ConstantInt>(constant)) {
+    assert(NoCTErrorIntToPtr);
+    return getNullPtrBounds();
+  }
+
+  if (isa<ConstantFP>(constant)) {
+    llvm_unreachable("Pointer source is a floating point value...");
+  }
+
+  if (isa<GlobalIndirectSymbol>(constant)) {
+    llvm_unreachable("Global indirect symbols are not handled.");
+  }
+
+  if (ConstantExpr *constExpr = dyn_cast<ConstantExpr>(constant)) {
+
+    if (constExpr->getType()->isPointerTy()) {
+
+      switch (constExpr->getOpcode()) {
+      case Instruction::IntToPtr: {
+        // Store null pointer bounds for pointers derived from integers
+        return getNullPtrBounds();
+      }
+      case Instruction::GetElementPtr:
+        // Fall through
+      case Instruction::BitCast: {
+        // Recursively go through geps/bitcasts to find the base ptr
+        auto *ptrOp = cast<Constant>(constExpr->getOperand(0));
+        return getBoundsForWitness(ptrOp);
+      }
+      default:
+        llvm_unreachable("Unimplemented constant expression with pointer type");
+      }
+    }
+  }
+
+  llvm_unreachable("Unhandled case when constructing bound witnesses");
+}
+
+auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
+                                            Value *ptr) const
+    -> std::pair<Value *, Value *> {
+
+  ++MetadataLoadInserted;
+
+  assert(ptr);
+
+  if (handles.voidPtrTy != ptr->getType()) {
+    ptr = insertCast(handles.voidPtrTy, ptr, builder);
+  }
+
+  // Allocate space for base and bound for the call stores the information in
+  auto allocBase = builder.CreateAlloca(handles.baseTy);
+  allocBase->setName("base.alloc");
+  auto allocBound = builder.CreateAlloca(handles.boundTy);
+  allocBound->setName("bound.alloc");
+
+  LLVM_DEBUG(dbgs() << "Insert metadata load:\n"
+                    << "\tPtr: " << *ptr << "\n\tBaseAlloc: " << *allocBase
+                    << "\n\tBoundAlloc: " << *allocBound << "\n";);
+
+  ArrayRef<Value *> args = {ptr, allocBase, allocBound};
+
+  auto call =
+      builder.CreateCall(FunctionCallee(handles.loadInMemoryPtrInfo), args);
+
+  auto base = builder.CreateLoad(allocBase);
+  auto bound = builder.CreateLoad(allocBound);
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+  call->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+  return std::make_pair(base, bound);
+}
+
+void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
                                              Value *base, Value *bound) const {
 
   ++MetadataStoresInserted;
 
   assert(ptr && base && bound);
 
+  // Make sure the types are correct
   if (handles.voidPtrTy != ptr->getType()) {
-    ptr = Builder.CreateBitCast(ptr, handles.voidPtrTy);
+    ptr = insertCast(handles.voidPtrTy, ptr, builder);
   }
-
-  if (handles.baseTy != base->getType()) {
-    base = Builder.CreateBitCast(base, handles.baseTy);
-  }
-
-  if (handles.boundTy != bound->getType()) {
-    bound = Builder.CreateBitCast(bound, handles.boundTy);
-  }
+  std::tie(base, bound) = addBitCasts(builder, base, bound);
 
   LLVM_DEBUG(dbgs() << "Insert metadata store:\n"
                     << "\tPtr: " << *ptr << "\n\tBase: " << *base
@@ -422,10 +646,75 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &Builder, Value *ptr,
 
   ArrayRef<Value *> args = {ptr, base, bound};
   auto call =
-      Builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
+      builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
 
-  MDNode *node = MDNode::get(*context, MDString::get(*context, "Metadata"));
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
   call->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+}
+
+auto SoftBoundMechanism::insertShadowStackLoad(llvm::IRBuilder<> &builder,
+                                               int locIndex) const
+    -> std::pair<Value *, Value *> {
+
+  auto locIndexVal = ConstantInt::get(handles.intTy, locIndex, true);
+
+  ArrayRef<Value *> args = {locIndexVal};
+  auto callLoadBase =
+      builder.CreateCall(FunctionCallee(handles.loadBaseStack), args);
+  auto callLoadBound =
+      builder.CreateCall(FunctionCallee(handles.loadBoundStack), args);
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackInfoStr()));
+  callLoadBase->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  callLoadBound->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+  return std::make_pair(callLoadBase, callLoadBound);
+}
+
+void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
+                                                ITarget &) const {
+  llvm_unreachable("TODO implement");
+}
+
+auto SoftBoundMechanism::computeShadowStackLocation(const Value *val) const
+    -> int {
+
+  assert(val->getType()->isPointerTy());
+
+  int shadowStackLoc = 0;
+  if (isa<CallInst>(val)) {
+    return shadowStackLoc;
+  }
+
+  const auto arg = dyn_cast<Argument>(val);
+  assert(arg);
+  auto fun = arg->getParent();
+
+  // The returned pointer will have location 0, skip it in case something else
+  // is requested
+  if (fun->getReturnType()->isPointerTy()) {
+    shadowStackLoc++;
+  }
+
+  for (const auto &funArg : fun->args()) {
+    if (!funArg.getType()->isPointerTy()) {
+      // Non-pointer arguments are not accounted for in the location calculation
+      continue;
+    }
+
+    if (arg == &funArg) {
+      return shadowStackLoc;
+    }
+    shadowStackLoc++;
+  }
+
+  llvm_unreachable(
+      "Argument not found, shadow stack location cannot be determined");
 }
 
 bool SoftBoundMechanism::isSimpleVectorTy(const VectorType *vecTy) const {
@@ -442,4 +731,69 @@ bool SoftBoundMechanism::isSimpleVectorTy(const VectorType *vecTy) const {
   }
 
   return true;
+}
+
+bool SoftBoundMechanism::containsUnsupportedOp(const Constant *cons) const {
+  if (!isa<ConstantExpr>(cons)) {
+    return false;
+  }
+
+  auto constExpr = cast<ConstantExpr>(cons);
+  if (isUnsupportedInstruction(constExpr->getOpcode())) {
+    return true;
+  }
+
+  for (const auto &op : constExpr->operands()) {
+    if (containsUnsupportedOp(cast<Constant>(op))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
+
+  // Bail if exception handling is involved
+  if (Instruction::isExceptionalTerminator(opC)) {
+    return true;
+  }
+
+  switch (opC) {
+  case Instruction::CatchPad:
+  case Instruction::CleanupPad:
+  case Instruction::LandingPad:
+    return true;
+  case Instruction::IntToPtr: {
+    if (!NoCTErrorIntToPtr) {
+      return true;
+    }
+    break;
+  }
+  default:
+    break;
+  }
+  return false;
+}
+
+void SoftBoundMechanism::checkModule(Module &module) {
+  for (const auto &fun : module) {
+    for (const auto &bb : fun) {
+      for (const Instruction &inst : bb) {
+
+        if (isUnsupportedInstruction(inst.getOpcode())) {
+          globalConfig.noteError();
+          return;
+        }
+
+        for (const auto &arg : inst.operands()) {
+          if (const auto &cons = dyn_cast<Constant>(arg)) {
+            if (containsUnsupportedOp(cons)) {
+              globalConfig.noteError();
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
 }
