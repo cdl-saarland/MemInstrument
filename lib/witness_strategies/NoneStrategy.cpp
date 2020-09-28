@@ -22,6 +22,11 @@ void NoneStrategy::createWitness(InstrumentationMechanism &IM,
     return;
   }
 
+  if (Node->Target->needsNoBoundWitness()) {
+    // No witness required.
+    return;
+  }
+
   IM.insertWitness(*(Node->Target));
 }
 

@@ -173,12 +173,18 @@ void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
 
   for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;
+    if (Target->needsNoBoundWitness()) {
+      continue;
+    }
     assert(Target->hasBoundWitness());
     PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }
 
   for (auto *Node : InternalNodes) {
     auto &Target = Node->Target;
+    if (Target->needsNoBoundWitness()) {
+      continue;
+    }
     assert(Target->hasBoundWitness());
     PrintMap[Target->getBoundWitness().get()].insert(Target.get());
   }

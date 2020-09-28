@@ -91,6 +91,12 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   }
 
   auto &Target = Node->Target;
+  // Call invariant targets do not have requirements
+  if (Target->is(ITarget::Kind::CallInvariant)) {
+    Node->HasAllRequirements = true;
+    return;
+  }
+
   assert(Target->hasInstrumentee());
   Instruction *Instrumentee = dyn_cast<Instruction>(Target->getInstrumentee());
   Node->HasAllRequirements = true;
@@ -223,6 +229,11 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   auto &Target = Node->Target;
   if (Target->hasBoundWitness()) {
     // We already handled this node.
+    return;
+  }
+
+  if (Target->needsNoBoundWitness()) {
+    // No witness required.
     return;
   }
 

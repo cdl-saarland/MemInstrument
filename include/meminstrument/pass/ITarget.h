@@ -86,7 +86,14 @@ public:
   /// indicator whether explicit bound information is required
   bool requiresExplicitBounds(void) const;
 
+  /// indicator whether a bound witness is available
   bool hasBoundWitness(void) const;
+
+  /// indicator whether a bound witness is required for this target
+  bool needsNoBoundWitness(void) const;
+
+  /// indicator whether a bound witness is available if required
+  bool hasWitnessIfNeeded(void) const;
 
   std::shared_ptr<Witness> getBoundWitness(void);
 

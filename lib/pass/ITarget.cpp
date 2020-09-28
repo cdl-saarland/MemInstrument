@@ -115,6 +115,14 @@ bool ITarget::hasBoundWitness(void) const {
   return _BoundWitness.get() != nullptr;
 }
 
+bool ITarget::needsNoBoundWitness(void) const {
+  return is(ITarget::Kind::CallInvariant);
+}
+
+bool ITarget::hasWitnessIfNeeded(void) const {
+  return needsNoBoundWitness() || hasBoundWitness();
+}
+
 std::shared_ptr<Witness> ITarget::getBoundWitness(void) {
   assert(isValid());
   assert(hasBoundWitness());
