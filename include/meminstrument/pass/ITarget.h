@@ -95,7 +95,7 @@ public:
   /// indicator whether a bound witness is available if required
   bool hasWitnessIfNeeded(void) const;
 
-  std::shared_ptr<Witness> getBoundWitness(void);
+  std::shared_ptr<Witness> getBoundWitness(void) const;
 
   void setBoundWitness(std::shared_ptr<Witness> BoundWitness);
 

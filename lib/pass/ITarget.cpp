@@ -123,7 +123,7 @@ bool ITarget::hasWitnessIfNeeded(void) const {
   return needsNoBoundWitness() || hasBoundWitness();
 }
 
-std::shared_ptr<Witness> ITarget::getBoundWitness(void) {
+std::shared_ptr<Witness> ITarget::getBoundWitness(void) const {
   assert(isValid());
   assert(hasBoundWitness());
   return _BoundWitness;
