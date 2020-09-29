@@ -32,7 +32,7 @@ class PrototypeInserter {
 public:
   PrototypeInserter(llvm::Module &);
 
-  auto insertRunTimeProtoypes() -> RunTimeHandles;
+  auto insertRunTimeProtoypes() const -> RunTimeHandles;
 
 private:
   llvm::Module &module;
@@ -47,23 +47,23 @@ private:
   llvm::PointerType *basePtrTy = nullptr;
   llvm::PointerType *boundPtrTy = nullptr;
 
-  void insertSpatialRunTimeProtoypes(RunTimeHandles &);
+  void insertSpatialRunTimeProtoypes(RunTimeHandles &) const;
 
-  void insertSpatialOnlyRunTimeProtoypes(RunTimeHandles &);
+  void insertSpatialOnlyRunTimeProtoypes(RunTimeHandles &) const;
 
-  void insertTemporalRunTimeProtoypes(RunTimeHandles &);
+  void insertTemporalRunTimeProtoypes(RunTimeHandles &) const;
 
-  void insertTemporalOnlyRunTimeProtoypes(RunTimeHandles &);
+  void insertTemporalOnlyRunTimeProtoypes(RunTimeHandles &) const;
 
-  void insertFullSafetyRunTimeProtoypes(RunTimeHandles &);
+  void insertFullSafetyRunTimeProtoypes(RunTimeHandles &) const;
 
-  void insertSetupFunctions(RunTimeHandles &);
+  void insertSetupFunctions(RunTimeHandles &) const;
 
-  void insertCommonFunctions(RunTimeHandles &);
+  void insertCommonFunctions(RunTimeHandles &) const;
 
   template <typename... ArgsTy>
   auto createAndInsertPrototype(const llvm::StringRef &name,
-                                llvm::Type *retType, ArgsTy... args)
+                                llvm::Type *retType, ArgsTy... args) const
       -> llvm::Function *;
 };
 } // namespace softbound

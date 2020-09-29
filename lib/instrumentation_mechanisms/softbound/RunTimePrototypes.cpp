@@ -41,7 +41,7 @@ PrototypeInserter::PrototypeInserter(Module &module)
   boundPtrTy = basePtrTy;
 }
 
-auto PrototypeInserter::insertRunTimeProtoypes() -> RunTimeHandles {
+auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
 
   RunTimeHandles handles;
 
@@ -77,7 +77,7 @@ auto PrototypeInserter::insertRunTimeProtoypes() -> RunTimeHandles {
 //===---------------------------- private -------------------------------===//
 
 void PrototypeInserter::insertSpatialOnlyRunTimeProtoypes(
-    RunTimeHandles &handles) {
+    RunTimeHandles &handles) const {
 
   handles.memcpyCheck = createAndInsertPrototype(
       "__softboundcets_memcopy_check", voidTy, voidPtrTy, voidPtrTy, sizeTTy,
@@ -92,7 +92,8 @@ void PrototypeInserter::insertSpatialOnlyRunTimeProtoypes(
       "__softboundcets_metadata_store", voidTy, voidPtrTy, baseTy, boundTy);
 }
 
-void PrototypeInserter::insertSpatialRunTimeProtoypes(RunTimeHandles &handles) {
+void PrototypeInserter::insertSpatialRunTimeProtoypes(
+    RunTimeHandles &handles) const {
 
   // Shadow stack operations
   handles.loadBaseStack = createAndInsertPrototype(
@@ -117,26 +118,26 @@ void PrototypeInserter::insertSpatialRunTimeProtoypes(RunTimeHandles &handles) {
 }
 
 void PrototypeInserter::insertTemporalRunTimeProtoypes(
-    RunTimeHandles &handles) {
+    RunTimeHandles &handles) const {
   llvm_unreachable("Temporal Safety is not yet implemented");
 }
 
 void PrototypeInserter::insertTemporalOnlyRunTimeProtoypes(
-    RunTimeHandles &handles) {
+    RunTimeHandles &handles) const {
   llvm_unreachable("Temporal Safety is not yet implemented");
 }
 
 void PrototypeInserter::insertFullSafetyRunTimeProtoypes(
-    RunTimeHandles &handles) {
+    RunTimeHandles &handles) const {
   llvm_unreachable("Temporal Safety is not yet implemented");
 }
 
-void PrototypeInserter::insertSetupFunctions(RunTimeHandles &handles) {
+void PrototypeInserter::insertSetupFunctions(RunTimeHandles &handles) const {
 
   handles.init = createAndInsertPrototype("__softboundcets_init", voidTy);
 }
 
-void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) {
+void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
 
   handles.allocateShadowStack = createAndInsertPrototype(
       "__softboundcets_allocate_shadow_stack_space", voidTy, intTy);
@@ -148,7 +149,8 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) {
 
 template <typename... ArgsTy>
 auto PrototypeInserter::createAndInsertPrototype(const StringRef &name,
-                                                 Type *retType, ArgsTy... args)
+                                                 Type *retType,
+                                                 ArgsTy... args) const
     -> Function * {
 
   // Insert the function prototype into the module
