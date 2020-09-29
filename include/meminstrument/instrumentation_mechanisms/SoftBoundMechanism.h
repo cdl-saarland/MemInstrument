@@ -52,8 +52,6 @@ public:
 
   virtual auto getFailFunction() const -> llvm::Value * override;
 
-  virtual auto getVerboseFailFunction() const -> llvm::Value * override;
-
   virtual auto getExtCheckCounterFunction() const -> llvm::Value * override;
 
   virtual auto getName() const -> const char * override;

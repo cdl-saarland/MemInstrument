@@ -231,15 +231,16 @@ auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
 }
 
 auto SoftBoundMechanism::getFailFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
-}
-
-auto SoftBoundMechanism::getVerboseFailFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
+  return handles.failFunction;
 }
 
 auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
-  llvm_unreachable("TODO implement");
+  if (handles.externalCheckCounter) {
+    return handles.externalCheckCounter;
+  }
+  llvm_unreachable("Misconfiguration: The run-time needs to be configured to "
+                   "collect run-time statistics (ENABLE_RT_STATS) in order to "
+                   "provide the external checks counter function.");
 }
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }

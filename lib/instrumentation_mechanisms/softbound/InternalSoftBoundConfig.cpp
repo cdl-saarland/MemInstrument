@@ -48,6 +48,10 @@ bool InternalSoftBoundConfig::ensureFullSafety() {
   return level == FULL_SAFETY;
 }
 
+bool InternalSoftBoundConfig::hasRunTimeStatsEnabled() {
+  return runTimeStatsEnabled;
+}
+
 auto InternalSoftBoundConfig::getMetadataKind() -> StringRef {
   return "SoftBound";
 }
@@ -66,6 +70,12 @@ auto InternalSoftBoundConfig::getSetupInfoStr() -> StringRef { return "Setup"; }
 
 const SafetyLevel InternalSoftBoundConfig::level =
     InternalSoftBoundConfig::initialize();
+
+#if ENABLE_RT_STATS
+const bool InternalSoftBoundConfig::runTimeStatsEnabled = true;
+#else
+const bool InternalSoftBoundConfig::runTimeStatsEnabled = false;
+#endif
 
 auto constexpr InternalSoftBoundConfig::initialize() -> SafetyLevel {
 

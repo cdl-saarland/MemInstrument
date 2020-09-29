@@ -70,6 +70,7 @@ auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
 
   insertSetupFunctions(handles);
   insertCommonFunctions(handles);
+  insertFailAndStatsFunctions(handles);
 
   return handles;
 }
@@ -145,6 +146,18 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
       "__softboundcets_deallocate_shadow_stack_space", voidTy);
   handles.copyInMemoryMetadata = createAndInsertPrototype(
       "__softboundcets_copy_metadata", voidTy, voidPtrTy, voidPtrTy, sizeTTy);
+}
+
+void PrototypeInserter::insertFailAndStatsFunctions(
+    RunTimeHandles &handles) const {
+
+  if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
+    handles.externalCheckCounter =
+        createAndInsertPrototype("__rt_stat_inc_external_check", voidTy);
+  }
+
+  handles.failFunction =
+      createAndInsertPrototype("__softboundcets_abort", voidTy);
 }
 
 template <typename... ArgsTy>

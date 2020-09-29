@@ -64,6 +64,10 @@ public:
 
   llvm::Type *intTy = nullptr;
   llvm::Type *sizeTTy = nullptr;
+
+  // Fail functions and statistics
+  llvm::Function *externalCheckCounter = nullptr;
+  llvm::Function *failFunction = nullptr;
 };
 } // namespace softbound
 

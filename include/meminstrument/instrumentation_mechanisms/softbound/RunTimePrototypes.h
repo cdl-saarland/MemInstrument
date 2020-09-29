@@ -61,6 +61,8 @@ private:
 
   void insertCommonFunctions(RunTimeHandles &) const;
 
+  void insertFailAndStatsFunctions(RunTimeHandles &) const;
+
   template <typename... ArgsTy>
   auto createAndInsertPrototype(const llvm::StringRef &name,
                                 llvm::Type *retType, ArgsTy... args) const
