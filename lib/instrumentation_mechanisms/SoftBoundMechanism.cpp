@@ -235,7 +235,7 @@ auto SoftBoundMechanism::getFailFunction() const -> Value * {
 }
 
 auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
-  if (handles.externalCheckCounter) {
+  if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
     return handles.externalCheckCounter;
   }
   llvm_unreachable("Misconfiguration: The run-time needs to be configured to "
