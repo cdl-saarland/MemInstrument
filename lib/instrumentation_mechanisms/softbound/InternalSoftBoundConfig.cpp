@@ -18,9 +18,6 @@
 
 #include "meminstrument/softbound/SBRTInfo.h"
 
-#include "llvm/ADT/StringRef.h"
-
-using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
 
@@ -52,19 +49,29 @@ bool InternalSoftBoundConfig::hasRunTimeStatsEnabled() {
   return runTimeStatsEnabled;
 }
 
-auto InternalSoftBoundConfig::getMetadataKind() -> StringRef {
+auto InternalSoftBoundConfig::getMetadataKind() -> std::string {
   return "SoftBound";
 }
 
-auto InternalSoftBoundConfig::getShadowStackInfoStr() -> StringRef {
+auto InternalSoftBoundConfig::getShadowStackInfoStr() -> std::string {
   return "ShadowStack";
 }
 
-auto InternalSoftBoundConfig::getMetadataInfoStr() -> StringRef {
+auto InternalSoftBoundConfig::getShadowStackLoadStr() -> std::string {
+  return getShadowStackInfoStr() + "_load";
+}
+
+auto InternalSoftBoundConfig::getShadowStackStoreStr() -> std::string {
+  return getShadowStackInfoStr() + "_store";
+}
+
+auto InternalSoftBoundConfig::getMetadataInfoStr() -> std::string {
   return "Metadata";
 }
 
-auto InternalSoftBoundConfig::getSetupInfoStr() -> StringRef { return "Setup"; }
+auto InternalSoftBoundConfig::getSetupInfoStr() -> std::string {
+  return "Setup";
+}
 
 //===-------------------------- private -----------------------------------===//
 

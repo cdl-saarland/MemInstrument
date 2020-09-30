@@ -14,9 +14,7 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_SOFTBOUNDCONFIG_H
 #define MEMINSTRUMENT_INSTRUMENTATION_MECHANISMS_SOFTBOUND_SOFTBOUNDCONFIG_H
 
-namespace llvm {
-class StringRef;
-}
+#include <string>
 
 namespace meminstrument {
 
@@ -40,10 +38,12 @@ public:
   static bool hasRunTimeStatsEnabled();
 
   /// Definitions of string for metadata nodes used to annotate the generated IR
-  static auto getMetadataKind() -> llvm::StringRef;
-  static auto getShadowStackInfoStr() -> llvm::StringRef;
-  static auto getMetadataInfoStr() -> llvm::StringRef;
-  static auto getSetupInfoStr() -> llvm::StringRef;
+  static auto getMetadataKind() -> std::string;
+  static auto getShadowStackInfoStr() -> std::string;
+  static auto getShadowStackLoadStr() -> std::string;
+  static auto getShadowStackStoreStr() -> std::string;
+  static auto getMetadataInfoStr() -> std::string;
+  static auto getSetupInfoStr() -> std::string;
 
 private:
   static const SafetyLevel level;
