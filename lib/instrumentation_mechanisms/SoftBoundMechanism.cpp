@@ -106,7 +106,7 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
 
   assert(isa<IntermediateIT>(&target));
 
-  llvm::IRBuilder<> builder(target.getLocation());
+  IRBuilder<> builder(target.getLocation());
 
   Value *base = nullptr;
   Value *bound = nullptr;
@@ -612,7 +612,7 @@ auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
                     << "\tPtr: " << *ptr << "\n\tBaseAlloc: " << *allocBase
                     << "\n\tBoundAlloc: " << *allocBound << "\n";);
 
-  ArrayRef<Value *> args = {ptr, allocBase, allocBound};
+  SmallVector<Value *, 3> args = {ptr, allocBase, allocBound};
 
   auto call =
       builder.CreateCall(FunctionCallee(handles.loadInMemoryPtrInfo), args);
@@ -645,7 +645,7 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
                     << "\tPtr: " << *ptr << "\n\tBase: " << *base
                     << "\n\tBound: " << *bound << "\n";);
 
-  ArrayRef<Value *> args = {ptr, base, bound};
+  SmallVector<Value *, 3> args = {ptr, base, bound};
   auto call =
       builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
 
@@ -655,13 +655,13 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
   call->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
 }
 
-auto SoftBoundMechanism::insertShadowStackLoad(llvm::IRBuilder<> &builder,
+auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
                                                int locIndex) const
     -> std::pair<Value *, Value *> {
 
   auto locIndexVal = ConstantInt::get(handles.intTy, locIndex, true);
 
-  ArrayRef<Value *> args = {locIndexVal};
+  SmallVector<Value *, 1> args = {locIndexVal};
   auto callLoadBase =
       builder.CreateCall(FunctionCallee(handles.loadBaseStack), args);
   auto callLoadBound =
