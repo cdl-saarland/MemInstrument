@@ -84,6 +84,12 @@ void PointerBoundsPolicy::addCallTargets(
 
   dest.push_back(ITargetBuilder::createCallInvariantTarget(call));
 
+  // In case of an intrinsic, the pointer arguments do not need additional
+  // invariant checks (these won't make use of any additional information).
+  if (isa<IntrinsicInst>(call)) {
+    return;
+  }
+
   // Take care of pointer arguments that are handed over
   for (const auto &arg : call->args()) {
 

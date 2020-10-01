@@ -421,7 +421,14 @@ CallInvariantIT::CallInvariantIT(CallBase *call)
 
 bool CallInvariantIT::needsNoBoundWitness() const { return true; }
 
-void CallInvariantIT::dump(raw_ostream &os) const { os << "call invariant"; }
+void CallInvariantIT::dump(raw_ostream &os) const {
+  os << "call invariant";
+  const auto *call = cast<CallBase>(getLocation());
+  const auto *calledFun = call->getCalledFunction();
+  if (calledFun && calledFun->hasName()) {
+    os << " for " << calledFun->getName();
+  }
+}
 
 bool CallInvariantIT::operator==(const ITarget &other) const {
   return equals(other);
