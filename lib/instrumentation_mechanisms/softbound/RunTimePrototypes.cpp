@@ -1,4 +1,4 @@
-//===--------------------- RunTimePrototypes.cpp - TODO -------------------===//
+//===- RunTimePrototypes.cpp - SoftBound Internal Funs Prototype Inserter -===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// TODO
+/// Injects all prototypes for internal check functions etc. into the module.
+/// It additionally provides types to be used when generating calls to any of
+/// the functions, such that changes in the signatures can be hidden to some
+/// extend.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -28,7 +31,8 @@ PrototypeInserter::PrototypeInserter(Module &module)
     : module(module), context(module.getContext()) {
 
   // TODO find out if the native width is somehow accessible via DL/TT
-  // The current solution will not properly work for cross-compilation
+  // The current solution will not properly work in a cross-compilation use
+  // case.
   auto byteSize = 8;
   intTy = IntegerType::getIntNTy(context, sizeof(int) * byteSize);
   sizeTTy = IntegerType::getIntNTy(context, sizeof(size_t) * byteSize);
@@ -75,17 +79,11 @@ auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
   return handles;
 }
 
-//===---------------------------- private -------------------------------===//
+//===---------------------------- private ---------------------------------===//
 
 void PrototypeInserter::insertSpatialOnlyRunTimeProtoypes(
     RunTimeHandles &handles) const {
 
-  handles.memcpyCheck = createAndInsertPrototype(
-      "__softboundcets_memcopy_check", voidTy, voidPtrTy, voidPtrTy, sizeTTy,
-      baseTy, boundTy, baseTy, boundTy);
-  handles.memsetCheck =
-      createAndInsertPrototype("__softboundcets_memset_check", voidTy,
-                               voidPtrTy, sizeTTy, baseTy, boundTy);
   handles.loadInMemoryPtrInfo =
       createAndInsertPrototype("__softboundcets_metadata_load", voidTy,
                                voidPtrTy, basePtrTy, boundPtrTy);
@@ -110,12 +108,9 @@ void PrototypeInserter::insertSpatialRunTimeProtoypes(
   handles.spatialCallCheck =
       createAndInsertPrototype("__softboundcets_spatial_call_dereference_check",
                                voidTy, baseTy, boundTy, voidPtrTy);
-  handles.spatialLoadCheck =
-      createAndInsertPrototype("__softboundcets_spatial_load_dereference_check",
+  handles.spatialCheck =
+      createAndInsertPrototype("__softboundcets_spatial_dereference_check",
                                voidTy, baseTy, boundTy, voidPtrTy, sizeTTy);
-  handles.spatialStoreCheck = createAndInsertPrototype(
-      "__softboundcets_spatial_store_dereference_check", voidTy, baseTy,
-      boundTy, voidPtrTy, sizeTTy);
 }
 
 void PrototypeInserter::insertTemporalRunTimeProtoypes(

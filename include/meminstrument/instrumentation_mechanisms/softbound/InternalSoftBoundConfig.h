@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// Configuration of SoftBound
+/// Configuration of SoftBound derived from the C run-time library.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -16,28 +16,45 @@
 
 #include <string>
 
+namespace llvm {
+class StringRef;
+}
+
 namespace meminstrument {
 
 namespace softbound {
 
+/// The pass can either ensure spatial memory safety, temporal memory safety or
+/// both. Use the SafetyLevel to track this state.
 enum SafetyLevel { SPATIAL_ONLY, TEMPORAL_ONLY, FULL_SAFETY };
 
 class InternalSoftBoundConfig {
 
 public:
+  /// Returns true if the run-time is configured to ensure spatial safety.
   static bool ensureSpatial();
 
+  /// Returns true if the run-time is configured to ensure only spatial safety.
   static bool ensureOnlySpatial();
 
+  /// Returns true if the run-time is configured to ensure temporal safety.
   static bool ensureTemporal();
 
+  /// Returns true if the run-time is configured to ensure only temporal safety.
   static bool ensureOnlyTemporal();
 
+  /// Returns true if the run-time is configured to ensure spatial and temporal
+  /// safety.
   static bool ensureFullSafety();
 
+  /// Returns true iff the run-time is configured to track run-time statistics.
   static bool hasRunTimeStatsEnabled();
 
-  /// Definitions of string for metadata nodes used to annotate the generated IR
+  /// Get the name of the function wrapper for the given function name if
+  /// available. Return the unmodified name otherwise.
+  static auto getWrappedName(llvm::StringRef funName) -> std::string;
+
+  /// Definitions of metadata strings used to annotate the generated IR
   static auto getMetadataKind() -> std::string;
   static auto getShadowStackInfoStr() -> std::string;
   static auto getShadowStackLoadStr() -> std::string;
@@ -49,6 +66,7 @@ private:
   static const SafetyLevel level;
   static const bool runTimeStatsEnabled;
 
+  /// Use the information given by the run-time to determine the safety level.
   static auto constexpr initialize() -> SafetyLevel;
 };
 } // namespace softbound

@@ -468,7 +468,6 @@ public:
     return IMKind::softbound;
   }
   virtual WSKind getWitnessStrategy(void) const override {
-    // TODO discuss after implementing the policy
     return WSKind::after_inflow;
   }
   virtual MIMode getMIMode(void) const override {

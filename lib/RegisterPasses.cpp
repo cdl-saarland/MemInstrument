@@ -20,6 +20,11 @@
 #include "PICO/PICO.h"
 #endif
 
+namespace llvm {
+ModulePass *createEliminateAvailableExternallyPass();
+ModulePass *createStripDeadPrototypesPass();
+} // namespace llvm
+
 using namespace meminstrument;
 using namespace llvm;
 
@@ -62,6 +67,11 @@ static void registerMeminstrumentPass(const PassManagerBuilder &,
   // This is necessary for instrumenting invoke instructions that occur in C++
   // exception handling:
   // PM.add(createBreakCriticalEdgesPass());
+  // TODO this is only a requirement for SoftBound
+  // Cut out functions for which no code will be generated (they conflict with
+  // the standard library wrappers of the run-time library)
+  PM.add(createEliminateAvailableExternallyPass());
+  PM.add(createStripDeadPrototypesPass());
   PM.add(new MemInstrumentPass());
 }
 

@@ -113,8 +113,12 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
   auto *instrumentee = target.getInstrumentee();
   LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
 
-  if (isa<Argument>(instrumentee) || isa<CallInst>(instrumentee)) {
-    auto locIndex = computeShadowStackLocation(instrumentee);
+  if (isa<Argument>(instrumentee) || isa<CallBase>(instrumentee)) {
+    Value *fun = nullptr;
+    if (auto arg = dyn_cast<Argument>(instrumentee)) {
+      fun = arg->getParent();
+    }
+    auto locIndex = computeShadowStackLocation(instrumentee, fun);
     std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
   }
 
@@ -208,11 +212,24 @@ void SoftBoundMechanism::materializeBounds(ITarget &) {
 
 void SoftBoundMechanism::insertCheck(ITarget &target) const {
 
-  if (auto cInvIT = dyn_cast<CallInvariantIT>(&target)) {
-    handleCallInvariant(*cInvIT);
+  DEBUG_WITH_TYPE("softbound-genchecks",
+                  dbgs() << "Insert check for: " << target << "\n";);
+
+  if (target.isCheck()) {
+
+    if (auto callC = dyn_cast<CallCheckIT>(&target)) {
+      insertSpatialCallCheck(*callC);
+      return;
+    }
+
+    insertSpatialDereferenceCheck(target);
     return;
   }
-  llvm_unreachable("TODO implement");
+
+  assert(target.isInvariant());
+  auto invIT = cast<InvariantIT>(&target);
+
+  handleInvariant(*invIT);
 }
 
 auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
@@ -245,10 +262,20 @@ auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
 
-//===-------------------------- private -----------------------------------===//
+//===---------------------------- private ---------------------------------===//
 
-/// Insert the declarations for SoftBound metadata propagation functions
 void SoftBoundMechanism::insertFunDecls(Module &module) {
+
+  // Rename all declarations of library functions that have a run-time wrapper
+  for (auto &fun : module) {
+    if (!fun.isDeclaration()) {
+      continue;
+    }
+    assert(fun.hasName());
+    auto newName = InternalSoftBoundConfig::getWrappedName(fun.getName());
+    fun.setName(newName);
+    LLVM_DEBUG(dbgs() << "Renamed function: " << fun.getName() << "\n");
+  }
 
   PrototypeInserter protoInserter(module);
   handles = protoInserter.insertRunTimeProtoypes();
@@ -480,13 +507,155 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   llvm_unreachable("Unimplemented constant global initializer.");
 }
 
-void SoftBoundMechanism::handleCallInvariant(CallInvariantIT &) const {
+void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
+  if (auto cInvIT = dyn_cast<CallInvariantIT>(&target)) {
+    handleCallInvariant(*cInvIT);
+    return;
+  }
 
-  // TODO Insert shadow stack allocation + deallocation
+  Value *instrumentee = target.getInstrumentee();
+  Instruction *loc = target.getLocation();
+  const auto bw = target.getBoundWitness();
 
-  // TODO rename wrapped functions
+  IRBuilder<> builder(loc);
 
-  // TODO intrinsics might need additional calls for metadata copying
+  // Stores of pointer values to memory require a metadata store.
+  if (isa<StoreInst>(loc)) {
+    assert(instrumentee->getType()->isPointerTy());
+    if (instrumentee->getType() != handles.voidPtrTy) {
+      instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
+    }
+
+    insertMetadataStore(builder, instrumentee, bw->getLowerBound(),
+                        bw->getUpperBound());
+
+    DEBUG_WITH_TYPE("softbound-genchecks",
+                    dbgs() << "Metadata for pointer store to memory saved.\n";);
+    return;
+  }
+
+  auto lb = target.getBoundWitness()->getLowerBound();
+  auto ub = target.getBoundWitness()->getUpperBound();
+
+  // Upon a call, the base and bound for all pointer arguments need to be stored
+  // to the shadow stack.
+  if (isa<CallBase>(loc)) {
+    auto locIndex = computeShadowStackLocation(instrumentee, loc);
+    insertShadowStackStore(builder, lb, ub, locIndex);
+    DEBUG_WITH_TYPE(
+        "softbound-genchecks",
+        dbgs() << "Passed pointer information stored to shadow stack.\n";);
+    return;
+  }
+
+  // If a pointer is returned, its bounds need to be stored to the shadow stack.
+  if (isa<ReturnInst>(loc)) {
+    auto locIndex = computeShadowStackLocation(loc);
+    insertShadowStackStore(builder, lb, ub, locIndex);
+    DEBUG_WITH_TYPE(
+        "softbound-genchecks",
+        dbgs() << "Returned pointer information stored to shadow stack.\n";);
+    return;
+  }
+
+  llvm_unreachable("Unexpected invariant target.");
+}
+
+void SoftBoundMechanism::handleCallInvariant(
+    const CallInvariantIT &target) const {
+
+  auto call = cast<CallBase>(target.getLocation());
+
+  // Intrinsics might need additional calls for metadata copying, insert them
+  if (auto intrinsic = dyn_cast<IntrinsicInst>(call)) {
+    handleIntrinsicInvariant(intrinsic);
+    return;
+  }
+
+  // Take care of shadow stack allocation and deallocation
+  handleShadowStackAllocation(call);
+  auto calledFun = call->getCalledFunction();
+  if (!calledFun || !calledFun->hasName()) {
+    return;
+  }
+}
+
+void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackInfoStr()));
+
+  // Compute how many arguments the shadow stack needs be capable to store
+  auto size = computeSizeShadowStack(call);
+  auto sizeVal = ConstantInt::get(handles.intTy, size, true);
+
+  // Determine the location for the allocation, it might be necessary to skip
+  // already inserted shadow stack stores.
+  auto locBefore = getLastMDLocation(
+      call, InternalSoftBoundConfig::getShadowStackStoreStr(), false);
+  IRBuilder<> builder(locBefore);
+
+  // Allocate the shadow stack
+  SmallVector<Value *, 1> args = {sizeVal};
+  auto allocCall =
+      builder.CreateCall(FunctionCallee(handles.allocateShadowStack), args);
+  allocCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+  // Deallocate the shadow stack space after the call
+
+  // Determine the location for the deallocation
+  auto locAfter = getLastMDLocation(
+      call, InternalSoftBoundConfig::getShadowStackLoadStr(), true);
+  // Insertion always happens before the given instruction, so skip to the next
+  // one. There always needs to be a next node, as our metadata annotated
+  // instructions cannot be terminators.
+  builder.SetInsertPoint(locAfter->getNextNode());
+
+  // Deallocate the shadow stack
+  auto deallocCall =
+      builder.CreateCall(FunctionCallee(handles.deallocateShadowStack));
+  deallocCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+  DEBUG_WITH_TYPE("softbound-genchecks",
+                  dbgs() << "Allocate shadow stack: " << *allocCall
+                         << "\nDeallocate it: " << *deallocCall << "\n";);
+}
+
+void SoftBoundMechanism::handleIntrinsicInvariant(
+    IntrinsicInst *intrInst) const {
+
+  IRBuilder<> builder(intrInst);
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+
+  // Copy pointer metadata upon memcpy and memmove
+  if (intrInst->getOpcode())
+    switch (intrInst->getIntrinsicID()) {
+    case Intrinsic::memcpy:
+    case Intrinsic::memmove: {
+      SmallVector<Value *, 3> args;
+      args.push_back(intrInst->getOperand(0));
+      args.push_back(intrInst->getOperand(1));
+      args.push_back(intrInst->getOperand(2));
+      auto cpyCall = builder.CreateCall(
+          FunctionCallee(handles.copyInMemoryMetadata), args);
+      cpyCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+      DEBUG_WITH_TYPE("softbound-genchecks", {
+        dbgs() << "Inserted metadata copy: " << *cpyCall << "\n";
+      });
+      return;
+    }
+    case Intrinsic::memset: {
+      // TODO FIXME what if an in-memory pointer is overwritten here?
+      return;
+    }
+    default:
+      break;
+    }
 }
 
 auto SoftBoundMechanism::getBoundsConst(Constant *cons) const
@@ -670,7 +839,7 @@ auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
   MDNode *node = MDNode::get(
       *context,
       MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackInfoStr()));
+                    InternalSoftBoundConfig::getShadowStackLoadStr()));
   callLoadBase->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
   callLoadBound->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
 
@@ -678,44 +847,213 @@ auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
 }
 
 void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
-                                                ITarget &) const {
-  llvm_unreachable("TODO implement");
+                                                Value *lowerBound,
+                                                Value *upperBound,
+                                                int locIndex) const {
+
+  auto locIndexVal = ConstantInt::get(handles.intTy, locIndex, true);
+
+  SmallVector<Value *, 2> argsBase = {lowerBound, locIndexVal};
+  SmallVector<Value *, 2> argsBound = {upperBound, locIndexVal};
+  auto callStoreBase =
+      builder.CreateCall(FunctionCallee(handles.storeBaseStack), argsBase);
+  auto callStoreBound =
+      builder.CreateCall(FunctionCallee(handles.storeBoundStack), argsBound);
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackStoreStr()));
+  callStoreBase->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  callStoreBound->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+
+  LLVM_DEBUG(dbgs() << "\tBase store: " << *callStoreBase
+                    << "\n\tBound store: " << *callStoreBound << "\n";);
 }
 
-auto SoftBoundMechanism::computeShadowStackLocation(const Value *val) const
+auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
+                                                    const Value *usedIn) const
     -> int {
-
-  assert(val->getType()->isPointerTy());
+  DEBUG_WITH_TYPE("softbound-shadow-stack-loc", {
+    dbgs() << "Determine shadow stack location for value " << *val;
+    if (usedIn) {
+      if (auto fun = dyn_cast<Function>(usedIn)) {
+        dbgs() << " in " << fun->getName();
+      } else {
+        dbgs() << " in " << *usedIn;
+      }
+    }
+    dbgs() << "\n";
+  });
 
   int shadowStackLoc = 0;
-  if (isa<CallInst>(val)) {
+  if (isa<CallBase>(val) || isa<ReturnInst>(val)) {
+    DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
+                    { dbgs() << "Location: " << shadowStackLoc << "\n"; });
     return shadowStackLoc;
   }
 
-  const auto arg = dyn_cast<Argument>(val);
-  assert(arg);
-  auto fun = arg->getParent();
+  assert(usedIn && (isa<Function>(usedIn) || isa<CallBase>(usedIn)));
+  assert(val->getType()->isPointerTy());
 
-  // The returned pointer will have location 0, skip it in case something else
-  // is requested
-  if (fun->getReturnType()->isPointerTy()) {
-    shadowStackLoc++;
-  }
+  // TODO it should be possible to iterate over call arguments and function
+  // arguments in the same way...
+  if (const Function *fun = dyn_cast<Function>(usedIn)) {
 
-  for (const auto &funArg : fun->args()) {
-    if (!funArg.getType()->isPointerTy()) {
-      // Non-pointer arguments are not accounted for in the location calculation
-      continue;
+    // The returned pointer will have location 0, skip it in case something else
+    // is requested
+    if (fun->getReturnType()->isPointerTy()) {
+      shadowStackLoc++;
     }
 
-    if (arg == &funArg) {
-      return shadowStackLoc;
+    for (const auto &funArg : fun->args()) {
+
+      if (!funArg.getType()->isPointerTy()) {
+        // Non-pointer arguments are not accounted for in the location
+        // calculation
+        continue;
+      }
+
+      // Skip metadata arguments
+      if (funArg.getType()->isMetadataTy()) {
+        continue;
+      }
+
+      DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
+                      dbgs() << "Compare to " << funArg << "\n";);
+      if (val == &funArg) {
+        LLVM_DEBUG({ dbgs() << "Location: " << shadowStackLoc << "\n"; });
+        return shadowStackLoc;
+      }
+      shadowStackLoc++;
     }
-    shadowStackLoc++;
+  } else {
+    const CallBase *call = cast<CallBase>(usedIn);
+
+    // The returned pointer will have location 0, skip it in case something else
+    // is requested
+    if (call->getType()->isPointerTy()) {
+      shadowStackLoc++;
+    }
+
+    for (const auto &use : call->args()) {
+
+      if (!use->getType()->isPointerTy()) {
+        // Non-pointer arguments are not accounted for in the location
+        // calculation
+        continue;
+      }
+
+      // Skip metadata arguments
+      if (use->getType()->isMetadataTy()) {
+        continue;
+      }
+
+      DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
+                      dbgs() << "Compare to " << *use.get() << "\n";);
+      if (val == use.get()) {
+        DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
+                        { dbgs() << "Location: " << shadowStackLoc << "\n"; });
+        return shadowStackLoc;
+      }
+      shadowStackLoc++;
+    }
   }
 
   llvm_unreachable(
       "Argument not found, shadow stack location cannot be determined");
+}
+
+auto SoftBoundMechanism::computeSizeShadowStack(const CallBase *call) const
+    -> int {
+
+  int size = 0;
+  if (call->getType()->isPointerTy()) {
+    size++;
+  }
+
+  // Count every real pointer argument
+  for (const auto &use : call->args()) {
+
+    if (!use->getType()->isPointerTy()) {
+      // Non-pointer arguments are not accounted for in the location
+      // calculation
+      continue;
+    }
+
+    // Skip metadata arguments
+    if (use->getType()->isMetadataTy()) {
+      continue;
+    }
+
+    size++;
+  }
+
+  return size;
+}
+
+void SoftBoundMechanism::insertSpatialDereferenceCheck(
+    const ITarget &target) const {
+  assert(isa<ConstSizeCheckIT>(&target) || isa<VarSizeCheckIT>(&target));
+
+  auto *instrumentee = target.getInstrumentee();
+  IRBuilder<> builder(target.getLocation());
+
+  Value *size = nullptr;
+  if (auto constSIT = dyn_cast<ConstSizeCheckIT>(&target)) {
+    size = ConstantInt::get(handles.sizeTTy, constSIT->getAccessSize());
+  }
+
+  if (auto varSIT = dyn_cast<VarSizeCheckIT>(&target)) {
+    size = varSIT->getAccessSizeVal();
+    if (size->getType() != handles.sizeTTy) {
+      size = insertCast(handles.sizeTTy, size, builder);
+    }
+  }
+
+  if (instrumentee->getType() != handles.voidPtrTy) {
+    instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
+  }
+
+  assert(size);
+
+  const auto bw = target.getBoundWitness();
+  SmallVector<Value *, 4> args = {bw->getLowerBound(), bw->getUpperBound(),
+                                  instrumentee, size};
+
+  DEBUG_WITH_TYPE("softbound-genchecks",
+                  dbgs() << "\tLB: " << *bw->getLowerBound()
+                         << "\n\tUB: " << *bw->getUpperBound() << "\n\tinstr: "
+                         << *instrumentee << "\n\tsize: " << *size << "\n";);
+  auto call = builder.CreateCall(FunctionCallee(handles.spatialCheck), args);
+
+  DEBUG_WITH_TYPE("softbound-genchecks",
+                  dbgs() << "Generated check: " << *call << "\n";);
+}
+
+void SoftBoundMechanism::insertSpatialCallCheck(
+    const CallCheckIT &target) const {
+
+  auto *loc = target.getLocation();
+  assert(isa<CallBase>(loc));
+
+  IRBuilder<> builder(cast<CallBase>(loc));
+
+  auto *instrumentee = target.getInstrumentee();
+
+  if (instrumentee->getType() != handles.voidPtrTy) {
+    instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
+  }
+
+  const auto bw = target.getBoundWitness();
+  SmallVector<Value *, 3> args = {bw->getLowerBound(), bw->getUpperBound(),
+                                  instrumentee};
+
+  auto call =
+      builder.CreateCall(FunctionCallee(handles.spatialCallCheck), args);
+
+  DEBUG_WITH_TYPE("softbound-genchecks",
+                  dbgs() << "Generated check: " << *call << "\n";);
 }
 
 bool SoftBoundMechanism::isSimpleVectorTy(const VectorType *vecTy) const {
@@ -777,7 +1115,23 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
 }
 
 void SoftBoundMechanism::checkModule(Module &module) {
-  for (const auto &fun : module) {
+  for (const Function &fun : module) {
+
+    if (fun.hasAvailableExternallyLinkage()) {
+      // Function which are `available_externally` conflict with our goal to
+      // wrap standard library functions. These functions may include kind of
+      // inlined standard library functions, but no code for them will be
+      // emitted, so we cannot instrument them instead of calling the wrapper
+      // (as there is - to the best of my knowledge - no guarantee that the
+      // function will be inlined).
+      LLVM_DEBUG({
+        dbgs() << "Function " << fun.getName()
+               << " with `available_externally` linkage found, this should be "
+                  "prevented by the `EliminateAvailableExternallyPass` pass.\n";
+      });
+      globalConfig.noteError();
+    }
+
     for (const auto &bb : fun) {
       for (const Instruction &inst : bb) {
 
@@ -797,4 +1151,35 @@ void SoftBoundMechanism::checkModule(Module &module) {
       }
     }
   }
+}
+
+auto SoftBoundMechanism::getLastMDLocation(Instruction *start,
+                                           StringRef nodeString,
+                                           bool forward) const
+    -> Instruction * {
+  // Construct the look up node
+  auto shadowStackStoreNode =
+      MDNode::get(*context, MDString::get(*context, nodeString));
+
+  auto loc = start;
+  while (loc) {
+    Instruction *nextLoc;
+    if (forward) {
+      nextLoc = loc->getNextNode();
+    } else {
+      nextLoc = loc->getPrevNode();
+    }
+
+    if (!nextLoc) {
+      break;
+    }
+    auto md = nextLoc->getMetadata(InternalSoftBoundConfig::getMetadataKind());
+
+    // If this is not a shadow stack store, we found our insert location
+    if (!md || md != shadowStackStoreNode) {
+      break;
+    }
+    loc = nextLoc;
+  }
+  return loc;
 }

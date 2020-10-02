@@ -1,4 +1,4 @@
-//===--------- meminstrument/RunTimeHandles.h - TODO -------*- C++ -*-===//
+//===- meminstrument/RunTimeHandles.h - Handles for C functions -*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// TODO
+/// This class abstracts from the names of the C run-time functions and contains
+/// handles to all available internal metadata/check/etc. functions, such that
+/// calls to them can easily be inserted.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -29,14 +31,9 @@ public:
 
   // Check functions
 
-  //... for the C memcpy/memset functions
-  llvm::Function *memcpyCheck = nullptr;
-  llvm::Function *memsetCheck = nullptr;
-
   //... for spatial safety
   llvm::Function *spatialCallCheck = nullptr;
-  llvm::Function *spatialLoadCheck = nullptr;
-  llvm::Function *spatialStoreCheck = nullptr;
+  llvm::Function *spatialCheck = nullptr;
 
   //... for temporal safety [not implemented]
 

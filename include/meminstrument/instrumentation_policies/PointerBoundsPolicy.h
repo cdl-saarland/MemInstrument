@@ -1,4 +1,4 @@
-//===- meminstrument/PointerBoundsPolicy.h --- TODO -------------*- C++ -*-===//
+//===- meminstrument/PointerBoundsPolicy.h -- Ptr-based Policy --*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

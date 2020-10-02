@@ -1,4 +1,6 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -S
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -S 2>&1 | %fileCheck %s
+
+; CHECK: TODO
 
 ; XFAIL: *
 
@@ -8,4 +10,3 @@ bb:
   %x1 = load i32, i32* %p1
   ret i32 42
 }
-

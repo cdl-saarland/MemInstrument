@@ -64,7 +64,8 @@ private:
   /// The llvm context
   llvm::LLVMContext *context;
 
-  /// Insert the declarations for SoftBound metadata propagation functions
+  /// Insert the declarations for SoftBound metadata propagation functions and
+  /// library function wrappers
   void insertFunDecls(llvm::Module &);
 
   /// Rename the main function, such that the run-time main will be executed
@@ -82,9 +83,21 @@ private:
                          std::vector<llvm::Value *> indices) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
-  /// Prepare the shadow stack for a call, i.e. allocate space before the call
-  /// and deallocate it afterwards.
-  void handleCallInvariant(CallInvariantIT &) const;
+  /// Handles invariant targets that we use for metadata propagation. It
+  /// produces stores to propagate bounds and inserts allocations for metadata
+  /// data structures if necessary.
+  void handleInvariant(const InvariantIT &) const;
+
+  /// Take care of a call invariant target. This will rename wrapped functions,
+  /// allocate and deallocate shadow stack space and insert further code for
+  /// intrinsic calls if necesssary.
+  void handleCallInvariant(const CallInvariantIT &) const;
+
+  /// Take care of shadow stack allocation and deallocation for the given call.
+  void handleShadowStackAllocation(llvm::CallBase *) const;
+
+  /// Insert metadata calls for invariants of intrinsic function if necessary.
+  void handleIntrinsicInvariant(llvm::IntrinsicInst *) const;
 
   /// Add bit casts if the types are not yet those that base and bound should
   /// have.
@@ -127,9 +140,9 @@ private:
   auto insertShadowStackLoad(llvm::IRBuilder<> &, int index) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
-  /// Store base and bound information on the shadow stack for the given
-  /// target.
-  void insertShadowStackStore(llvm::IRBuilder<> &, ITarget &) const;
+  /// Store base and bound information on the shadow stack.
+  void insertShadowStackStore(llvm::IRBuilder<> &, llvm::Value *lowerBound,
+                              llvm::Value *upperBound, int locIndex) const;
 
   /// The shadow stack stores bound information for pointers handed over to
   /// functions and pointers returned from functions.
@@ -140,7 +153,24 @@ private:
   /// number of pointers before the requested argument bounds.
   /// To avoid flaws in the shadow stack location computation, this functions
   /// provides a consistent look up of the correct index.
-  auto computeShadowStackLocation(const llvm::Value *) const -> int;
+  ///
+  /// The first value describes which argument/returned pointer should be looked
+  /// up, the second one specifies in which call/function to search for the
+  /// argument. The second argument is not needed for returned pointer values,
+  /// as they can be identified as call/return.
+  auto computeShadowStackLocation(const llvm::Value *,
+                                  const llvm::Value *usedIn = nullptr) const
+      -> int;
+
+  /// Computes how many elements the shadow stack needs to be capable to store
+  /// for a given call.
+  auto computeSizeShadowStack(const llvm::CallBase *) const -> int;
+
+  /// Insert a call to a spatial check function for the given target.
+  void insertSpatialDereferenceCheck(const ITarget &) const;
+
+  /// Insert a call to a spatial call check function for the given target.
+  void insertSpatialCallCheck(const CallCheckIT &) const;
 
   /// Currently vectors of pointers are not handled properly. This function
   /// identifies unproblematic vectors.
@@ -155,6 +185,11 @@ private:
   /// Check if this module contains any unsupported constructs (e.g. exception
   /// handling)
   void checkModule(llvm::Module &);
+
+  /// Get the first instruction before/after start, that does not have metadata
+  /// containing nodeString.
+  auto getLastMDLocation(llvm::Instruction *start, llvm::StringRef nodeString,
+                         bool forward) const -> llvm::Instruction *;
 };
 
 } // namespace meminstrument

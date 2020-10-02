@@ -1,4 +1,4 @@
-//===---------------- InternalSoftBoundConfig.cpp - TODO ------------------===//
+//===--- InternalSoftBoundConfig.cpp - C run-time compliant configuration -===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,13 +11,20 @@
 /// or both. Align to the configuration that the run-time uses (otherwise the
 /// compiled program will not work). Provide some convenience functions to be
 /// independent of the defines in the rest of the code.
+/// This configuration encapsulates information that the C run-time communicates
+/// to the pass and makes them available independent from the details of the C
+/// run-time.
 ///
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
 
 #include "meminstrument/softbound/SBRTInfo.h"
+#include "meminstrument/softbound/SBWrapper.h"
 
+#include "llvm/ADT/StringRef.h"
+
+using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
 
@@ -49,6 +56,15 @@ bool InternalSoftBoundConfig::hasRunTimeStatsEnabled() {
   return runTimeStatsEnabled;
 }
 
+auto InternalSoftBoundConfig::getWrappedName(StringRef funName) -> std::string {
+  auto wrappedName = "softboundcets_" + funName.str();
+  if (std::find(availableWrappers.begin(), availableWrappers.end(),
+                wrappedName) != availableWrappers.end()) {
+    return wrappedName;
+  }
+  return funName;
+}
+
 auto InternalSoftBoundConfig::getMetadataKind() -> std::string {
   return "SoftBound";
 }
@@ -73,7 +89,7 @@ auto InternalSoftBoundConfig::getSetupInfoStr() -> std::string {
   return "Setup";
 }
 
-//===-------------------------- private -----------------------------------===//
+//===---------------------------- private ---------------------------------===//
 
 const SafetyLevel InternalSoftBoundConfig::level =
     InternalSoftBoundConfig::initialize();
