@@ -7,6 +7,7 @@ config.target_triple = "@TARGET_TRIPLE@"
 config.llvm_src_root = "@LLVM_SOURCE_DIR@"
 config.llvm_obj_root = "@LLVM_BINARY_DIR@"
 config.llvm_lib_dir = "@LLVM_LIBRARY_DIR@"
+config.rt_lib_dir = "@RT_LIBS_PATH@"
 
 config.meminstrument_src_root = "@LLVM_SOURCE_DIR@/projects/meminstrument"
 config.meminstrument_test_root = "@LLVM_SOURCE_DIR@/projects/meminstrument/test"
