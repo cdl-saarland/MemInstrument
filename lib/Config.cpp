@@ -478,7 +478,7 @@ public:
   virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
-  virtual bool hasInstrumentVerbose(void) const override { return true; }
+  virtual bool hasInstrumentVerbose(void) const override { return false; }
   virtual const char *getName(void) const override { return "SoftBound"; }
 };
 
