@@ -51,6 +51,10 @@ STATISTIC(
     SetupErrror,
     "Number of modules for which the setup phase already detected problems");
 
+// In our setup byval arguments are weird because their address is unclear.
+// Disallow them for now.
+STATISTIC(ByValArg, "Number of byval arguments encountered");
+
 using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
@@ -85,6 +89,10 @@ void SoftBoundMechanism::initialize(Module &module) {
   // First, check if any unimplemented or problematic constructs are contained
   // in this module (e.g. exception handling)
   checkModule(module);
+
+  if (globalConfig.hasErrors()) {
+    ++SetupErrror;
+  }
 
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
@@ -1130,6 +1138,13 @@ void SoftBoundMechanism::checkModule(Module &module) {
                   "prevented by the `EliminateAvailableExternallyPass` pass.\n";
       });
       globalConfig.noteError();
+    }
+
+    for (const auto &arg : fun.args()) {
+      if (arg.hasByValAttr()) {
+        ++ByValArg;
+        globalConfig.noteError();
+      }
     }
 
     for (const auto &bb : fun) {
