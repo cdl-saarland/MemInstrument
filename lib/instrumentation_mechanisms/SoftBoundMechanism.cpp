@@ -589,13 +589,15 @@ void SoftBoundMechanism::handleCallInvariant(
 }
 
 void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackInfoStr()));
 
   // Compute how many arguments the shadow stack needs be capable to store
   auto size = computeSizeShadowStack(call);
+
+  // Don't allocate anything if no metadata needs to be propagated
+  if (size == 0) {
+    return;
+  }
+
   auto sizeVal = ConstantInt::get(handles.intTy, size, true);
 
   // Determine the location for the allocation, it might be necessary to skip
@@ -603,6 +605,12 @@ void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
   auto locBefore = getLastMDLocation(
       call, InternalSoftBoundConfig::getShadowStackStoreStr(), false);
   IRBuilder<> builder(locBefore);
+
+  // Construct the metadata for the call
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackInfoStr()));
 
   // Allocate the shadow stack
   SmallVector<Value *, 1> args = {sizeVal};
