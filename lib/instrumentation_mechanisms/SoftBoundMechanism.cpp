@@ -83,8 +83,9 @@ void SoftBoundMechanism::initialize(Module &module) {
     return;
   }
 
-  // Store the context to avoid looking it up all the time
+  // Store the context and data layout to avoid looking it up all the time
   context = &module.getContext();
+  DL = &module.getDataLayout();
 
   // First, check if any unimplemented or problematic constructs are contained
   // in this module (e.g. exception handling)
@@ -131,8 +132,17 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
   }
 
   if (AllocaInst *alloc = dyn_cast<AllocaInst>(instrumentee)) {
+
+    auto sz = DL->getTypeAllocSize(alloc->getAllocatedType());
+    Value *sizeVal = ConstantInt::get(handles.sizeTTy, sz);
+
+    if (alloc->isArrayAllocation()) {
+      sizeVal = builder.CreateNUWMul(alloc->getArraySize(), sizeVal);
+    }
+    LLVM_DEBUG(dbgs() << "alloc size: " << *sizeVal << "\n";);
+
     base = builder.CreateConstGEP1_32(alloc, 0);
-    bound = builder.CreateConstGEP1_32(alloc, 1);
+    bound = builder.CreateGEP(alloc, sizeVal);
   }
 
   if (auto constant = dyn_cast<Constant>(instrumentee)) {

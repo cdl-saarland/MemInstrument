@@ -64,6 +64,9 @@ private:
   /// The llvm context
   llvm::LLVMContext *context;
 
+  /// The data layout
+  const llvm::DataLayout *DL;
+
   /// Insert the declarations for SoftBound metadata propagation functions and
   /// library function wrappers
   void insertFunDecls(llvm::Module &);
