@@ -19,9 +19,9 @@
 using namespace meminstrument;
 using namespace llvm;
 
-WitnessGraphNode *
-WitnessStrategy::getInternalNode(WitnessGraph &WG, llvm::Value *Instrumentee,
-                                 llvm::Instruction *Location) {
+WitnessGraphNode *WitnessStrategy::getInternalNode(WitnessGraph &WG,
+                                                   Value *Instrumentee,
+                                                   Instruction *Location) {
   auto NewTarget = ITarget::createIntermediateTarget(Instrumentee, Location);
   return WG.getInternalNode(NewTarget);
 }

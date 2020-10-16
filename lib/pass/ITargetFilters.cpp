@@ -114,7 +114,7 @@ uint64_t extractAccessId(Instruction *I) {
 }
 
 void meminstrument::filterITargetsRandomly(
-    GlobalConfig &CFG, std::map<llvm::Function *, ITargetVector> TargetMap) {
+    GlobalConfig &CFG, std::map<Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
   }

@@ -48,8 +48,8 @@ static RegisterPass<DummyExternalChecksPass>
                                     false, // CFGOnly
                                     true); // isAnalysis
 
-static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
-                                      llvm::legacy::PassManagerBase &PM) {
+static void registerMeminstrumentPass(const PassManagerBuilder &,
+                                      legacy::PassManagerBase &PM) {
   if (UseLifeTimeKillerOpt) {
     PM.add(new lifetimekiller::LifeTimeKillerPass());
   }
@@ -66,12 +66,12 @@ static void registerMeminstrumentPass(const llvm::PassManagerBuilder &,
 }
 
 // #if MEMINSTRUMENT_USE_PICO
-static llvm::RegisterStandardPasses
-    RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_ModuleOptimizerEarly,
+static RegisterStandardPasses
+    RegisterMeminstrumentPass(PassManagerBuilder::EP_ModuleOptimizerEarly,
                               registerMeminstrumentPass);
 // #else
-// static llvm::RegisterStandardPasses
-//     RegisterMeminstrumentPass(llvm::PassManagerBuilder::EP_OptimizerLast,
+// static RegisterStandardPasses
+//     RegisterMeminstrumentPass(PassManagerBuilder::EP_OptimizerLast,
 //                               registerMeminstrumentPass);
 // #endif
 } // namespace meminstrument

@@ -44,9 +44,9 @@ const char *markString = "nosanitize";
 using namespace llvm;
 using namespace meminstrument;
 
-llvm::Value *RuntimeStatWitness::getLowerBound(void) const { return nullptr; }
+Value *RuntimeStatWitness::getLowerBound(void) const { return nullptr; }
 
-llvm::Value *RuntimeStatWitness::getUpperBound(void) const { return nullptr; }
+Value *RuntimeStatWitness::getUpperBound(void) const { return nullptr; }
 
 RuntimeStatWitness::RuntimeStatWitness(void) : Witness(WK_RuntimeStat) {}
 
@@ -120,12 +120,12 @@ void RuntimeStatMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-llvm::Value *RuntimeStatMechanism::getFailFunction(void) const {
+Value *RuntimeStatMechanism::getFailFunction(void) const {
   llvm_unreachable("FailFunction calls are not supported by this mechanism!");
   return nullptr;
 }
 
-uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
+uint64_t RuntimeStatMechanism::populateStringMap(Module &M) {
   uint64_t Counter = 0;
   for (auto &F : M) {
     if (F.isDeclaration()) {
@@ -202,7 +202,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(llvm::Module &M) {
   return Counter;
 }
 
-void RuntimeStatMechanism::initialize(llvm::Module &M) {
+void RuntimeStatMechanism::initialize(Module &M) {
   Verbose = _CFG.hasInstrumentVerbose();
   auto &Ctx = M.getContext();
 
@@ -217,9 +217,9 @@ void RuntimeStatMechanism::initialize(llvm::Module &M) {
       new GlobalVariable(M, SizeType, false, GlobalValue::InternalLinkage,
                          Constant::getNullValue(SizeType), "MI_StatID");
 
-  llvm::Value *InitFun = insertFunDecl(M, "__mi_stat_init", SizeType, SizeType);
-  llvm::Value *InitEntryFun = insertFunDecl(M, "__mi_stat_init_entry", VoidTy,
-                                            SizeType, SizeType, StringType);
+  Value *InitFun = insertFunDecl(M, "__mi_stat_init", SizeType, SizeType);
+  Value *InitEntryFun = insertFunDecl(M, "__mi_stat_init_entry", VoidTy,
+                                      SizeType, SizeType, StringType);
 
   auto Fun =
       registerCtors(M, std::make_pair<StringRef, int>("__mi_stat_setup", 0));
@@ -238,7 +238,7 @@ void RuntimeStatMechanism::initialize(llvm::Module &M) {
     for (const auto &P : StringMap) {
       uint64_t idx = P.second.idx;
       std::string &name = P.second.str;
-      llvm::Value *Str = insertStringLiteral(M, name);
+      Value *Str = insertStringLiteral(M, name);
       Str = insertCast(StringType, Str, Builder);
       insertCall(
           Builder, InitEntryFun,
@@ -248,7 +248,7 @@ void RuntimeStatMechanism::initialize(llvm::Module &M) {
     auto *call = insertCall(Builder, InitFun, ConstantInt::get(SizeType, 25));
 
     auto addEntry = [&](uint64_t idx, StringRef text) {
-      llvm::Value *Str = insertStringLiteral(M, text.str().c_str());
+      Value *Str = insertStringLiteral(M, text.str().c_str());
       Str = insertCast(StringType, Str, Builder);
       insertCall(
           Builder, InitEntryFun,
@@ -297,7 +297,7 @@ RuntimeStatMechanism::insertWitnessPhi(ITarget &) const {
 
 void RuntimeStatMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
                                                    std::shared_ptr<Witness> &,
-                                                   llvm::BasicBlock *) const {
+                                                   BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 

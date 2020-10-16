@@ -16,14 +16,14 @@
 using namespace llvm;
 using namespace meminstrument;
 
-llvm::Value *DummyWitness::getLowerBound(void) const { return LowerBound; }
+Value *DummyWitness::getLowerBound(void) const { return LowerBound; }
 
-llvm::Value *DummyWitness::getUpperBound(void) const { return UpperBound; }
+Value *DummyWitness::getUpperBound(void) const { return UpperBound; }
 
-DummyWitness::DummyWitness(llvm::Value *WitnessValue)
+DummyWitness::DummyWitness(Value *WitnessValue)
     : Witness(WK_Dummy), WitnessValue(WitnessValue) {}
 
-void DummyMechanism::initTypes(llvm::LLVMContext &Ctx) {
+void DummyMechanism::initTypes(LLVMContext &Ctx) {
   WitnessType = Type::getInt8PtrTy(Ctx);
   PtrArgType = Type::getInt8PtrTy(Ctx);
   SizeType = Type::getInt64Ty(Ctx);
@@ -86,11 +86,9 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-llvm::Value *DummyMechanism::getFailFunction(void) const {
-  return FailFunction;
-}
+Value *DummyMechanism::getFailFunction(void) const { return FailFunction; }
 
-void DummyMechanism::initialize(llvm::Module &M) {
+void DummyMechanism::initialize(Module &M) {
   auto &Ctx = M.getContext();
   initTypes(Ctx);
   auto *VoidTy = Type::getVoidTy(Ctx);
@@ -103,8 +101,8 @@ void DummyMechanism::initialize(llvm::Module &M) {
   GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
                                         SizeType, WitnessType);
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
-      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  AttributeList NoReturnAttr = AttributeList::get(
+      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", NoReturnAttr, VoidTy);
 }
 
@@ -125,7 +123,7 @@ DummyMechanism::insertWitnessPhi(ITarget &Target) const {
 
 void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                              std::shared_ptr<Witness> &Incoming,
-                                             llvm::BasicBlock *InBB) const {
+                                             BasicBlock *InBB) const {
   auto *PhiWitness = cast<DummyWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
 

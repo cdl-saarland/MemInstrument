@@ -21,7 +21,7 @@ using namespace llvm;
 
 DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
 
-bool DummyExternalChecksPass::runOnModule(Module &M) {
+bool DummyExternalChecksPass::runOnModule(Module &) {
 
   LLVM_DEBUG(dbgs() << "Running External Checks Pass\n";);
 
@@ -34,8 +34,7 @@ void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 char DummyExternalChecksPass::ID = 0;
 
-bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &P,
-                                            llvm::Module &M) {
+bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &, Module &) {
   // No need to do something here.
   return false;
 }
@@ -44,7 +43,7 @@ bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &P,
 /// (required for use with external_only config)
 void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
                                                         ITargetVector &Vec,
-                                                        llvm::Function &F) {
+                                                        Function &F) {
   // we store our relevant targets in a worklist for later materialization
   auto &CurrentWL = WorkList[&F];
 
@@ -75,7 +74,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
 }
 
 void DummyExternalChecksPass::materializeExternalChecksForFunction(
-    MemInstrumentPass &P, ITargetVector &Vec, llvm::Function &F) {
+    MemInstrumentPass &P, ITargetVector &Vec, Function &F) {
   auto &CFG = P.getConfig();
   auto &IM = CFG.getInstrumentationMechanism();
   auto &Ctx = F.getContext();

@@ -109,47 +109,45 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
   return GV;
 }
 
-llvm::Value *InstrumentationMechanism::insertFunDecl_impl(
-    std::vector<llvm::Type *> &Vec, llvm::Module &M, llvm::StringRef Name,
-    llvm::AttributeList AList, llvm::Type *RetTy) {
+Value *InstrumentationMechanism::insertFunDecl_impl(std::vector<Type *> &Vec,
+                                                    Module &M, StringRef Name,
+                                                    AttributeList AList,
+                                                    Type *RetTy) {
   auto *FunTy = FunctionType::get(RetTy, Vec, /*isVarArg*/ false);
   auto *Res = M.getOrInsertFunction(Name, FunTy, AList).getCallee();
   setNoInstrument(Res);
   return Res;
 }
 
-llvm::Instruction *
-InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
-                                     const std::vector<llvm::Value *> &&args,
-                                     const llvm::Twine &Name) {
+Instruction *
+InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+                                     const std::vector<Value *> &&args,
+                                     const Twine &Name) {
   auto *Res = B.CreateCall(Fun, args);
   setNoInstrument(Res);
   return Res;
 }
 
-llvm::Instruction *
-InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
-                                     llvm::Value *arg,
-                                     const llvm::Twine &Name) {
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+                                                  Value *arg,
+                                                  const Twine &Name) {
   return insertCall(B, Fun, std::vector<Value *>{arg}, Name);
 }
 
-llvm::Instruction *
-InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B, llvm::Value *Fun,
-                                     const std::vector<llvm::Value *> &&args) {
+Instruction *
+InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+                                     const std::vector<Value *> &&args) {
   return insertCall(B, Fun, std::move(args), "inserted_call");
 }
 
-llvm::Instruction *InstrumentationMechanism::insertCall(llvm::IRBuilder<> &B,
-                                                        llvm::Value *Fun,
-                                                        llvm::Value *arg) {
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+                                                  Value *arg) {
   return insertCall(B, Fun, arg, "inserted_call");
 }
 
-llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
-                                                  llvm::Value *FromVal,
-                                                  llvm::IRBuilder<> &Builder,
-                                                  llvm::StringRef Suffix) {
+Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
+                                            IRBuilder<> &Builder,
+                                            StringRef Suffix) {
   auto *Res =
       Builder.CreateBitCast(FromVal, DestType, FromVal->getName() + Suffix);
   if (auto *I = dyn_cast<Instruction>(Res)) {
@@ -158,23 +156,20 @@ llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
   return Res;
 }
 
-llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
-                                                  llvm::Value *FromVal,
-                                                  llvm::IRBuilder<> &Builder) {
+Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
+                                            IRBuilder<> &Builder) {
   return insertCast(DestType, FromVal, Builder, "_casted");
 }
 
-llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
-                                                  llvm::Value *FromVal,
-                                                  llvm::Instruction *Location) {
+Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
+                                            Instruction *Location) {
   IRBuilder<> Builder(Location);
   return insertCast(DestType, FromVal, Builder);
 }
 
-llvm::Value *InstrumentationMechanism::insertCast(llvm::Type *DestType,
-                                                  llvm::Value *FromVal,
-                                                  llvm::Instruction *Location,
-                                                  llvm::StringRef Suffix) {
+Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
+                                            Instruction *Location,
+                                            StringRef Suffix) {
   IRBuilder<> Builder(Location);
   return insertCast(DestType, FromVal, Builder, Suffix);
 }

@@ -461,7 +461,7 @@ Config *Config::create(ConfigKind k) {
 
 } // namespace meminstrument
 
-GlobalConfig::GlobalConfig(Config *Cfg, const llvm::Module &M) {
+GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
 
 #define X_OR_DEFAULT(TYPE, X, Y) (((X) != TYPE::default_val) ? (X) : (Y))
 
@@ -523,7 +523,7 @@ bool GlobalConfig::hasUseNoop(void) {
   return res;
 }
 
-std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {
+std::unique_ptr<GlobalConfig> GlobalConfig::create(const Module &M) {
   auto GlobalCfg = std::unique_ptr<GlobalConfig>(
       new GlobalConfig(Config::create(ConfigKindOpt), M));
   LLVM_DEBUG(dbgs() << "Creating MemInstrument Config:\n";
@@ -531,7 +531,7 @@ std::unique_ptr<GlobalConfig> GlobalConfig::create(const llvm::Module &M) {
   return GlobalCfg;
 }
 
-void GlobalConfig::dump(llvm::raw_ostream &Stream) const {
+void GlobalConfig::dump(raw_ostream &Stream) const {
   Stream << "{{{ Config: " << _ConfigName << "\n";
   Stream << "     InstrumentationPolicy: " << _IP->getName() << '\n';
   Stream << "           WitnessStrategy: " << _WS->getName() << '\n';

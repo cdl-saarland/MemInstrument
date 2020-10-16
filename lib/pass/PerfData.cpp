@@ -61,7 +61,7 @@ void queryValue(sqlite3 *db, std::string &query, QueryResult &qr) {
 
   rc = sqlite3_exec(db, query.c_str(), callback, &qr, &zErrMsg);
   if (rc != SQLITE_OK) {
-    llvm::errs() << "SQL error: " << zErrMsg << "\n";
+    errs() << "SQL error: " << zErrMsg << "\n";
     sqlite3_free(zErrMsg);
   }
 }
@@ -86,7 +86,7 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
     rc = sqlite3_open(DBPathOpt.c_str(), &db);
     if (rc) {
       ++FailingHotnessLookUps;
-      llvm::errs() << "Can't open database: " << sqlite3_errmsg(db) << "\n";
+      errs() << "Can't open database: " << sqlite3_errmsg(db) << "\n";
       failed = true;
       return 0;
     }
@@ -104,8 +104,7 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 
     if (!qr.did_something) {
       ++FailingHotnessLookUps;
-      llvm::dbgs() << "[mi_perf] Failing Module lookup: " << stmt.c_str()
-                   << "\n";
+      dbgs() << "[mi_perf] Failing Module lookup: " << stmt.c_str() << "\n";
       failed = true;
       return 0;
     }
@@ -126,7 +125,7 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 
   if (!qr.did_something) {
     ++FailingHotnessLookUps;
-    llvm::dbgs() << "[mi_perf] Failing lookup: " << stmt.c_str() << "\n";
+    dbgs() << "[mi_perf] Failing lookup: " << stmt.c_str() << "\n";
   }
 
   return qr.value;

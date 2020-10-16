@@ -127,7 +127,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   if (Mode == MIMode::SETUP || CFG->hasErrors())
     return true;
 
-  std::map<llvm::Function *, ITargetVector> TargetMap;
+  std::map<Function *, ITargetVector> TargetMap;
 
   for (auto &F : M) {
     if (F.empty() || hasNoInstrument(&F)) {
@@ -238,8 +238,7 @@ void MemInstrumentPass::getAnalysisUsage(AnalysisUsage &AU) const {
 #endif
 }
 
-void MemInstrumentPass::print(llvm::raw_ostream &O,
-                              const llvm::Module *M) const {
+void MemInstrumentPass::print(raw_ostream &O, const Module *M) const {
   O << "MemInstrumentPass for module\n" << *M << "\n";
 }
 

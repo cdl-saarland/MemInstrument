@@ -86,7 +86,7 @@ void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
 }
 
 void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
-                                                        llvm::ReturnInst *Ret) {
+                                                        ReturnInst *Ret) {
 
   auto *Operand = Ret->getReturnValue();
   if (!Operand || !Operand->getType()->isPointerTy()) {

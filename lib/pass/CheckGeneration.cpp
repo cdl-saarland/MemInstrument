@@ -17,7 +17,7 @@ using namespace meminstrument;
 using namespace llvm;
 
 void meminstrument::generateChecks(GlobalConfig &CFG, ITargetVector &Vec,
-                                   llvm::Function &F) {
+                                   Function &F) {
   auto &IM = CFG.getInstrumentationMechanism();
 
   for (auto &T : Vec) {

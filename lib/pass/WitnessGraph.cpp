@@ -97,13 +97,13 @@ void WitnessGraph::createWitnesses(InstrumentationMechanism &IM) {
   }
 }
 
-void WitnessGraph::printDotGraph(llvm::raw_ostream &stream) const {
+void WitnessGraph::printDotGraph(raw_ostream &stream) const {
   std::map<WitnessGraphNode *, WitnessGraphNode *> edges;
   printDotGraph(stream, edges);
 }
 
 void WitnessGraph::printDotGraph(
-    llvm::raw_ostream &stream,
+    raw_ostream &stream,
     std::map<WitnessGraphNode *, WitnessGraphNode *> &edges) const {
   stream << "digraph witnessgraph_" << Func.getName() << "\n{\n";
   stream << "  rankdir=BT;\n";
@@ -168,8 +168,8 @@ void WitnessGraph::dumpDotGraph(
   delete (fout);
 }
 
-void WitnessGraph::printWitnessClasses(llvm::raw_ostream &Stream) const {
-  llvm::DenseMap<Witness *, std::set<ITarget *>> PrintMap;
+void WitnessGraph::printWitnessClasses(raw_ostream &Stream) const {
+  DenseMap<Witness *, std::set<ITarget *>> PrintMap;
 
   for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;

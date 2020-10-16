@@ -46,7 +46,7 @@ cl::opt<bool> ShareBoundsOpt(
 } // namespace
 
 void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
-                                             llvm::Constant *C) const {
+                                             Constant *C) const {
   assert(C->getType()->isPointerTy() &&
          "getPointerOperands() called for non-pointer constant!");
 

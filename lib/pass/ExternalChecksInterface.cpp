@@ -9,8 +9,8 @@
 namespace meminstrument {
 ExternalChecksInterface::~ExternalChecksInterface(void) {}
 
-bool ExternalChecksInterface::prepareModule(MemInstrumentPass &P,
-                                            llvm::Module &M) {
+bool ExternalChecksInterface::prepareModule(MemInstrumentPass &,
+                                            llvm::Module &) {
   return false;
 }
 } // namespace meminstrument

@@ -38,12 +38,12 @@ bool hasMDStrImpl(const char *ref, const MDNode *N) {
 
 namespace meminstrument {
 
-void setNoInstrument(llvm::Value *V) {
+void setNoInstrument(Value *V) {
   auto &Ctx = V->getContext();
   MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, NOINSTRUMENT_MD));
-  if (auto *O = llvm::dyn_cast<GlobalObject>(V)) {
+  if (auto *O = dyn_cast<GlobalObject>(V)) {
     O->setMetadata(MEMINSTRUMENT_MD, N);
-  } else if (auto *I = llvm::dyn_cast<Instruction>(V)) {
+  } else if (auto *I = dyn_cast<Instruction>(V)) {
     I->setMetadata(MEMINSTRUMENT_MD, N);
   } else {
     llvm_unreachable("Value not supported for setting metadata!");
@@ -68,7 +68,7 @@ bool hasByvalHandling(const Instruction *O) {
   return hasMDStrImpl(BYVAL_HANDLING_MD, O->getMetadata(BYVAL_HANDLING_MD));
 }
 
-bool hasPointerAccessSize(const llvm::Value *V) {
+bool hasPointerAccessSize(const Value *V) {
   const auto *Ty = V->getType();
   if (!Ty->isPointerTy()) {
     return false;
@@ -87,7 +87,7 @@ bool hasPointerAccessSize(const llvm::Value *V) {
   return true;
 }
 
-size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V) {
+size_t getPointerAccessSize(const DataLayout &DL, Value *V) {
   assert(hasPointerAccessSize(V));
 
   auto *Ty = V->getType();

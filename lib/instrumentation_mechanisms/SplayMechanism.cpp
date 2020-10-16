@@ -36,15 +36,14 @@ using namespace meminstrument;
 // FIXME currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
 
-llvm::Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
+Value *SplayWitness::getLowerBound(void) const { return LowerBound; }
 
-llvm::Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
+Value *SplayWitness::getUpperBound(void) const { return UpperBound; }
 
-SplayWitness::SplayWitness(llvm::Value *WitnessValue,
-                           llvm::Instruction *Location)
+SplayWitness::SplayWitness(Value *WitnessValue, Instruction *Location)
     : Witness(WK_Splay), WitnessValue(WitnessValue), Location(Location) {}
 
-llvm::Instruction *SplayWitness::getInsertionLocation() const {
+Instruction *SplayWitness::getInsertionLocation() const {
   auto *Res = Location;
   while (isa<PHINode>(Res)) {
     Res = Res->getNextNode();
@@ -189,19 +188,17 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
   ++SplayNumBounds;
 }
 
-llvm::Value *SplayMechanism::getFailFunction(void) const {
-  return FailFunction;
-}
+Value *SplayMechanism::getFailFunction(void) const { return FailFunction; }
 
-llvm::Value *SplayMechanism::getExtCheckCounterFunction(void) const {
+Value *SplayMechanism::getExtCheckCounterFunction(void) const {
   return ExtCheckCounterFunction;
 }
 
-llvm::Value *SplayMechanism::getVerboseFailFunction(void) const {
+Value *SplayMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;
 }
 
-void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
+void SplayMechanism::insertFunctionDeclarations(Module &M) {
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
   auto *StringTy = Type::getInt8PtrTy(Ctx);
@@ -237,8 +234,8 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   GetUpperBoundFunction =
       insertFunDecl(M, "__splay_get_upper_as_ptr", PtrArgType, WitnessType);
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
-      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  AttributeList NoReturnAttr = AttributeList::get(
+      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
 
   ExtCheckCounterFunction =
@@ -255,7 +252,7 @@ void SplayMechanism::insertFunctionDeclarations(llvm::Module &M) {
   }
 }
 
-void SplayMechanism::setupGlobals(llvm::Module &M) {
+void SplayMechanism::setupGlobals(Module &M) {
   auto &Ctx = M.getContext();
 
   // register a static constructor that inserts all globals into the splay tree
@@ -326,7 +323,7 @@ void SplayMechanism::setupGlobals(llvm::Module &M) {
   Builder.CreateRetVoid();
 }
 
-void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
+void SplayMechanism::instrumentAlloca(Module &M, AllocaInst *AI) {
   IRBuilder<> Builder(AI->getNextNode());
   auto *PtrArg = insertCast(PtrArgType, AI, Builder);
 
@@ -353,7 +350,7 @@ void SplayMechanism::instrumentAlloca(Module &M, llvm::AllocaInst *AI) {
   ++SplayNumAllocas;
 }
 
-void SplayMechanism::initTypes(llvm::LLVMContext &Ctx) {
+void SplayMechanism::initTypes(LLVMContext &Ctx) {
   WitnessType = Type::getInt8PtrTy(Ctx);
   PtrArgType = Type::getInt8PtrTy(Ctx);
   SizeType = Type::getInt64Ty(Ctx);
@@ -387,7 +384,7 @@ void SplayMechanism::setupInitCall(Module &M) {
   Builder.CreateRetVoid();
 }
 
-void SplayMechanism::initialize(llvm::Module &M) {
+void SplayMechanism::initialize(Module &M) {
   initTypes(M.getContext());
 
   insertFunctionDeclarations(M);
@@ -465,7 +462,7 @@ SplayMechanism::insertWitnessPhi(ITarget &Target) const {
 
 void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                              std::shared_ptr<Witness> &Incoming,
-                                             llvm::BasicBlock *InBB) const {
+                                             BasicBlock *InBB) const {
   auto *PhiWitness = cast<SplayWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
 

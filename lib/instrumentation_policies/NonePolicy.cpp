@@ -14,4 +14,4 @@
 using namespace meminstrument;
 using namespace llvm;
 
-void NonePolicy::classifyTargets(ITargetVector &, llvm::Instruction *) {}
+void NonePolicy::classifyTargets(ITargetVector &, Instruction *) {}

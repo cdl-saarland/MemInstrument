@@ -22,9 +22,9 @@ STATISTIC(NoopMechanismAnnotated, "The number of full bound checks placed");
 using namespace llvm;
 using namespace meminstrument;
 
-llvm::Value *NoopWitness::getLowerBound(void) const { return nullptr; }
+Value *NoopWitness::getLowerBound(void) const { return nullptr; }
 
-llvm::Value *NoopWitness::getUpperBound(void) const { return nullptr; }
+Value *NoopWitness::getUpperBound(void) const { return nullptr; }
 
 NoopWitness::NoopWitness(void) : Witness(WK_Noop) {}
 
@@ -75,22 +75,22 @@ void NoopMechanism::materializeBounds(ITarget &Target) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-llvm::Value *NoopMechanism::getFailFunction(void) const { return FailFunction; }
+Value *NoopMechanism::getFailFunction(void) const { return FailFunction; }
 
-void NoopMechanism::initialize(llvm::Module &M) {
+void NoopMechanism::initialize(Module &M) {
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);
 
   size_t numbits = 64;
 
-  llvm::APInt lowerVal = APInt::getNullValue(numbits);
+  APInt lowerVal = APInt::getNullValue(numbits);
 
   LowerBoundLocation = new GlobalVariable(
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, lowerVal), "mi_lower_bound_location");
 
-  llvm::APInt upperVal = APInt::getAllOnesValue(numbits);
+  APInt upperVal = APInt::getAllOnesValue(numbits);
 
   UpperBoundLocation = new GlobalVariable(
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
@@ -100,8 +100,8 @@ void NoopMechanism::initialize(llvm::Module &M) {
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
-      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  AttributeList NoReturnAttr = AttributeList::get(
+      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
   FailFunction =
       M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx))
           .getCallee();
@@ -114,7 +114,7 @@ std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &) const {
 
 void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
                                             std::shared_ptr<Witness> &,
-                                            llvm::BasicBlock *) const {
+                                            BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 

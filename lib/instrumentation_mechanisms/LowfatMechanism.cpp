@@ -27,15 +27,14 @@ STATISTIC(LowfatNumWitnessLookups, "The # of witness lookups inserted");
 using namespace llvm;
 using namespace meminstrument;
 
-llvm::Value *LowfatWitness::getLowerBound(void) const { return LowerBound; }
+Value *LowfatWitness::getLowerBound(void) const { return LowerBound; }
 
-llvm::Value *LowfatWitness::getUpperBound(void) const { return UpperBound; }
+Value *LowfatWitness::getUpperBound(void) const { return UpperBound; }
 
-LowfatWitness::LowfatWitness(llvm::Value *WitnessValue,
-                             llvm::Instruction *Location)
+LowfatWitness::LowfatWitness(Value *WitnessValue, Instruction *Location)
     : Witness(WK_Lowfat), WitnessValue(WitnessValue), Location(Location) {}
 
-llvm::Instruction *LowfatWitness::getInsertionLocation() const {
+Instruction *LowfatWitness::getInsertionLocation() const {
   auto *Res = Location;
   while (isa<PHINode>(Res)) {
     Res = Res->getNextNode();
@@ -129,15 +128,13 @@ void LowfatMechanism::materializeBounds(ITarget &Target) {
   ++LowfatNumBounds;
 }
 
-llvm::Value *LowfatMechanism::getFailFunction(void) const {
-  return FailFunction;
-}
+Value *LowfatMechanism::getFailFunction(void) const { return FailFunction; }
 
-llvm::Value *LowfatMechanism::getVerboseFailFunction(void) const {
+Value *LowfatMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;
 }
 
-void LowfatMechanism::insertFunctionDeclarations(llvm::Module &M) {
+void LowfatMechanism::insertFunctionDeclarations(Module &M) {
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
 
@@ -150,20 +147,20 @@ void LowfatMechanism::insertFunctionDeclarations(llvm::Module &M) {
   GetLowerBoundFunction =
       insertFunDecl(M, "__lowfat_get_lower_bound", PtrArgType, WitnessType);
 
-  llvm::AttributeList NoReturnAttr = llvm::AttributeList::get(
-      Ctx, llvm::AttributeList::FunctionIndex, llvm::Attribute::NoReturn);
+  AttributeList NoReturnAttr = AttributeList::get(
+      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
   FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
   VerboseFailFunction =
       insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
 }
 
-void LowfatMechanism::initTypes(llvm::LLVMContext &Ctx) {
+void LowfatMechanism::initTypes(LLVMContext &Ctx) {
   WitnessType = Type::getInt8PtrTy(Ctx);
   PtrArgType = Type::getInt8PtrTy(Ctx);
   SizeType = Type::getInt64Ty(Ctx);
 }
 
-void LowfatMechanism::initialize(llvm::Module &M) {
+void LowfatMechanism::initialize(Module &M) {
   initTypes(M.getContext());
   insertFunctionDeclarations(M);
 }
@@ -186,7 +183,7 @@ LowfatMechanism::insertWitnessPhi(ITarget &Target) const {
 
 void LowfatMechanism::addIncomingWitnessToPhi(
     std::shared_ptr<Witness> &Phi, std::shared_ptr<Witness> &Incoming,
-    llvm::BasicBlock *InBB) const {
+    BasicBlock *InBB) const {
   auto *PhiWitness = cast<LowfatWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
 

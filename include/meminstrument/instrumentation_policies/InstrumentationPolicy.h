@@ -47,7 +47,7 @@ protected:
 
   /// Create check targets for the given intrinsic.
   bool insertCheckTargetsForIntrinsic(ITargetVector &Dest,
-                                       llvm::IntrinsicInst *II);
+                                      llvm::IntrinsicInst *II);
 
   /// Create check targets for a load or store instruction.
   void insertCheckTargetsLoadStore(ITargetVector &Dest,
