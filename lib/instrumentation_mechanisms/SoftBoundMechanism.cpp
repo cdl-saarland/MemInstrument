@@ -290,6 +290,11 @@ void SoftBoundMechanism::insertFunDecls(Module &module) {
       continue;
     }
     assert(fun.hasName());
+    if (fun.getName().startswith("llvm.")) {
+      // Ignore llvm internals
+      continue;
+    }
+
     auto newName = InternalSoftBoundConfig::getWrappedName(fun.getName());
     fun.setName(newName);
     LLVM_DEBUG(dbgs() << "Renamed function: " << fun.getName() << "\n");
@@ -913,7 +918,7 @@ auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
   });
 
   int shadowStackLoc = 0;
-  if (isa<CallBase>(val) || isa<ReturnInst>(val)) {
+  if (!usedIn && (isa<CallBase>(val) || isa<ReturnInst>(val))) {
     DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
                     { dbgs() << "Location: " << shadowStackLoc << "\n"; });
     return shadowStackLoc;
