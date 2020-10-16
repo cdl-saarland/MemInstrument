@@ -34,8 +34,8 @@ bool InstrumentationPolicy::validateSize(Value *Ptr) {
   return true;
 }
 
-bool InstrumentationPolicy::insertCheckTargetsForInstrinsic(ITargetVector &Dest,
-                                                            IntrinsicInst *II) {
+bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(ITargetVector &Dest,
+                                                           IntrinsicInst *II) {
   switch (II->getIntrinsicID()) {
   case Intrinsic::memcpy:
   case Intrinsic::memmove: {

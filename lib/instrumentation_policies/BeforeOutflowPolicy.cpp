@@ -30,7 +30,7 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
     CallInst *I = cast<CallInst>(Location);
 
     if (auto *II = dyn_cast<IntrinsicInst>(I)) {
-      if (insertCheckTargetsForInstrinsic(Dest, II)) {
+      if (insertCheckTargetsForIntrinsic(Dest, II)) {
         ++NumIntrinsicsHandled;
         break;
       }

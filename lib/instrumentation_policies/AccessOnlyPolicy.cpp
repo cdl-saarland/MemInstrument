@@ -24,6 +24,6 @@ void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination,
   }
 
   if (auto *II = dyn_cast<IntrinsicInst>(Location)) {
-    insertCheckTargetsForInstrinsic(Destination, II);
+    insertCheckTargetsForIntrinsic(Destination, II);
   }
 }

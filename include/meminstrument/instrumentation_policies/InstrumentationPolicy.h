@@ -46,7 +46,7 @@ protected:
   bool validateSize(llvm::Value *Ptr);
 
   /// Create check targets for the given intrinsic.
-  bool insertCheckTargetsForInstrinsic(ITargetVector &Dest,
+  bool insertCheckTargetsForIntrinsic(ITargetVector &Dest,
                                        llvm::IntrinsicInst *II);
 
   /// Create check targets for a load or store instruction.
