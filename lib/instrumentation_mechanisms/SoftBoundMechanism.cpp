@@ -543,14 +543,14 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
   IRBuilder<> builder(loc);
 
   // Stores of pointer values to memory require a metadata store.
-  if (isa<StoreInst>(loc)) {
+  if (auto store = dyn_cast<StoreInst>(loc)) {
     assert(instrumentee->getType()->isPointerTy());
     if (instrumentee->getType() != handles.voidPtrTy) {
       instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
     }
 
-    insertMetadataStore(builder, instrumentee, bw->getLowerBound(),
-                        bw->getUpperBound());
+    insertMetadataStore(builder, store->getPointerOperand(),
+                        bw->getLowerBound(), bw->getUpperBound());
 
     DEBUG_WITH_TYPE("softbound-genchecks",
                     dbgs() << "Metadata for pointer store to memory saved.\n";);
