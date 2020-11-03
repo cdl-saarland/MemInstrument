@@ -95,11 +95,17 @@ void SoftBoundMechanism::initialize(Module &module) {
     ++SetupErrror;
   }
 
+  // Replace calls to library functions with calls to the SoftBound wrappers
+  replaceWrappedFunction(module);
+
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
 
   // Rename the main function such that it can be linked against the run-time
   renameMain(module);
+
+  // Insert allocas to store loaded metadata in
+  insertMetadataAllocs(module);
 
   // Generate setup function that inserts metadata stores for global variables
   setUpGlobals(module);
@@ -282,7 +288,7 @@ auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
 
 //===---------------------------- private ---------------------------------===//
 
-void SoftBoundMechanism::insertFunDecls(Module &module) {
+void SoftBoundMechanism::replaceWrappedFunction(Module &module) const {
 
   // Rename all declarations of library functions that have a run-time wrapper
   for (auto &fun : module) {
@@ -299,9 +305,31 @@ void SoftBoundMechanism::insertFunDecls(Module &module) {
     fun.setName(newName);
     LLVM_DEBUG(dbgs() << "Renamed function: " << fun.getName() << "\n");
   }
+}
 
+void SoftBoundMechanism::insertFunDecls(Module &module) {
   PrototypeInserter protoInserter(module);
   handles = protoInserter.insertRunTimeProtoypes();
+}
+
+void SoftBoundMechanism::insertMetadataAllocs(Module &module) {
+
+  for (auto &fun : module) {
+    if (fun.isDeclaration()) {
+      continue;
+    }
+
+    // Use the beginning of the function to insert the allocas
+    IRBuilder<> builder(&(*fun.getEntryBlock().getFirstInsertionPt()));
+
+    auto allocBase = builder.CreateAlloca(handles.baseTy);
+    allocBase->setName("base.alloc");
+    auto allocBound = builder.CreateAlloca(handles.boundTy);
+    allocBound->setName("bound.alloc");
+
+    // Store the generated allocs for reuse
+    metadataAllocs[&fun] = std::make_pair(allocBase, allocBound);
+  }
 }
 
 void SoftBoundMechanism::renameMain(Module &module) {
@@ -802,11 +830,11 @@ auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
     ptr = insertCast(handles.voidPtrTy, ptr, builder);
   }
 
-  // Allocate space for base and bound for the call stores the information in
-  auto allocBase = builder.CreateAlloca(handles.baseTy);
-  allocBase->setName("base.alloc");
-  auto allocBound = builder.CreateAlloca(handles.boundTy);
-  allocBound->setName("bound.alloc");
+  // Get the allocations for the metadata load call to store base and bound in
+  AllocaInst *allocBase = nullptr;
+  AllocaInst *allocBound = nullptr;
+  std::tie(allocBase, allocBound) =
+      metadataAllocs.at(builder.GetInsertPoint()->getFunction());
 
   LLVM_DEBUG(dbgs() << "Insert metadata load:\n"
                     << "\tPtr: " << *ptr << "\n\tBaseAlloc: " << *allocBase

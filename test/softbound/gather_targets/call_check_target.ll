@@ -1,12 +1,12 @@
 ; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
 
-; CHECK: value invariant for Multi at entry::[store,2]
-; CHECK-NEXT: dereference check with constant size 8B for opt at entry::[store,2]
-; CHECK-NEXT: dereference check with constant size 8B for opt1 at entry::[{{.*}},4]
+; CHECK: value invariant for Multi at entry::[store,4]
+; CHECK-NEXT: dereference check with constant size 8B for opt at entry::[store,4]
+; CHECK-NEXT: dereference check with constant size 8B for opt1 at entry::[{{.*}},6]
 ; CHECK-NEXT: call check{{.*}}at entry::call
 ; CHECK-NEXT: call invariant{{.*}}entry::call
-; CHECK-NEXT: dereference check with constant size 4B for result at entry::[store,7]
-; CHECK-NEXT: dereference check with constant size 4B for result2 at entry::[{{.*}},9]
+; CHECK-NEXT: dereference check with constant size 4B for result at entry::[store,9]
+; CHECK-NEXT: dereference check with constant size 4B for result2 at entry::[{{.*}},11]
 ; CHECK-NEXT: call invariant{{.*}}entry::call3
 ; CHECK-NEXT: argument 0 invariant {{.*}}at entry::call3
 

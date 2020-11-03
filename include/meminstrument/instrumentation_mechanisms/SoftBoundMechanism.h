@@ -61,15 +61,26 @@ private:
   /// inserted during instrumentation
   softbound::RunTimeHandles handles;
 
+  /// Allocas to store loaded metadata in
+  std::map<llvm::Function *, std::pair<llvm::AllocaInst *, llvm::AllocaInst *>>
+      metadataAllocs;
+
   /// The llvm context
   llvm::LLVMContext *context;
 
   /// The data layout
   const llvm::DataLayout *DL;
 
+  /// Replace all functions for which SoftBound provides a wrapper with the
+  /// wrapped version (affects calls and declarations only)
+  void replaceWrappedFunction(llvm::Module &) const;
+
   /// Insert the declarations for SoftBound metadata propagation functions and
   /// library function wrappers
   void insertFunDecls(llvm::Module &);
+
+  /// Insert allocas to store loaded metadata in
+  void insertMetadataAllocs(llvm::Module &);
 
   /// Rename the main function, such that the run-time main will be executed
   /// instead, which then calls the renamed main
