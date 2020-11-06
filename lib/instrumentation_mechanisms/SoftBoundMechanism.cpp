@@ -336,7 +336,7 @@ void SoftBoundMechanism::insertMetadataAllocs(Module &module) {
   }
 }
 
-void SoftBoundMechanism::renameMain(Module &module) {
+void SoftBoundMechanism::renameMain(Module &module) const {
 
   Function *mainFun = module.getFunction("main");
 
@@ -348,7 +348,7 @@ void SoftBoundMechanism::renameMain(Module &module) {
   mainFun->setName("softboundcets_pseudo_main");
 }
 
-void SoftBoundMechanism::setUpGlobals(Module &module) {
+void SoftBoundMechanism::setUpGlobals(Module &module) const {
 
   // Look up the run-time init function
   auto initFun = handles.init;

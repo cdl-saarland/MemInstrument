@@ -84,11 +84,11 @@ private:
 
   /// Rename the main function, such that the run-time main will be executed
   /// instead, which then calls the renamed main
-  void renameMain(llvm::Module &);
+  void renameMain(llvm::Module &) const;
 
   /// Take care of running the SoftBound setup in the very beginning (including
   /// globally initialized variables)
-  void setUpGlobals(llvm::Module &);
+  void setUpGlobals(llvm::Module &) const;
 
   /// Given a global initializer, insert pointer bounds in book
   /// keeping data structures
