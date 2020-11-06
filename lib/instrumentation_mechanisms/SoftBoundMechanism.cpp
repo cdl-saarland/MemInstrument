@@ -260,21 +260,6 @@ void SoftBoundMechanism::insertCheck(ITarget &target) const {
   handleInvariant(*invIT);
 }
 
-auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
-                                     Value *bound) const
-    -> std::pair<Value *, Value *> {
-
-  if (base->getType() != handles.baseTy) {
-    base = insertCast(handles.baseTy, base, builder);
-  }
-
-  if (bound->getType() != handles.boundTy) {
-    bound = insertCast(handles.boundTy, bound, builder);
-  }
-
-  return std::make_pair(base, bound);
-}
-
 auto SoftBoundMechanism::getFailFunction() const -> Value * {
   return handles.failFunction;
 }
@@ -719,6 +704,21 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
     default:
       break;
     }
+}
+
+auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
+                                     Value *bound) const
+    -> std::pair<Value *, Value *> {
+
+  if (base->getType() != handles.baseTy) {
+    base = insertCast(handles.baseTy, base, builder);
+  }
+
+  if (bound->getType() != handles.boundTy) {
+    bound = insertCast(handles.boundTy, bound, builder);
+  }
+
+  return std::make_pair(base, bound);
 }
 
 auto SoftBoundMechanism::getBoundsConst(Constant *cons) const
