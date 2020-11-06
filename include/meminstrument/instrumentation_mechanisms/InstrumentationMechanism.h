@@ -78,6 +78,10 @@ public:
   /// according to the witness stored in Target at the location of Target.
   virtual void insertCheck(ITarget &Target) const = 0;
 
+  /// The module should be skipped; in case this still requires some IR changes,
+  /// this function can be used. Returns true iff the module was changed.
+  virtual bool skipInstrumentation(llvm::Module &M) const { return false; }
+
   /// Provides an llvm Function in the module that can be called to abort the
   /// execution of the instrumented program.
   virtual llvm::Value *getFailFunction(void) const = 0;

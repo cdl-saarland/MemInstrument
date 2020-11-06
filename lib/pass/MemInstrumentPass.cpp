@@ -77,19 +77,20 @@ void labelAccesses(Module &M) {
 
 bool MemInstrumentPass::runOnModule(Module &M) {
 
-  if (M.getName().endswith("tools/timeit.c")) {
-    // small hack to avoid unnecessary work in the lnt tests
-    LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
-                      << "`\n";);
-    return false;
-  }
-
   CFG = GlobalConfig::create(M);
 
   MIMode Mode = CFG->getMIMode();
 
   if (Mode == MIMode::NOTHING)
     return true;
+
+  auto &IM = CFG->getInstrumentationMechanism();
+  if (M.getName().endswith("tools/timeit.c")) {
+    // small hack to avoid unnecessary work in the lnt tests
+    LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
+                      << "`\n";);
+    return IM.skipInstrumentation(M);
+  }
 
   LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
              dbgs() << "\nEnd of dumped module.\n";);
@@ -121,7 +122,6 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   LLVM_DEBUG(
       dbgs() << "MemInstrumentPass: setting up instrumentation mechanism\n";);
 
-  auto &IM = CFG->getInstrumentationMechanism();
   IM.initialize(M);
 
   if (Mode == MIMode::SETUP || CFG->hasErrors())
