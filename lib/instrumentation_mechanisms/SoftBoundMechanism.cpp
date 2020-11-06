@@ -260,6 +260,17 @@ void SoftBoundMechanism::insertCheck(ITarget &target) const {
   handleInvariant(*invIT);
 }
 
+bool SoftBoundMechanism::skipInstrumentation(Module &module) const {
+
+  auto change = module.getFunction("main");
+
+  // Even if the module should not be instrumented, we need to make sure to
+  // rename the main function. Linking against the SoftBound run-time
+  // causes a crash otherwise (multiple definitions of the main).
+  renameMain(module);
+  return change;
+}
+
 auto SoftBoundMechanism::getFailFunction() const -> Value * {
   return handles.failFunction;
 }

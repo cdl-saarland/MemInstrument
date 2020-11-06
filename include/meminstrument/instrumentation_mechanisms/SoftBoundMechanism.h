@@ -50,6 +50,8 @@ public:
 
   virtual void insertCheck(ITarget &) const override;
 
+  virtual bool skipInstrumentation(llvm::Module &) const;
+
   virtual auto getFailFunction() const -> llvm::Value * override;
 
   virtual auto getExtCheckCounterFunction() const -> llvm::Value * override;
@@ -104,7 +106,7 @@ private:
 
   /// Take care of a call invariant target. This will rename wrapped functions,
   /// allocate and deallocate shadow stack space and insert further code for
-  /// intrinsic calls if necesssary.
+  /// intrinsic calls if necessary.
   void handleCallInvariant(const CallInvariantIT &) const;
 
   /// Take care of shadow stack allocation and deallocation for the given call.
