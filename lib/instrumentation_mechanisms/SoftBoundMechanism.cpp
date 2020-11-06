@@ -51,9 +51,13 @@ STATISTIC(
     SetupErrror,
     "Number of modules for which the setup phase already detected problems");
 
-// In our setup byval arguments are weird because their address is unclear.
+// In our setup byval arguments/extract value arguments are weird because their
+// address/the address of their elements is unclear.
 // Disallow them for now.
+// Find more details in `checkModule`.
 STATISTIC(ByValArg, "Number of byval arguments encountered");
+STATISTIC(ExtractValuePointer, "Number of extract value instructions that "
+                               "extract pointer values from an aggregate");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -1200,6 +1204,23 @@ void SoftBoundMechanism::checkModule(Module &module) {
 
     for (const auto &bb : fun) {
       for (const Instruction &inst : bb) {
+
+        if (inst.getType()->isPointerTy() && isa<ExtractValueInst>(inst)) {
+          // Extract value instructions work on aggregate types and return an
+          // element of the aggregate. The problem with these aggregates is
+          // that our metadata propagation has the assumption that one pointer
+          // that is stored to memory has one unit of metadata, which is not
+          // true for aggregate types. If an aggregate has multiple pointer
+          // elements, we would need to associate all of them with the one
+          // pointer value of the aggregate (the sub-fields of an aggregate do
+          // not have an address).
+          //
+          // Side note: The shadow stack could be adapted to this easily by
+          // reserving one slot for each pointer argument of an aggregate type.
+          ++ExtractValuePointer;
+          globalConfig.noteError();
+          return;
+        }
 
         if (isUnsupportedInstruction(inst.getOpcode())) {
           globalConfig.noteError();
