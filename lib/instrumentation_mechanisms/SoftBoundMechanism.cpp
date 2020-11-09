@@ -98,16 +98,16 @@ void SoftBoundMechanism::initialize(Module &module) {
   context = &module.getContext();
   DL = &module.getDataLayout();
 
-  // First, check if any unimplemented or problematic constructs are contained
-  // in this module (e.g. exception handling)
+  // Replace calls to library functions with calls to the SoftBound wrappers
+  replaceWrappedFunction(module);
+
+  // Check if any unimplemented or problematic constructs are contained in this
+  // module (e.g. exception handling)
   checkModule(module);
 
   if (globalConfig.hasErrors()) {
     ++SetupErrror;
   }
-
-  // Replace calls to library functions with calls to the SoftBound wrappers
-  replaceWrappedFunction(module);
 
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
