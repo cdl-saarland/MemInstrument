@@ -51,13 +51,20 @@ STATISTIC(
     SetupErrror,
     "Number of modules for which the setup phase already detected problems");
 
+// Detailed statistics on which setup error occurred:
+
 // In our setup byval arguments/extract value arguments are weird because their
 // address/the address of their elements is unclear.
 // Disallow them for now.
 // Find more details in `checkModule`.
-STATISTIC(ByValArg, "Number of byval arguments encountered");
-STATISTIC(ExtractValuePointer, "Number of extract value instructions that "
-                               "extract pointer values from an aggregate");
+STATISTIC(ByValArg, "[setup error] Number of byval arguments encountered");
+STATISTIC(ExtractValuePointer,
+          "[setup error] Number of extract value instructions that "
+          "extract pointer values from an aggregate");
+STATISTIC(
+    ExceptionHandlingInst,
+    "[setup error] Number of exception handling instructions encountered");
+STATISTIC(IntToPtrCast, "[setup error] Number of int to pointer casts");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -1168,6 +1175,7 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
 
   // Bail if exception handling is involved
   if (Instruction::isExceptionalTerminator(opC)) {
+    ++ExceptionHandlingInst;
     return true;
   }
 
@@ -1175,9 +1183,11 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
   case Instruction::CatchPad:
   case Instruction::CleanupPad:
   case Instruction::LandingPad:
+    ++ExceptionHandlingInst;
     return true;
   case Instruction::IntToPtr: {
     if (!NoCTErrorIntToPtr) {
+      ++IntToPtrCast;
       return true;
     }
     break;
