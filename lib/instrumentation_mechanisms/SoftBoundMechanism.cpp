@@ -42,6 +42,9 @@ STATISTIC(MetadataStoresInserted, "Number of metadata stores inserted");
 // are casted from an integer).
 STATISTIC(NullptrBoundsRequested, "Number of nullptr bounds requested");
 
+// Number of requests for wide bounds.
+STATISTIC(WideBoundsRequested, "Number of wide bounds requested");
+
 // Number of requests for bounds of function pointers.
 STATISTIC(FunctionBoundsRequested, "Number of function bounds requested");
 
@@ -72,11 +75,22 @@ using namespace softbound;
 
 cl::OptionCategory SBCategory("SoftBound options");
 
-static cl::opt<bool> NoCTErrorIntToPtr(
-    "sb-no-ct-error-inttoptr", cl::cat(SBCategory),
-    cl::desc("Compile programs which contain int to pointer casts. Null bounds "
-             "will be stored, such that upon access of the pointer (but only "
-             "then) the program crashes."));
+enum BadPtrSrc { Disallow, NullBounds, WideBounds };
+
+static cl::opt<BadPtrSrc> IntToPtrHandling(
+    cl::desc("Ways to deal with integer to pointer casts:"),
+    cl::cat(SBCategory), cl::init(Disallow),
+    cl::values(
+        clEnumValN(Disallow, "sb-inttoptr-disallow",
+                   "Don't even compile the program."),
+        clEnumValN(NullBounds, "sb-inttoptr-null-bounds",
+                   "Assign nullptr bounds to pointers derived from integers. "
+                   "Upon access of the pointer at run time a memory safety "
+                   "violation will be reported."),
+        clEnumValN(WideBounds, "sb-inttoptr-wide-bounds",
+                   "Assign wide bounds to pointers derived from integers. It "
+                   "will be possible to access arbitrary memory through a "
+                   "pointer derived from an integer.")));
 
 //===----------------------------------------------------------------------===//
 //                   Implementation of SoftBoundMechanism
@@ -169,6 +183,11 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
   if (auto load = dyn_cast<LoadInst>(instrumentee)) {
     std::tie(base, bound) =
         insertMetadataLoad(builder, load->getPointerOperand());
+  }
+
+  if (isa<IntToPtrInst>(instrumentee)) {
+    assert(IntToPtrHandling != BadPtrSrc::Disallow);
+    std::tie(base, bound) = getBoundsForIntToPtrCast();
   }
 
   if (globalConfig.hasErrors()) {
@@ -317,6 +336,7 @@ void SoftBoundMechanism::replaceWrappedFunction(Module &module) const {
 void SoftBoundMechanism::insertFunDecls(Module &module) {
   PrototypeInserter protoInserter(module);
   handles = protoInserter.insertRunTimeProtoypes();
+  handles.highestAddr = determineHighestValidAddress();
 }
 
 void SoftBoundMechanism::insertMetadataAllocs(Module &module) {
@@ -475,15 +495,13 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 
       switch (constExpr->getOpcode()) {
       case Instruction::IntToPtr: {
-        if (!NoCTErrorIntToPtr) {
+        if (IntToPtrHandling == BadPtrSrc::Disallow) {
           LLVM_DEBUG(
               dbgs() << "Integer to pointer cast found, report an error.\n";);
           globalConfig.noteError();
           return std::make_pair(base, bound);
         }
-        // Store null pointer bounds for pointers derived from integers
-        std::tie(base, bound) = getNullPtrBounds();
-        return std::make_pair(base, bound);
+        return getBoundsForIntToPtrCast();
       }
       case Instruction::GetElementPtr:
         // Fall through
@@ -763,14 +781,40 @@ auto SoftBoundMechanism::getBoundsForFun(Value *cons) const
   return std::make_pair(cons, cons);
 }
 
+auto SoftBoundMechanism::getBoundsForIntToPtrCast() const
+    -> std::pair<Value *, Value *> {
+  if (IntToPtrHandling == BadPtrSrc::Disallow) {
+    return std::make_pair(nullptr, nullptr);
+  }
+  if (IntToPtrHandling == BadPtrSrc::NullBounds) {
+    return getNullPtrBounds();
+  }
+  if (IntToPtrHandling == BadPtrSrc::WideBounds) {
+    return getWideBounds();
+  }
+  llvm_unreachable("Unknown option set for IntToPtr handling.");
+}
+
 auto SoftBoundMechanism::getNullPtrBounds() const
     -> std::pair<Value *, Value *> {
-
   ++NullptrBoundsRequested;
 
   auto base = ConstantPointerNull::get(handles.baseTy);
   auto bound = ConstantPointerNull::get(handles.boundTy);
 
+  return std::make_pair(base, bound);
+}
+
+auto SoftBoundMechanism::getWideBounds() const -> std::pair<Value *, Value *> {
+  ++WideBoundsRequested;
+
+  auto base = ConstantPointerNull::get(handles.baseTy);
+
+  // The bound value is a pointer with the highest valid address.
+  auto suitableIntType = DL->getIntPtrType(handles.boundTy);
+  auto maxAddressInt =
+      ConstantInt::get(suitableIntType, handles.highestAddr, false);
+  auto bound = ConstantExpr::getIntToPtr(maxAddressInt, handles.boundTy);
   return std::make_pair(base, bound);
 }
 
@@ -800,11 +844,11 @@ auto SoftBoundMechanism::getBoundsForWitness(Constant *constant) const
     return getNullPtrBounds();
   }
 
-  // The bounds for an integer casted to a pointer are requested, we won't allow
-  // the access to it, therefore nullptr bounds are stored
+  // The bounds for an integer casted to a pointer are requested, no bounds are
+  // available. Decide based on the given policy what to do.
   if (isa<ConstantInt>(constant)) {
-    assert(NoCTErrorIntToPtr);
-    return getNullPtrBounds();
+    assert(IntToPtrHandling != BadPtrSrc::Disallow);
+    return getBoundsForIntToPtrCast();
   }
 
   if (isa<ConstantFP>(constant)) {
@@ -1186,7 +1230,7 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
     ++ExceptionHandlingInst;
     return true;
   case Instruction::IntToPtr: {
-    if (!NoCTErrorIntToPtr) {
+    if (IntToPtrHandling == BadPtrSrc::Disallow) {
       ++IntToPtrCast;
       return true;
     }
@@ -1196,6 +1240,22 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
     break;
   }
   return false;
+}
+
+auto SoftBoundMechanism::determineHighestValidAddress() const -> uintptr_t {
+
+  // Compute the highest valid address.
+  auto ptrSize = DL->getPointerSizeInBits();
+
+  // TODO It would be nice if there was some TT function that could provide
+  // this information...
+
+  // In case the pointer width is 64bit, the actual highest address is only
+  // 2^48 (-1) (at least on x86_64), adapt the calculation accordingly.
+  if (ptrSize == 64) {
+    ptrSize = 48;
+  }
+  return pow(2, ptrSize) - 1;
 }
 
 void SoftBoundMechanism::checkModule(Module &module) {

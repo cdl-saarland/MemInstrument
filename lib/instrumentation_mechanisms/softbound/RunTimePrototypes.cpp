@@ -19,6 +19,8 @@
 #include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
 #include "meminstrument/instrumentation_mechanisms/softbound/RunTimeHandles.h"
 
+#include <limits>
+
 using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
@@ -33,16 +35,19 @@ PrototypeInserter::PrototypeInserter(Module &module)
   // TODO find out if the native width is somehow accessible via DL/TT
   // The current solution will not properly work in a cross-compilation use
   // case.
-  auto byteSize = 8;
-  intTy = IntegerType::getIntNTy(context, sizeof(int) * byteSize);
-  sizeTTy = IntegerType::getIntNTy(context, sizeof(size_t) * byteSize);
+  // One option could be to use `getLargestLegalIntType` or
+  // `getSmallestLegalIntType` that the DataLayout provides, but none of them
+  // corresponds to the type generated when translating the C run-time library
+  // on my test machine.
+  intTy = IntegerType::getIntNTy(context, sizeof(int) * CHAR_BIT);
+  sizeTTy = IntegerType::getIntNTy(context, sizeof(size_t) * CHAR_BIT);
 
   voidTy = Type::getVoidTy(context);
   voidPtrTy = Type::getInt8PtrTy(context);
   baseTy = voidPtrTy;
   boundTy = voidPtrTy;
-  basePtrTy = PointerType::getUnqual(voidPtrTy);
-  boundPtrTy = basePtrTy;
+  basePtrTy = PointerType::getUnqual(baseTy);
+  boundPtrTy = PointerType::getUnqual(boundTy);
 }
 
 auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {

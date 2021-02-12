@@ -65,6 +65,9 @@ public:
   // Fail functions and statistics
   llvm::Function *externalCheckCounter = nullptr;
   llvm::Function *failFunction = nullptr;
+
+  // Highest valid pointer value
+  uintptr_t highestAddr;
 };
 } // namespace softbound
 

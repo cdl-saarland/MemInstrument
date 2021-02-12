@@ -131,11 +131,24 @@ private:
   auto getBoundsForFun(llvm::Value *) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
+  /// Return the bounds for a pointer constructed from an integer.
+  /// The resulting bounds depend on the policy on how to handle them, which is
+  /// set by a command line flag.
+  auto getBoundsForIntToPtrCast() const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
   /// Create base and bound values that are null pointer.
   /// Objects with nullptr bounds are not valid to access, but up to a load or
   /// store operation (in which case they lead to an error), they do not harm
   /// the program execution.
   auto getNullPtrBounds() const -> std::pair<llvm::Value *, llvm::Value *>;
+
+  /// Create base and bound values that span the range of valid pointers.
+  /// These bounds will prevent run-time errors for pointers where the actual
+  /// bounds are unknown. Access errors through pointers with wide bounds will
+  /// not be detected. These bounds will only be used when explicitly enabled by
+  /// the user.
+  auto getWideBounds() const -> std::pair<llvm::Value *, llvm::Value *>;
 
   /// Compute bounds for a constant
   auto getBoundsForWitness(llvm::Constant *) const
@@ -197,6 +210,10 @@ private:
 
   /// Returns true iff the constant contains an integer to pointer cast.
   bool containsUnsupportedOp(const llvm::Constant *) const;
+
+  /// Compute the highest valid address. This is needed in case wide bounds are
+  /// used.
+  auto determineHighestValidAddress() const -> uintptr_t;
 
   /// Check if this module contains any unsupported constructs (e.g. exception
   /// handling)
