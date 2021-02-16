@@ -327,10 +327,89 @@ void SoftBoundMechanism::replaceWrappedFunction(Module &module) const {
       continue;
     }
 
-    auto newName = InternalSoftBoundConfig::getWrappedName(fun.getName());
-    fun.setName(newName);
+    auto oldName = fun.getName();
+    auto newName = InternalSoftBoundConfig::getWrappedName(oldName);
+    if (oldName != newName) {
+      fun.setName(newName);
+
+      auto attrs = fun.getAttributes();
+      auto newAttrs = updateNotPreservedAttributes(
+          attrs, fun.getFunctionType()->getNumParams());
+      fun.setAttributes(newAttrs);
+    }
     LLVM_DEBUG(dbgs() << "Renamed function: " << fun.getName() << "\n");
   }
+
+  updateCallAttributesForWrappedFunctions(module);
+}
+
+void SoftBoundMechanism::updateCallAttributesForWrappedFunctions(
+    Module &module) const {
+
+  for (auto &fun : module) {
+    if (fun.isDeclaration()) {
+      continue;
+    }
+
+    for (auto &block : fun) {
+      for (auto &inst : block) {
+
+        if (!isa<CallInst>(inst)) {
+          continue;
+        }
+        auto &callInst = cast<CallInst>(inst);
+        auto calledFun = callInst.getCalledFunction();
+        if (!calledFun || !calledFun->hasName()) {
+          continue;
+        }
+
+        if (InternalSoftBoundConfig::isWrappedName(calledFun->getName())) {
+          auto attrs = callInst.getAttributes();
+          auto newAttrs = updateNotPreservedAttributes(
+              attrs, calledFun->getFunctionType()->getNumParams());
+          callInst.setAttributes(newAttrs);
+        }
+      }
+    }
+  }
+}
+
+auto SoftBoundMechanism::updateNotPreservedAttributes(
+    const AttributeList &attrs, int numArgs) const -> AttributeList {
+
+  if (attrs.isEmpty()) {
+    return attrs;
+  }
+
+  // The wrappers do not necessarily preserve those attributes, so we have
+  // to drop them.
+  // This is conservative, as the wrappers might preserve the attributes. Rely
+  // on LTO to properly optimize the functions when the wrapper definitions are
+  // available.
+  // TODO it might be possible to replace `readnone` with
+  // `inaccessiblememonly`, but it is unclear whether it is sound to
+  // use this in combination with LTO, where the inaccessible memory becomes
+  // available...
+  auto attrsToDrop = {Attribute::ReadNone, Attribute::ReadOnly,
+                      Attribute::WriteOnly, Attribute::ArgMemOnly};
+
+  AttrBuilder funAttrBuilder(attrs.getFnAttributes());
+  for (const auto &attrib : attrsToDrop) {
+    funAttrBuilder.removeAttribute(attrib);
+  }
+
+  SmallVector<AttributeSet, 5> argAttrs;
+  for (int i = 0; i < numArgs; i++) {
+    AttrBuilder argAttrBuilder(attrs.getParamAttributes(i));
+    for (const auto &attrib : attrsToDrop) {
+      argAttrBuilder.removeAttribute(attrib);
+    }
+    argAttrs.push_back(AttributeSet::get(*context, argAttrBuilder));
+  }
+
+  return AttributeList::get(attrs.getContext(),
+                            AttributeSet::get(*context, funAttrBuilder),
+                            attrs.getRetAttributes(), argAttrs);
 }
 
 void SoftBoundMechanism::insertFunDecls(Module &module) {

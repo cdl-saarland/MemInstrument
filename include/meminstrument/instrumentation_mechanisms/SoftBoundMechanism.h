@@ -77,6 +77,16 @@ private:
   /// wrapped version (affects calls and declarations only)
   void replaceWrappedFunction(llvm::Module &) const;
 
+  /// The wrappers introduced by SoftBound do not have the same properties as
+  /// the original standard library functions, we need to update the
+  /// call attributes accordingly.
+  void updateCallAttributesForWrappedFunctions(llvm::Module &) const;
+
+  /// Update the attribute of the given function or call according to the
+  /// behavior of the wrapper.
+  auto updateNotPreservedAttributes(const llvm::AttributeList &,
+                                    int numArgs) const -> llvm::AttributeList;
+
   /// Insert the declarations for SoftBound metadata propagation functions and
   /// library function wrappers
   void insertFunDecls(llvm::Module &);

@@ -52,7 +52,10 @@ public:
 
   /// Get the name of the function wrapper for the given function name if
   /// available. Return the unmodified name otherwise.
-  static auto getWrappedName(llvm::StringRef funName) -> std::string;
+  static auto getWrappedName(const llvm::StringRef funName) -> std::string;
+
+  /// Returns true iff the given name is the name of a wrapper
+  static bool isWrappedName(const llvm::StringRef funName);
 
   /// Definitions of metadata strings used to annotate the generated IR
   static auto getMetadataKind() -> std::string;
@@ -68,6 +71,10 @@ private:
 
   /// Use the information given by the run-time to determine the safety level.
   static auto constexpr initialize() -> SafetyLevel;
+
+  /// The prefix used in the C run-time library to mark wrapped standard library
+  /// functions.
+  static auto getWrapperPrefix() -> std::string;
 };
 } // namespace softbound
 

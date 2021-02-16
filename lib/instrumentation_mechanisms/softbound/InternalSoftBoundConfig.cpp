@@ -56,13 +56,18 @@ bool InternalSoftBoundConfig::hasRunTimeStatsEnabled() {
   return runTimeStatsEnabled;
 }
 
-auto InternalSoftBoundConfig::getWrappedName(StringRef funName) -> std::string {
-  auto wrappedName = "softboundcets_" + funName.str();
+auto InternalSoftBoundConfig::getWrappedName(const StringRef funName)
+    -> std::string {
+  auto wrappedName = getWrapperPrefix() + funName.str();
   if (std::find(availableWrappers.begin(), availableWrappers.end(),
                 wrappedName) != availableWrappers.end()) {
     return wrappedName;
   }
   return funName;
+}
+
+bool InternalSoftBoundConfig::isWrappedName(const llvm::StringRef funName) {
+  return funName.startswith(getWrapperPrefix());
 }
 
 auto InternalSoftBoundConfig::getMetadataKind() -> std::string {
@@ -129,4 +134,8 @@ auto constexpr InternalSoftBoundConfig::initialize() -> SafetyLevel {
 #if __SOFTBOUNDCETS_SPATIAL_TEMPORAL
   return SafetyLevel::FULL_SAFETY;
 #endif
+}
+
+auto InternalSoftBoundConfig::getWrapperPrefix() -> std::string {
+  return "softboundcets_";
 }
