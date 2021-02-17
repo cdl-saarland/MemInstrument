@@ -322,8 +322,8 @@ void SoftBoundMechanism::replaceWrappedFunction(Module &module) const {
       continue;
     }
     assert(fun.hasName());
-    if (fun.getName().startswith("llvm.")) {
-      // Ignore llvm internals
+    if (fun.isIntrinsic()) {
+      // Ignore intrinsics
       continue;
     }
 
