@@ -147,6 +147,12 @@ private:
   auto getBoundsForIntToPtrCast() const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
+  /// Return the bounds for a zero sized array.
+  /// The resulting bounds depend on the policy on how to handle them, which is
+  /// set by a command line flag.
+  auto getBoundsForZeroSizedArray(llvm::GlobalVariable *) const
+      -> std::pair<llvm::Value *, llvm::Value *>;
+
   /// Create base and bound values that are null pointer.
   /// Objects with nullptr bounds are not valid to access, but up to a load or
   /// store operation (in which case they lead to an error), they do not harm

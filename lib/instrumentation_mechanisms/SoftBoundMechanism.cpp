@@ -48,6 +48,11 @@ STATISTIC(WideBoundsRequested, "Number of wide bounds requested");
 // Number of requests for bounds of function pointers.
 STATISTIC(FunctionBoundsRequested, "Number of function bounds requested");
 
+// Number of requests for bounds of global arrays whose size is unknown within
+// the module.
+STATISTIC(ZeroSizedArrayBoundsRequested,
+          "Number of bounds requested for arrays declarations of size zero");
+
 // The setup phase detected code in the module which will prevent the
 // instrumentation from making the program safe.
 STATISTIC(
@@ -91,6 +96,22 @@ static cl::opt<BadPtrSrc> IntToPtrHandling(
                    "Assign wide bounds to pointers derived from integers. It "
                    "will be possible to access arbitrary memory through a "
                    "pointer derived from an integer.")));
+
+static cl::opt<BadPtrSrc> ZeroSizedArrayHandling(
+    cl::desc("Ways to deal with arrays that are defined externally and appear "
+             "to have size zero within the currently compiled module:"),
+    cl::cat(SBCategory), cl::init(Disallow),
+    cl::values(
+        clEnumValN(Disallow, "sb-size-zero-disallow",
+                   "Don't even compile the program."),
+        clEnumValN(
+            NullBounds, "sb-size-zero-model-as-such",
+            "Use zero as the size of the array. Upon access of the pointer at "
+            "run time a memory safety violation will be reported."),
+        clEnumValN(
+            WideBounds, "sb-size-zero-wide-upper",
+            "Assign a wide upper bound to arrays of size zero. Underflows can "
+            "still be detected, overflows will go unnoticed.")));
 
 //===----------------------------------------------------------------------===//
 //                   Implementation of SoftBoundMechanism
@@ -839,6 +860,17 @@ auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
 auto SoftBoundMechanism::getBoundsConst(Constant *cons) const
     -> std::pair<Value *, Value *> {
 
+  // Treat zero sized global arrays in a special way.
+  if (auto globalVar = dyn_cast<GlobalVariable>(cons)) {
+    PointerType *pt = cast<PointerType>(globalVar->getType());
+    auto elemType = pt->getElementType();
+    if (globalVar->isDeclaration()) {
+      if (!elemType->isSized() || DL->getTypeSizeInBits(elemType) == 0) {
+        return getBoundsForZeroSizedArray(globalVar);
+      }
+    }
+  }
+
   IRBuilder<> builder(*context);
   auto *base = builder.CreateConstGEP1_32(cons, 0);
   auto *bound = builder.CreateConstGEP1_32(cons, 1);
@@ -870,6 +902,35 @@ auto SoftBoundMechanism::getBoundsForIntToPtrCast() const
   }
   if (IntToPtrHandling == BadPtrSrc::WideBounds) {
     return getWideBounds();
+  }
+  llvm_unreachable("Unknown option set for IntToPtr handling.");
+}
+
+auto SoftBoundMechanism::getBoundsForZeroSizedArray(GlobalVariable *gv) const
+    -> std::pair<Value *, Value *> {
+
+  ++ZeroSizedArrayBoundsRequested;
+
+  LLVM_DEBUG(dbgs() << "Deal with zero sized array: " << *gv << "\n";);
+
+  if (ZeroSizedArrayHandling == BadPtrSrc::Disallow) {
+    return std::make_pair(nullptr, nullptr);
+  }
+
+  IRBuilder<> builder(*context);
+  auto *base = builder.CreateConstGEP1_32(gv, 0);
+
+  if (ZeroSizedArrayHandling == BadPtrSrc::NullBounds) {
+    auto *bound = builder.CreateConstGEP1_32(gv, 1);
+    std::tie(base, bound) = addBitCasts(builder, base, bound);
+    return std::make_pair(base, bound);
+  }
+
+  if (ZeroSizedArrayHandling == BadPtrSrc::WideBounds) {
+    Value *wide_ub;
+    std::tie(std::ignore, wide_ub) = getWideBounds();
+    std::tie(base, wide_ub) = addBitCasts(builder, base, wide_ub);
+    return std::make_pair(base, wide_ub);
   }
   llvm_unreachable("Unknown option set for IntToPtr handling.");
 }
