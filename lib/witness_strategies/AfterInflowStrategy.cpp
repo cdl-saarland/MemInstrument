@@ -68,6 +68,9 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
     case Instruction::BitCast:
       getPointerOperands(Results, CE->getOperand(0)); // pointer argument
       break;
+    case Instruction::IntToPtr:
+      Results.push_back(CE);
+      break;
     default:
       ++NumUnsupportedConstExprs;
       LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n"
