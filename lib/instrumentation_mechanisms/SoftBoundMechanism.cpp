@@ -61,6 +61,9 @@ STATISTIC(
 
 // Detailed statistics on which setup error occurred:
 
+STATISTIC(InAllocaArg,
+          "[setup error] Number of inalloca arguments encountered");
+
 // In our setup byval arguments/extract value arguments are weird because their
 // address/the address of their elements is unclear.
 // Disallow them for now.
@@ -1417,6 +1420,10 @@ void SoftBoundMechanism::checkModule(Module &module) {
     }
 
     for (const auto &arg : fun.args()) {
+      if (arg.hasInAllocaAttr()) {
+        ++InAllocaArg;
+        globalConfig.noteError();
+      }
       if (arg.hasByValAttr()) {
         ++ByValArg;
         globalConfig.noteError();
