@@ -178,11 +178,16 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
   LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
 
   if (isa<Argument>(instrumentee) || isa<CallBase>(instrumentee)) {
-    Value *fun = nullptr;
+    unsigned locIndex;
+    // Look up the function argument shadow stack index
     if (auto arg = dyn_cast<Argument>(instrumentee)) {
-      fun = arg->getParent();
+      auto fun = arg->getParent();
+      locIndex = computeShadowStackLocation(arg, fun);
     }
-    auto locIndex = computeShadowStackLocation(instrumentee, fun);
+    // Look up the shadow stack index for the returned pointer bounds
+    if (auto cb = dyn_cast<CallBase>(instrumentee)) {
+      locIndex = computeShadowStackLocation(cb);
+    }
     std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
   }
 
@@ -718,8 +723,9 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
   // Upon a call, the base and bound for all pointer arguments need to be stored
   // to the shadow stack.
-  if (isa<CallBase>(loc)) {
-    auto locIndex = computeShadowStackLocation(instrumentee, loc);
+  if (auto argIT = dyn_cast<ArgInvariantIT>(&target)) {
+    auto locIndex = computeShadowStackLocation(
+        instrumentee, cast<CallBase>(loc), argIT->getArgNum());
     insertShadowStackStore(builder, lb, ub, locIndex);
     DEBUG_WITH_TYPE(
         "softbound-genchecks",
@@ -728,8 +734,8 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
   }
 
   // If a pointer is returned, its bounds need to be stored to the shadow stack.
-  if (isa<ReturnInst>(loc)) {
-    auto locIndex = computeShadowStackLocation(loc);
+  if (auto retInst = dyn_cast<ReturnInst>(loc)) {
+    auto locIndex = computeShadowStackLocation(retInst);
     insertShadowStackStore(builder, lb, ub, locIndex);
     DEBUG_WITH_TYPE(
         "softbound-genchecks",
@@ -1139,93 +1145,76 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
                     << "\n\tBound store: " << *callStoreBound << "\n";);
 }
 
-auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
-                                                    const Value *usedIn) const
-    -> int {
-  DEBUG_WITH_TYPE("softbound-shadow-stack-loc", {
-    dbgs() << "Determine shadow stack location for value " << *val;
-    if (usedIn) {
-      if (auto fun = dyn_cast<Function>(usedIn)) {
-        dbgs() << " in " << fun->getName();
-      } else {
-        dbgs() << " in " << *usedIn;
-      }
-    }
-    dbgs() << "\n";
-  });
+auto SoftBoundMechanism::computeShadowStackLocation(
+    const Instruction *inst) const -> unsigned {
+  assert(isa<CallBase>(inst) || isa<ReturnInst>(inst));
+  return 0;
+}
 
-  int shadowStackLoc = 0;
-  if (!usedIn && (isa<CallBase>(val) || isa<ReturnInst>(val))) {
-    DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
-                    { dbgs() << "Location: " << shadowStackLoc << "\n"; });
-    return shadowStackLoc;
+auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg,
+                                                    const Function *fun) const
+    -> unsigned {
+  assert(arg->getType()->isPointerTy());
+
+  unsigned shadowStackLoc = 0;
+
+  // The returned pointer will have location 0, skip it in case something else
+  // is requested
+  if (fun->getReturnType()->isPointerTy()) {
+    shadowStackLoc++;
   }
 
-  assert(usedIn && (isa<Function>(usedIn) || isa<CallBase>(usedIn)));
-  assert(val->getType()->isPointerTy());
+  for (const auto &funArg : fun->args()) {
 
-  // TODO it should be possible to iterate over call arguments and function
-  // arguments in the same way...
-  if (const Function *fun = dyn_cast<Function>(usedIn)) {
-
-    // The returned pointer will have location 0, skip it in case something else
-    // is requested
-    if (fun->getReturnType()->isPointerTy()) {
-      shadowStackLoc++;
+    if (!funArg.getType()->isPointerTy()) {
+      // Non-pointer arguments are not accounted for in the location
+      // calculation
+      continue;
     }
 
-    for (const auto &funArg : fun->args()) {
-
-      if (!funArg.getType()->isPointerTy()) {
-        // Non-pointer arguments are not accounted for in the location
-        // calculation
-        continue;
-      }
-
-      // Skip metadata arguments
-      if (funArg.getType()->isMetadataTy()) {
-        continue;
-      }
-
-      DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
-                      dbgs() << "Compare to " << funArg << "\n";);
-      if (val == &funArg) {
-        LLVM_DEBUG({ dbgs() << "Location: " << shadowStackLoc << "\n"; });
-        return shadowStackLoc;
-      }
-      shadowStackLoc++;
-    }
-  } else {
-    const CallBase *call = cast<CallBase>(usedIn);
-
-    // The returned pointer will have location 0, skip it in case something else
-    // is requested
-    if (call->getType()->isPointerTy()) {
-      shadowStackLoc++;
+    // Skip metadata arguments
+    if (funArg.getType()->isMetadataTy()) {
+      continue;
     }
 
-    for (const auto &use : call->args()) {
-
-      if (!use->getType()->isPointerTy()) {
-        // Non-pointer arguments are not accounted for in the location
-        // calculation
-        continue;
-      }
-
-      // Skip metadata arguments
-      if (use->getType()->isMetadataTy()) {
-        continue;
-      }
-
-      DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
-                      dbgs() << "Compare to " << *use.get() << "\n";);
-      if (val == use.get()) {
-        DEBUG_WITH_TYPE("softbound-shadow-stack-loc",
-                        { dbgs() << "Location: " << shadowStackLoc << "\n"; });
-        return shadowStackLoc;
-      }
-      shadowStackLoc++;
+    if (arg == &funArg) {
+      return shadowStackLoc;
     }
+    shadowStackLoc++;
+  }
+
+  llvm_unreachable(
+      "Argument not found, shadow stack location cannot be determined");
+}
+auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
+                                                    const CallBase *call,
+                                                    unsigned argNum) const
+    -> unsigned {
+  unsigned shadowStackLoc = 0;
+  // The returned pointer will have location 0, skip it in case something else
+  // is requested
+  if (call->getType()->isPointerTy()) {
+    shadowStackLoc++;
+  }
+
+  for (const auto &use : call->args()) {
+
+    if (!use->getType()->isPointerTy()) {
+      // Non-pointer arguments are not accounted for in the location
+      // calculation
+      continue;
+    }
+
+    // Skip metadata arguments
+    if (use->getType()->isMetadataTy()) {
+      continue;
+    }
+
+    if (argNum == use.getOperandNo()) {
+      assert(val == use.get());
+      return shadowStackLoc;
+    }
+    shadowStackLoc++;
   }
 
   llvm_unreachable(

@@ -203,9 +203,13 @@ private:
   /// up, the second one specifies in which call/function to search for the
   /// argument. The second argument is not needed for returned pointer values,
   /// as they can be identified as call/return.
+  auto computeShadowStackLocation(const llvm::Instruction *) const -> unsigned;
+  auto computeShadowStackLocation(const llvm::Argument *,
+                                  const llvm::Function *usedIn) const
+      -> unsigned;
   auto computeShadowStackLocation(const llvm::Value *,
-                                  const llvm::Value *usedIn = nullptr) const
-      -> int;
+                                  const llvm::CallBase *usedIn,
+                                  unsigned argNum) const -> unsigned;
 
   /// Computes how many elements the shadow stack needs to be capable to store
   /// for a given call.
