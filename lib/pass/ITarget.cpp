@@ -51,7 +51,7 @@ bool meminstrument::validateITargets(const DominatorTree &dt,
 
 bool ITarget::is(Kind k) const { return this->getKind() == k; }
 
-ITarget::Kind ITarget::getKind(void) const { return _Kind; }
+ITarget::Kind ITarget::getKind(void) const { return kind; }
 
 bool ITarget::isCheck() const {
   return is(Kind::ConstSizeCheck) || is(Kind::VarSizeCheck) ||
@@ -65,54 +65,54 @@ bool ITarget::isInvariant() const {
 Value *ITarget::getInstrumentee(void) const {
   assert(isValid());
   assert(hasInstrumentee());
-  return _Instrumentee;
+  return instrumentee;
 }
 
 Instruction *ITarget::getLocation(void) const {
   assert(isValid());
-  return _Location;
+  return location;
 }
 
 size_t ITarget::getAccessSize(void) const {
   assert(isValid());
   assert(is(Kind::ConstSizeCheck));
-  return _AccessSize;
+  return accessSize;
 }
 
 Value *ITarget::getAccessSizeVal(void) const {
   assert(isValid());
   assert(is(Kind::VarSizeCheck));
-  return _AccessSizeVal;
+  return accessSizeVal;
 }
 
 bool ITarget::hasInstrumentee(void) const {
   assert(isValid());
-  return _Instrumentee;
+  return instrumentee;
 }
 
 bool ITarget::hasUpperBoundFlag(void) const {
   assert(isValid());
-  return _CheckUpperBoundFlag;
+  return checkUpperBoundFlag;
 }
 
 bool ITarget::hasLowerBoundFlag(void) const {
   assert(isValid());
-  return _CheckLowerBoundFlag;
+  return checkLowerBoundFlag;
 }
 
 bool ITarget::hasTemporalFlag(void) const {
   assert(isValid());
-  return _CheckTemporalFlag;
+  return checkTemporalFlag;
 }
 
 bool ITarget::requiresExplicitBounds(void) const {
   assert(isValid());
-  return _RequiresExplicitBounds;
+  return explicitBoundsFlag;
 }
 
 bool ITarget::hasBoundWitness(void) const {
   assert(isValid());
-  return _BoundWitness.get() != nullptr;
+  return boundWitness.get() != nullptr;
 }
 
 bool ITarget::needsNoBoundWitness(void) const {
@@ -126,16 +126,16 @@ bool ITarget::hasWitnessIfNeeded(void) const {
 std::shared_ptr<Witness> ITarget::getBoundWitness(void) const {
   assert(isValid());
   assert(hasBoundWitness());
-  return _BoundWitness;
+  return boundWitness;
 }
 
 void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
-  _BoundWitness = BoundWitness;
+  boundWitness = BoundWitness;
 }
 
-bool ITarget::isValid(void) const { return not _Invalidated; }
+bool ITarget::isValid(void) const { return not invalidated; }
 
-void ITarget::invalidate(void) { _Invalidated = true; }
+void ITarget::invalidate(void) { invalidated = true; }
 
 bool ITarget::subsumes(const ITarget &other) const {
   assert(isValid());
@@ -183,10 +183,10 @@ bool ITarget::joinFlags(const ITarget &other) {
     Changed = true;                                                            \
   }
 
-  MERGE_FLAG(_CheckUpperBoundFlag);
-  MERGE_FLAG(_CheckLowerBoundFlag);
-  MERGE_FLAG(_CheckTemporalFlag);
-  MERGE_FLAG(_RequiresExplicitBounds);
+  MERGE_FLAG(checkUpperBoundFlag);
+  MERGE_FLAG(checkLowerBoundFlag);
+  MERGE_FLAG(checkTemporalFlag);
+  MERGE_FLAG(explicitBoundsFlag);
 #undef MERGE_FLAG
 
   return Changed;
@@ -195,19 +195,19 @@ bool ITarget::joinFlags(const ITarget &other) {
 ITargetPtr ITarget::createBoundsTarget(Value *Instrumentee,
                                        Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Bounds);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
-  R->_CheckUpperBoundFlag = true;
-  R->_CheckLowerBoundFlag = true;
-  R->_RequiresExplicitBounds = true;
+  R->instrumentee = Instrumentee;
+  R->location = Location;
+  R->checkUpperBoundFlag = true;
+  R->checkLowerBoundFlag = true;
+  R->explicitBoundsFlag = true;
   return std::shared_ptr<ITarget>(R);
 }
 
 ITargetPtr ITarget::createInvariantTarget(Value *Instrumentee,
                                           Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Invariant);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
+  R->instrumentee = Instrumentee;
+  R->location = Location;
   return std::shared_ptr<ITarget>(R);
 }
 
@@ -223,11 +223,11 @@ ITargetPtr ITarget::createSpatialCheckTarget(Value *Instrumentee,
                                              Instruction *Location,
                                              size_t Size) {
   ITarget *R = new ITarget(ITarget::Kind::ConstSizeCheck);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
-  R->_AccessSize = Size;
-  R->_CheckUpperBoundFlag = true;
-  R->_CheckLowerBoundFlag = true;
+  R->instrumentee = Instrumentee;
+  R->location = Location;
+  R->accessSize = Size;
+  R->checkUpperBoundFlag = true;
+  R->checkLowerBoundFlag = true;
   return std::shared_ptr<ITarget>(R);
 }
 
@@ -235,41 +235,41 @@ ITargetPtr ITarget::createSpatialCheckTarget(Value *Instrumentee,
                                              Instruction *Location,
                                              Value *Size) {
   ITarget *R = new ITarget(ITarget::Kind::VarSizeCheck);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
-  R->_AccessSizeVal = Size;
-  R->_CheckUpperBoundFlag = true;
-  R->_CheckLowerBoundFlag = true;
+  R->instrumentee = Instrumentee;
+  R->location = Location;
+  R->accessSizeVal = Size;
+  R->checkUpperBoundFlag = true;
+  R->checkLowerBoundFlag = true;
   return std::shared_ptr<ITarget>(R);
 }
 
 ITargetPtr ITarget::createIntermediateTarget(Value *Instrumentee,
                                              Instruction *Location) {
   ITarget *R = new ITarget(ITarget::Kind::Intermediate);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Location;
+  R->instrumentee = Instrumentee;
+  R->location = Location;
   return std::shared_ptr<ITarget>(R);
 }
 
 ITargetPtr ITarget::createCallCheckTarget(Value *Instrumentee, CallInst *Call) {
   ITarget *R = new ITarget(ITarget::Kind::CallCheck);
-  R->_Instrumentee = Instrumentee;
-  R->_Location = Call;
-  R->_CheckUpperBoundFlag = false;
-  R->_CheckLowerBoundFlag = false;
-  R->_CheckTemporalFlag = false;
-  R->_RequiresExplicitBounds = false;
+  R->instrumentee = Instrumentee;
+  R->location = Call;
+  R->checkUpperBoundFlag = false;
+  R->checkLowerBoundFlag = false;
+  R->checkTemporalFlag = false;
+  R->explicitBoundsFlag = false;
   return std::shared_ptr<ITarget>(R);
 }
 
 ITargetPtr ITarget::createCallInvariantTarget(CallInst *Call) {
   ITarget *R = new ITarget(ITarget::Kind::CallInvariant);
-  R->_Instrumentee = nullptr;
-  R->_Location = Call;
-  R->_CheckUpperBoundFlag = false;
-  R->_CheckLowerBoundFlag = false;
-  R->_CheckTemporalFlag = false;
-  R->_RequiresExplicitBounds = false;
+  R->instrumentee = nullptr;
+  R->location = Call;
+  R->checkUpperBoundFlag = false;
+  R->checkLowerBoundFlag = false;
+  R->checkTemporalFlag = false;
+  R->explicitBoundsFlag = false;
   return std::shared_ptr<ITarget>(R);
 }
 
@@ -319,12 +319,12 @@ void ITarget::printLocation(raw_ostream &Stream) const {
 
 bool ITarget::operator==(const ITarget &Other) const {
   assert(isValid() && Other.isValid());
-  return _Instrumentee == Other._Instrumentee && _Location == Other._Location &&
-         _Kind == Other._Kind &&
-         _CheckUpperBoundFlag == Other._CheckUpperBoundFlag &&
-         _CheckLowerBoundFlag == Other._CheckLowerBoundFlag &&
-         _CheckTemporalFlag == Other._CheckTemporalFlag &&
-         _RequiresExplicitBounds == Other._RequiresExplicitBounds;
+  return instrumentee == Other.instrumentee && location == Other.location &&
+         kind == Other.kind &&
+         checkUpperBoundFlag == Other.checkUpperBoundFlag &&
+         checkLowerBoundFlag == Other.checkLowerBoundFlag &&
+         checkTemporalFlag == Other.checkTemporalFlag &&
+         explicitBoundsFlag == Other.explicitBoundsFlag;
 }
 
 raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
@@ -334,7 +334,7 @@ raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
   }
 
   Stream << '<';
-  switch (IT._Kind) {
+  switch (IT.kind) {
   case ITarget::Kind::Bounds:
     Stream << "bounds";
     break;

@@ -46,31 +46,31 @@ enum class MIMode {
 class GlobalConfig {
 public:
   InstrumentationPolicy &getInstrumentationPolicy(void) {
-    assert(_IP && "InstrumentationPolicy not set!");
-    return *_IP;
+    assert(instrumentationPolicy && "InstrumentationPolicy not set!");
+    return *instrumentationPolicy;
   }
 
   InstrumentationMechanism &getInstrumentationMechanism(void) {
-    assert(_IM && "InstrumentationMechanism not set!");
-    return *_IM;
+    assert(instrumentationMechanism && "InstrumentationMechanism not set!");
+    return *instrumentationMechanism;
   }
 
   WitnessStrategy &getWitnessStrategy(void) {
-    assert(_WS && "WitnessStrategy not set!");
-    return *_WS;
+    assert(witnessStrategy && "WitnessStrategy not set!");
+    return *witnessStrategy;
   }
 
-  MIMode getMIMode(void) { return _MIMode; }
+  MIMode getMIMode(void) { return mode; }
 
-  bool hasUseFilters(void) { return _UseFilters; }
+  bool hasUseFilters(void) { return useFilters; }
 
-  bool hasUseExternalChecks(void) { return _UseExternalChecks; }
+  bool hasUseExternalChecks(void) { return useExternalChecks; }
 
-  bool hasPrintWitnessGraph(void) { return _PrintWitnessGraph; }
+  bool hasPrintWitnessGraph(void) { return printWitnessGraph; }
 
-  bool hasSimplifyWitnessGraph(void) { return _SimplifyWitnessGraph; }
+  bool hasSimplifyWitnessGraph(void) { return simplifyWitnessGraph; }
 
-  bool hasInstrumentVerbose(void) { return _InstrumentVerbose; }
+  bool hasInstrumentVerbose(void) { return instrumentVerbose; }
 
   uint32_t getNoopGenBoundsTime(void);
   uint32_t getNoopDerefCheckTime(void);
@@ -87,9 +87,9 @@ public:
   void dump(llvm::raw_ostream &Stream) const;
 
   ~GlobalConfig(void) {
-    delete _IM;
-    delete _IP;
-    delete _WS;
+    delete instrumentationMechanism;
+    delete instrumentationPolicy;
+    delete witnessStrategy;
   }
 
   void noteError(void);
@@ -103,21 +103,21 @@ public:
 private:
   GlobalConfig(Config *Cfg, const llvm::Module &M);
 
-  InstrumentationMechanism *_IM = nullptr;
-  InstrumentationPolicy *_IP = nullptr;
-  WitnessStrategy *_WS = nullptr;
+  InstrumentationMechanism *instrumentationMechanism = nullptr;
+  InstrumentationPolicy *instrumentationPolicy = nullptr;
+  WitnessStrategy *witnessStrategy = nullptr;
 
-  MIMode _MIMode = MIMode::DEFAULT;
+  MIMode mode = MIMode::DEFAULT;
 
-  bool _UseFilters = false;
-  bool _UseExternalChecks = false;
-  bool _PrintWitnessGraph = false;
-  bool _SimplifyWitnessGraph = false;
-  bool _InstrumentVerbose = false;
+  bool useFilters = false;
+  bool useExternalChecks = false;
+  bool printWitnessGraph = false;
+  bool simplifyWitnessGraph = false;
+  bool instrumentVerbose = false;
 
-  uint64_t _numErrors = 0;
+  uint64_t numErrors = 0;
 
-  const char *_ConfigName;
+  const char *configName;
 };
 
 } // namespace meminstrument

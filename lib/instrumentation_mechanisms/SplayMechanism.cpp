@@ -77,7 +77,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
 
   Module *M = Target.getLocation()->getModule();
-  bool Verbose = _CFG.hasInstrumentVerbose();
+  bool Verbose = globalConfig.hasInstrumentVerbose();
 
   IRBuilder<> Builder(Target.getLocation());
 
@@ -203,7 +203,7 @@ void SplayMechanism::insertFunctionDeclarations(Module &M) {
   auto *VoidTy = Type::getVoidTy(Ctx);
   auto *StringTy = Type::getInt8PtrTy(Ctx);
 
-  bool Verbose = _CFG.hasInstrumentVerbose();
+  bool Verbose = globalConfig.hasInstrumentVerbose();
 
   if (Verbose) {
     CheckInboundsFunction =
@@ -246,7 +246,7 @@ void SplayMechanism::insertFunctionDeclarations(Module &M) {
 
   WarningFunction = insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
 
-  if (_CFG.hasUseNoop()) {
+  if (globalConfig.hasUseNoop()) {
     ConfigFunction =
         insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
   }
@@ -280,7 +280,7 @@ void SplayMechanism::setupGlobals(Module &M) {
     uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
     auto *Size = ConstantInt::get(SizeType, sz);
 
-    if (_CFG.hasInstrumentVerbose()) {
+    if (globalConfig.hasInstrumentVerbose()) {
       std::string insn = "";
       raw_string_ostream ss(insn);
       ss << GV;
@@ -306,7 +306,7 @@ void SplayMechanism::setupGlobals(Module &M) {
 
     auto *Size = ConstantInt::get(SizeType, 1);
 
-    if (_CFG.hasInstrumentVerbose()) {
+    if (globalConfig.hasInstrumentVerbose()) {
       std::string insn = "";
       raw_string_ostream ss(insn);
       ss << "Function " << F.getName();
@@ -337,7 +337,7 @@ void SplayMechanism::instrumentAlloca(Module &M, AllocaInst *AI) {
                              /*hasNSW*/ false);
   }
 
-  if (_CFG.hasInstrumentVerbose()) {
+  if (globalConfig.hasInstrumentVerbose()) {
     std::string insn = "";
     raw_string_ostream ss(insn);
     ss << *AI;
@@ -371,7 +371,7 @@ void SplayMechanism::setupInitCall(Module &M) {
 
 #define ADD_TIME_VAL(i, x)                                                     \
   IndexVal = ConstantInt::get(SizeType, i);                                    \
-  TimeVal = ConstantInt::get(SizeType, _CFG.getNoop##x##Time());               \
+  TimeVal = ConstantInt::get(SizeType, globalConfig.getNoop##x##Time());       \
   insertCall(Builder, ConfigFunction, std::vector<Value *>{IndexVal, TimeVal});
 
   ADD_TIME_VAL(0, DerefCheck)
@@ -391,7 +391,7 @@ void SplayMechanism::initialize(Module &M) {
 
   setupGlobals(M);
 
-  if (_CFG.hasUseNoop()) {
+  if (globalConfig.hasUseNoop()) {
     setupInitCall(M);
   }
 
@@ -415,7 +415,7 @@ void SplayMechanism::initialize(Module &M) {
         uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
         auto *Size = ConstantInt::get(SizeType, sz);
 
-        if (_CFG.hasInstrumentVerbose()) {
+        if (globalConfig.hasInstrumentVerbose()) {
           std::string insn = "";
           raw_string_ostream ss(insn);
           ss << "byval";

@@ -203,7 +203,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(Module &M) {
 }
 
 void RuntimeStatMechanism::initialize(Module &M) {
-  Verbose = _CFG.hasInstrumentVerbose();
+  Verbose = globalConfig.hasInstrumentVerbose();
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);

@@ -30,7 +30,7 @@ class WitnessGraph;
 /// according to the WitnessStrategy.
 class WitnessStrategy {
 public:
-  WitnessStrategy(GlobalConfig &cfg) : _CFG(cfg) {}
+  WitnessStrategy(GlobalConfig &cfg) : globalConfig(cfg) {}
 
   virtual ~WitnessStrategy(void) {}
 
@@ -69,7 +69,7 @@ protected:
                                            llvm::Value *Instrumentee,
                                            llvm::Instruction *Location);
 
-  GlobalConfig &_CFG;
+  GlobalConfig &globalConfig;
 };
 } // namespace meminstrument
 

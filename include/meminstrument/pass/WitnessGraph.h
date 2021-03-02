@@ -30,7 +30,7 @@ struct WitnessGraphNode {
   /// Allows traversal from actual instrumentation targets to the definitions
   /// of the contributing pointers.
   const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiredNodes() const {
-    return _Requirements;
+    return requirements;
   }
 
   /// Gets a vector of nodes that require this node.
@@ -38,7 +38,7 @@ struct WitnessGraphNode {
   /// Allows traversal from the definitions of the contributing pointers to
   /// actual instrumentation targets.
   const llvm::SmallVectorImpl<WitnessGraphNode *> &getRequiringNodes() const {
-    return _RequiredBy;
+    return requiredBy;
   }
 
   /// Unlinks this Node from the Nodes that are required by it.
@@ -57,9 +57,9 @@ private:
     id = RunningId++;
   }
 
-  llvm::SmallVector<WitnessGraphNode *, 4> _Requirements;
+  llvm::SmallVector<WitnessGraphNode *, 4> requirements;
 
-  llvm::SmallVector<WitnessGraphNode *, 4> _RequiredBy;
+  llvm::SmallVector<WitnessGraphNode *, 4> requiredBy;
 
   unsigned long id;
 

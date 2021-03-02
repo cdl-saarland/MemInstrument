@@ -36,7 +36,7 @@ public:
   virtual ~InstrumentationPolicy(void) {}
 
 protected:
-  GlobalConfig &_CFG;
+  GlobalConfig &globalConfig;
 
   InstrumentationPolicy(GlobalConfig &cfg);
 

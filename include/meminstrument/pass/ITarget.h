@@ -166,29 +166,28 @@ public:
   bool operator==(const ITarget &) const;
 
 private:
-  ITarget(Kind k)
-      : _Kind(k), _BoundWitness(std::shared_ptr<Witness>(nullptr)) {}
+  ITarget(Kind k) : kind(k), boundWitness(std::shared_ptr<Witness>(nullptr)) {}
 
-  llvm::Value *_Instrumentee;
+  llvm::Value *instrumentee;
 
-  llvm::Instruction *_Location;
+  llvm::Instruction *location;
 
-  const Kind _Kind;
+  const Kind kind;
 
-  bool _CheckUpperBoundFlag = false;
+  bool checkUpperBoundFlag = false;
 
-  bool _CheckLowerBoundFlag = false;
+  bool checkLowerBoundFlag = false;
 
-  bool _CheckTemporalFlag = false;
+  bool checkTemporalFlag = false;
 
-  bool _RequiresExplicitBounds = false;
+  bool explicitBoundsFlag = false;
 
-  bool _Invalidated = false;
+  bool invalidated = false;
 
-  std::shared_ptr<Witness> _BoundWitness;
+  std::shared_ptr<Witness> boundWitness;
 
-  size_t _AccessSize = 0;
-  llvm::Value *_AccessSizeVal = nullptr;
+  size_t accessSize = 0;
+  llvm::Value *accessSizeVal = nullptr;
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &stream, const ITarget &IT);

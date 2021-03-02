@@ -466,34 +466,34 @@ GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
 #define X_OR_DEFAULT(TYPE, X, Y) (((X) != TYPE::default_val) ? (X) : (Y))
 
   IMKind imk = X_OR_DEFAULT(IMKind, IMOpt, Cfg->getInstrumentationMechanism());
-  _IM = createInstrumentationMechanism(*this, imk);
+  instrumentationMechanism = createInstrumentationMechanism(*this, imk);
 
   const DataLayout &DL = M.getDataLayout();
   IPKind ipk = X_OR_DEFAULT(IPKind, IPOpt, Cfg->getInstrumentationPolicy());
-  _IP = createInstrumentationPolicy(*this, ipk, DL);
+  instrumentationPolicy = createInstrumentationPolicy(*this, ipk, DL);
 
   WSKind wsk = X_OR_DEFAULT(WSKind, WSOpt, Cfg->getWitnessStrategy());
-  _WS = createWitnessStrategy(*this, wsk);
+  witnessStrategy = createWitnessStrategy(*this, wsk);
 
 #undef X_OR_DEFAULT
 
   if (MIModeOpt != MIMode::DEFAULT) {
-    _MIMode = MIModeOpt;
+    mode = MIModeOpt;
   } else {
-    _MIMode = Cfg->getMIMode();
+    mode = Cfg->getMIMode();
   }
 
-#define ASSIGNBOOLOPT(x) _##x = getValOrDefault(x##Opt, Cfg->has##x());
+  useFilters = getValOrDefault(UseFiltersOpt, Cfg->hasUseFilters());
+  useExternalChecks =
+      getValOrDefault(UseExternalChecksOpt, Cfg->hasUseExternalChecks());
+  printWitnessGraph =
+      getValOrDefault(PrintWitnessGraphOpt, Cfg->hasPrintWitnessGraph());
+  simplifyWitnessGraph =
+      getValOrDefault(SimplifyWitnessGraphOpt, Cfg->hasSimplifyWitnessGraph());
+  instrumentVerbose =
+      getValOrDefault(InstrumentVerboseOpt, Cfg->hasInstrumentVerbose());
 
-  ASSIGNBOOLOPT(UseFilters)
-  ASSIGNBOOLOPT(UseExternalChecks)
-  ASSIGNBOOLOPT(PrintWitnessGraph)
-  ASSIGNBOOLOPT(SimplifyWitnessGraph)
-  ASSIGNBOOLOPT(InstrumentVerbose)
-
-#undef ASSIGNBOOLOPT
-
-  _ConfigName = Cfg->getName();
+  configName = Cfg->getName();
 
   delete Cfg;
 }
@@ -532,19 +532,22 @@ std::unique_ptr<GlobalConfig> GlobalConfig::create(const Module &M) {
 }
 
 void GlobalConfig::dump(raw_ostream &Stream) const {
-  Stream << "{{{ Config: " << _ConfigName << "\n";
-  Stream << "     InstrumentationPolicy: " << _IP->getName() << '\n';
-  Stream << "           WitnessStrategy: " << _WS->getName() << '\n';
-  Stream << "  InstrumentationMechanism: " << _IM->getName() << '\n';
-  Stream << "                      Mode: " << getModeName(_MIMode) << '\n';
-  Stream << "                UseFilters: " << _UseFilters << '\n';
-  Stream << "         UseExternalChecks: " << _UseExternalChecks << '\n';
-  Stream << "         PrintWitnessGraph: " << _PrintWitnessGraph << '\n';
-  Stream << "      SimplifyWitnessGraph: " << _SimplifyWitnessGraph << '\n';
-  Stream << "         InstrumentVerbose: " << _InstrumentVerbose << '\n';
+  Stream << "{{{ Config: " << configName << "\n";
+  Stream << "     InstrumentationPolicy: " << instrumentationPolicy->getName()
+         << '\n';
+  Stream << "           WitnessStrategy: " << witnessStrategy->getName()
+         << '\n';
+  Stream << "  InstrumentationMechanism: "
+         << instrumentationMechanism->getName() << '\n';
+  Stream << "                      Mode: " << getModeName(mode) << '\n';
+  Stream << "                UseFilters: " << useFilters << '\n';
+  Stream << "         UseExternalChecks: " << useExternalChecks << '\n';
+  Stream << "         PrintWitnessGraph: " << printWitnessGraph << '\n';
+  Stream << "      SimplifyWitnessGraph: " << simplifyWitnessGraph << '\n';
+  Stream << "         InstrumentVerbose: " << instrumentVerbose << '\n';
   Stream << "}}}\n\n";
 }
 
-void GlobalConfig::noteError(void) { ++_numErrors; }
+void GlobalConfig::noteError(void) { ++numErrors; }
 
-bool GlobalConfig::hasErrors(void) const { return _numErrors != 0; }
+bool GlobalConfig::hasErrors(void) const { return numErrors != 0; }

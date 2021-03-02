@@ -17,18 +17,18 @@ using namespace llvm;
 void WitnessGraphNode::addRequirement(WitnessGraphNode *N) {
   assert(N != nullptr);
 
-  _Requirements.push_back(N);
-  N->_RequiredBy.push_back(this);
+  requirements.push_back(N);
+  N->requiredBy.push_back(this);
 }
 
 void WitnessGraphNode::clearRequirements(void) {
-  for (auto *Req : _Requirements) {
-    auto &Vec = Req->_RequiredBy;
+  for (auto *Req : requirements) {
+    auto &Vec = Req->requiredBy;
     Vec.erase(std::remove_if(Vec.begin(), Vec.end(),
                              [&Req](WitnessGraphNode *&N) { return N == Req; }),
               Vec.end());
   }
-  _Requirements.clear();
+  requirements.clear();
 }
 
 WitnessGraphNode::~WitnessGraphNode(void) { clearRequirements(); }

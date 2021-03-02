@@ -22,13 +22,14 @@ namespace {
 STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
 }
 
-InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg) : _CFG(cfg) {}
+InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg)
+    : globalConfig(cfg) {}
 
 bool InstrumentationPolicy::validateSize(Value *Ptr) {
   if (!hasPointerAccessSize(Ptr)) {
     ++NumUnsizedTypes;
     LLVM_DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
-    _CFG.noteError();
+    globalConfig.noteError();
     return false;
   }
   return true;

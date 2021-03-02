@@ -106,7 +106,7 @@ public:
 
   virtual ~InstrumentationMechanism(void) {}
 
-  InstrumentationMechanism(GlobalConfig &cfg) : _CFG(cfg) {}
+  InstrumentationMechanism(GlobalConfig &cfg) : globalConfig(cfg) {}
 
   /// Convenient helper function to insert a string literal into an LLVM
   /// Module, useful for use with the verbose fail function provided by
@@ -115,7 +115,7 @@ public:
                                                    llvm::StringRef Str);
 
 protected:
-  GlobalConfig &_CFG;
+  GlobalConfig &globalConfig;
 
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
