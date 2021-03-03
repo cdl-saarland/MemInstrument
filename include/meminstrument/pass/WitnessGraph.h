@@ -11,10 +11,12 @@
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
-#include "llvm/Support/raw_ostream.h"
-
 #include <functional>
 #include <memory>
+
+namespace llvm {
+class raw_ostream;
+} // namespace llvm
 
 namespace meminstrument {
 

@@ -7,6 +7,7 @@
 #include "meminstrument/pass/WitnessGraph.h"
 
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <queue>
 #include <set>

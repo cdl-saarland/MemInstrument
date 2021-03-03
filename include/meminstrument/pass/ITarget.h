@@ -10,15 +10,18 @@
 #include "meminstrument/pass/Witness.h"
 
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <functional>
 #include <memory>
 #include <vector>
+
+namespace llvm {
+class raw_ostream;
+class DominatorTree;
+} // namespace llvm
 
 namespace meminstrument {
 

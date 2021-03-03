@@ -8,6 +8,9 @@
 
 #include "meminstrument/Config.h"
 
+#include "llvm/IR/Dominators.h"
+#include "llvm/Support/raw_ostream.h"
+
 #include "meminstrument/pass/Util.h"
 
 using namespace llvm;
