@@ -10,11 +10,12 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/IRBuilder.h"
 
 #include <set>
+
+#ifdef DEBUG_WG_SIMPLIFY
 #include <sstream>
+#endif
 
 #include "meminstrument/pass/Util.h"
 

@@ -10,8 +10,6 @@
 
 #include "meminstrument/pass/Util.h"
 
-#include <sstream>
-
 using namespace llvm;
 using namespace meminstrument;
 
@@ -275,9 +273,9 @@ void ITarget::printLocation(raw_ostream &Stream) const {
       }
       ++idx;
     }
-    std::stringstream ss;
-    ss << LocName << "," << idx << "]";
-    LocName = ss.str();
+    raw_string_ostream rso(LocName);
+    rso << "," << idx << "]";
+    LocName = rso.str();
   }
   auto *BB = this->getLocation()->getParent();
   Stream << BB->getName() << "::" << LocName;
