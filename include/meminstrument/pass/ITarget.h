@@ -105,8 +105,6 @@ public:
 
   void invalidate(void);
 
-  bool subsumes(const ITarget &other) const;
-
   bool joinFlags(const ITarget &other);
 
   /// Static factory method for creating an ITarget that requires that bounds

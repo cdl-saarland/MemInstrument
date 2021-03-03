@@ -12,7 +12,6 @@
 #include "meminstrument/pass/PerfData.h"
 
 #include "llvm/ADT/Statistic.h"
-// #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
@@ -32,6 +31,41 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
+
+bool subsumes(const ITarget &one, const ITarget &other) {
+  assert(one.isValid());
+  assert(other.isValid());
+
+  if (!one.hasInstrumentee() || !other.hasInstrumentee())
+    return false;
+
+  if (one.getInstrumentee() != other.getInstrumentee())
+    return false;
+
+  switch (one.getKind()) {
+  case ITarget::Kind::ConstSizeCheck:
+    return (other.getKind() == ITarget::Kind::ConstSizeCheck) &&
+           (one.getAccessSize() >= other.getAccessSize());
+
+  case ITarget::Kind::VarSizeCheck:
+    return (other.getKind() == ITarget::Kind::VarSizeCheck) &&
+           (one.getAccessSizeVal() == other.getAccessSizeVal());
+
+  case ITarget::Kind::Invariant:
+    switch (other.getKind()) {
+    case ITarget::Kind::ConstSizeCheck:
+    case ITarget::Kind::VarSizeCheck:
+    case ITarget::Kind::Invariant:
+      return true;
+    default:
+      return false;
+    }
+  default:
+    return false;
+  }
+  return false;
+}
+
 void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
   const auto &DomTree =
       ParentPass->getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
@@ -41,7 +75,7 @@ void filterByDominance(Pass *ParentPass, ITargetVector &Vec, Function &F) {
       if (i1 == i2 || !i1->isValid() || !i2->isValid())
         continue;
 
-      if (i1->subsumes(*i2) &&
+      if (subsumes(*i1, *i2) &&
           DomTree.dominates(i1->getLocation(), i2->getLocation())) {
         i2->invalidate();
         ++NumITargetsSubsumed;
@@ -57,6 +91,19 @@ void filterByAnnotation(ITargetVector &Vec) {
       ++NumITargetsNoSanitize;
       IT->invalidate();
     }
+  }
+}
+
+uint64_t extractAccessId(Instruction *I) {
+  if (auto *N = I->getMetadata("mi_access_id")) {
+    assert(N->getNumOperands() == 1);
+
+    assert(isa<MDString>(N->getOperand(0)));
+    auto *Str = cast<MDString>(N->getOperand(0));
+    return std::stoi(Str->getString());
+  } else {
+    assert(false && "Missing access id metadata!");
+    return 0;
   }
 }
 
@@ -100,19 +147,6 @@ void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
   filterByDominance(P, Vec, F);
 }
 
-uint64_t extractAccessId(Instruction *I) {
-  if (auto *N = I->getMetadata("mi_access_id")) {
-    assert(N->getNumOperands() == 1);
-
-    assert(isa<MDString>(N->getOperand(0)));
-    auto *Str = cast<MDString>(N->getOperand(0));
-    return std::stoi(Str->getString());
-  } else {
-    assert(false && "Missing access id metadata!");
-    return 0;
-  }
-}
-
 void meminstrument::filterITargetsRandomly(
     GlobalConfig &CFG, std::map<Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
@@ -139,10 +173,6 @@ void meminstrument::filterITargetsRandomly(
           auto funAname = funA->getName().str();
           auto funBname = funB->getName().str();
           auto modname = mod->getName().str();
-
-          // errs() << "Module name 1: '" << modname << "'\n";
-          // errs() << "Module name 2: '" << mod->getName().str().c_str() <<
-          // "'\n";
 
           uint64_t idxA = extractAccessId(a->getLocation());
           uint64_t idxB = extractAccessId(b->getLocation());

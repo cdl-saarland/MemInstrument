@@ -137,40 +137,6 @@ bool ITarget::isValid(void) const { return not invalidated; }
 
 void ITarget::invalidate(void) { invalidated = true; }
 
-bool ITarget::subsumes(const ITarget &other) const {
-  assert(isValid());
-  assert(other.isValid());
-
-  if (!hasInstrumentee() || !other.hasInstrumentee())
-    return false;
-
-  if (getInstrumentee() != other.getInstrumentee())
-    return false;
-
-  switch (getKind()) {
-  case Kind::ConstSizeCheck:
-    return (other.getKind() == Kind::ConstSizeCheck) &&
-           (getAccessSize() >= other.getAccessSize());
-
-  case Kind::VarSizeCheck:
-    return (other.getKind() == Kind::VarSizeCheck) &&
-           (getAccessSizeVal() == other.getAccessSizeVal());
-
-  case Kind::Invariant:
-    switch (other.getKind()) {
-    case Kind::ConstSizeCheck:
-    case Kind::VarSizeCheck:
-    case Kind::Invariant:
-      return true;
-    default:
-      return false;
-    }
-  default:
-    return false;
-  }
-  return false;
-}
-
 bool ITarget::joinFlags(const ITarget &other) {
   assert(isValid());
   assert(other.isValid());
