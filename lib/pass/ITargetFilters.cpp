@@ -16,8 +16,6 @@
 #include "llvm/IR/Instructions.h"
 
 #include <algorithm>
-#include <math.h>
-#include <string>
 
 #include "meminstrument/pass/Util.h"
 
@@ -148,7 +146,7 @@ void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
 }
 
 void meminstrument::filterITargetsRandomly(
-    GlobalConfig &CFG, std::map<Function *, ITargetVector> TargetMap) {
+    GlobalConfig &, std::map<Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {
     return;
   }
