@@ -1,11 +1,11 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
 ; RUN: fgrep "<dereference check with constant size 4B for add.ptr at entry::tmp>" %t.log
 ; RUN: fgrep "<dereference check with constant size 4B for arrayidx at for.body::[store,3]>" %t.log
-; RUN: fgrep "<invariant check for tmp at for.end::call1>" %t.log
+; RUN: fgrep "<argument 0 invariant for tmp at for.end::call1>" %t.log
 ; RUN: fgrep "<dereference check with constant size 4B for i at entry::[store,4]>" %t.log
 ; RUN: fgrep "<dereference check with constant size 8B for x at entry::[store,7]>" %t.log
-; RUN: fgrep "<invariant check for i1 at entry::[store,7]>" %t.log
-; RUN: fgrep "<invariant check for i2 at entry::call>" %t.log
+; RUN: fgrep "<value invariant for i1 at entry::[store,7]>" %t.log
+; RUN: fgrep "<argument 0 invariant for i2 at entry::call>" %t.log
 ; REQUIRES: asserts
 
 ; ModuleID = 'test_subobj.o0.ll'

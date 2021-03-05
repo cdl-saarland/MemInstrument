@@ -81,7 +81,8 @@ void WitnessGraph::propagateFlags(void) {
     auto *Node = Worklist.front();
     Worklist.pop();
     for (auto &Succ : Node->getRequiredNodes()) {
-      if (Succ->Target->joinFlags(*Node->Target)) {
+      auto InterIT = cast<IntermediateIT>(Succ->Target);
+      if (InterIT->joinFlags(*Node->Target)) {
         Worklist.push(Succ);
       }
     }

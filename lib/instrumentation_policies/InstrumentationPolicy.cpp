@@ -44,15 +44,15 @@ bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(ITargetVector &Dest,
     auto *Len = MT->getLength();
     auto *Src = MT->getSource();
     auto *Dst = MT->getDest();
-    Dest.push_back(ITarget::createSpatialCheckTarget(Src, II, Len));
-    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
+    Dest.push_back(ITargetBuilder::createSpatialCheckTarget(Src, II, Len));
+    Dest.push_back(ITargetBuilder::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   case Intrinsic::memset: {
     auto *MS = cast<MemSetInst>(II);
     auto *Len = MS->getLength();
     auto *Dst = MS->getDest();
-    Dest.push_back(ITarget::createSpatialCheckTarget(Dst, II, Len));
+    Dest.push_back(ITargetBuilder::createSpatialCheckTarget(Dst, II, Len));
     return true;
   }
   default:
@@ -72,7 +72,7 @@ void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
     return;
   }
 
-  Dest.push_back(ITarget::createSpatialCheckTarget(PtrOp, Inst));
+  Dest.push_back(ITargetBuilder::createSpatialCheckTarget(PtrOp, Inst));
 }
 
 void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
@@ -83,7 +83,7 @@ void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
     return;
   }
 
-  Dest.push_back(ITarget::createInvariantTarget(StoreOperand, Store));
+  Dest.push_back(ITargetBuilder::createValInvariantTarget(StoreOperand, Store));
 }
 
 void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
@@ -94,5 +94,5 @@ void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
     return;
   }
 
-  Dest.push_back(ITarget::createInvariantTarget(Operand, Ret));
+  Dest.push_back(ITargetBuilder::createValInvariantTarget(Operand, Ret));
 }

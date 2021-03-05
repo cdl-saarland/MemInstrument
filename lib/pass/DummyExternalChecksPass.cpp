@@ -52,14 +52,14 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
   auto *EntryLoc = F.getEntryBlock().getFirstNonPHI();
 
   for (auto &IT : Vec) {
-    if (!IT->isValid() || !IT->is(ITarget::Kind::ConstSizeCheck)) {
+    if (!IT->isValid() || !isa<ConstSizeCheckIT>(IT)) {
       continue;
     }
     auto *L = IT->getLocation();
     if (L->getMetadata("checkearly")) {
       if (auto *A = dyn_cast<Argument>(IT->getInstrumentee())) {
         // create a new ITarget for the beginning of the function
-        auto res = ITarget::createBoundsTarget(A, EntryLoc);
+        auto res = ITargetBuilder::createBoundsTarget(A, EntryLoc);
         // remember it for later
         CurrentWL.push_back(res);
         // invalidate the initial ITarget so that no checks are generated for it
@@ -67,7 +67,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
       }
     }
   }
-  size_t Num = meminstrument::getNumValidITargets(Vec);
+  size_t Num = ITargetBuilder::getNumValidITargets(Vec);
   LLVM_DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
   // add new targets to the ITarget vector
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());

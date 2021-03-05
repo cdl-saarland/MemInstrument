@@ -42,7 +42,8 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
       if (!validateSize(I->getCalledOperand())) {
         return;
       }
-      Dest.push_back(ITarget::createCallCheckTarget(I->getCalledOperand(), I));
+      Dest.push_back(
+          ITargetBuilder::createCallCheckTarget(I->getCalledOperand(), I));
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
       // skip debug information pseudo-calls
@@ -74,9 +75,11 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
         if (!validateSize(Operand)) {
           return;
         }
-        Dest.push_back(ITarget::createSpatialCheckTarget(Operand, Location));
+        Dest.push_back(
+            ITargetBuilder::createSpatialCheckTarget(Operand, Location));
       } else {
-        Dest.push_back(ITarget::createInvariantTarget(Operand, Location));
+        Dest.push_back(ITargetBuilder::createArgInvariantTarget(
+            Operand, I, Operand.getOperandNo()));
       }
 
       if (FunIsNoVarArg) {

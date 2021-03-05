@@ -65,7 +65,7 @@ void LowfatMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
 
 void LowfatMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
-  assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
+  assert(Target.isCheck() || Target.isInvariant());
 
   IRBuilder<> Builder(Target.getLocation());
 
@@ -77,14 +77,14 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
 
     // Determine the access width depending on the target kind
     Value *Size = nullptr;
-    if (Target.is(ITarget::Kind::CallCheck)) {
+    if (isa<CallCheckIT>(&Target)) {
       Size = ConstantInt::get(SizeType, 1);
     }
-    if (Target.is(ITarget::Kind::ConstSizeCheck)) {
-      Size = ConstantInt::get(SizeType, Target.getAccessSize());
+    if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&Target)) {
+      Size = ConstantInt::get(SizeType, constSizeTarget->getAccessSize());
     }
-    if (Target.is(ITarget::Kind::VarSizeCheck)) {
-      Size = Target.getAccessSizeVal();
+    if (auto varSizeTarget = dyn_cast<VarSizeCheckIT>(&Target)) {
+      Size = varSizeTarget->getAccessSizeVal();
     }
 
     assert(Size);
@@ -92,7 +92,7 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
                std::vector<Value *>{WitnessVal, CastVal, Size});
     ++LowfatNumDereferenceChecks;
   } else {
-    assert(Target.is(ITarget::Kind::Invariant));
+    assert(Target.isInvariant());
     insertCall(Builder, CheckOOBFunction,
                std::vector<Value *>{WitnessVal, CastVal});
     ++LowfatNumInboundsChecks;

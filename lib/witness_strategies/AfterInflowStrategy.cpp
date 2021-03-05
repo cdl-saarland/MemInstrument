@@ -96,7 +96,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
   auto &Target = Node->Target;
   // Call invariant targets do not have requirements
-  if (Target->is(ITarget::Kind::CallInvariant)) {
+  if (isa<CallInvariantIT>(Target)) {
     Node->HasAllRequirements = true;
     return;
   }
@@ -379,7 +379,7 @@ void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
   // for out-flowing pointers (as we assume the values to be valid anyway).
   for (auto *External : WG.getExternalNodes()) {
     auto &T = External->Target;
-    if (T->isValid() && T->is(ITarget::Kind::Invariant)) {
+    if (T->isValid() && T->isInvariant()) {
       std::set<WitnessGraphNode *> Seen;
       if (didNotChangeSinceWitness(Seen, External)) {
         External->Target->invalidate();

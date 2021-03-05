@@ -40,27 +40,25 @@ bool subsumes(const ITarget &one, const ITarget &other) {
   if (one.getInstrumentee() != other.getInstrumentee())
     return false;
 
-  switch (one.getKind()) {
-  case ITarget::Kind::ConstSizeCheck:
-    return (other.getKind() == ITarget::Kind::ConstSizeCheck) &&
-           (one.getAccessSize() >= other.getAccessSize());
-
-  case ITarget::Kind::VarSizeCheck:
-    return (other.getKind() == ITarget::Kind::VarSizeCheck) &&
-           (one.getAccessSizeVal() == other.getAccessSizeVal());
-
-  case ITarget::Kind::Invariant:
-    switch (other.getKind()) {
-    case ITarget::Kind::ConstSizeCheck:
-    case ITarget::Kind::VarSizeCheck:
-    case ITarget::Kind::Invariant:
-      return true;
-    default:
-      return false;
+  if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&one)) {
+    if (auto constSizeTargetOther = dyn_cast<ConstSizeCheckIT>(&other)) {
+      return constSizeTarget->getAccessSize() >=
+             constSizeTargetOther->getAccessSize();
     }
-  default:
-    return false;
   }
+
+  if (auto constSizeTarget = dyn_cast<VarSizeCheckIT>(&one)) {
+    if (auto constSizeTargetOther = dyn_cast<VarSizeCheckIT>(&other)) {
+      return constSizeTarget->getAccessSizeVal() ==
+             constSizeTargetOther->getAccessSizeVal();
+    }
+  }
+
+  if (other.isInvariant()) {
+    return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
+           isa<VarSizeCheckIT>(&one);
+  }
+
   return false;
 }
 

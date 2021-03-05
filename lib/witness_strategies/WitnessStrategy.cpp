@@ -22,7 +22,8 @@ using namespace llvm;
 WitnessGraphNode *WitnessStrategy::getInternalNode(WitnessGraph &WG,
                                                    Value *Instrumentee,
                                                    Instruction *Location) {
-  auto NewTarget = ITarget::createIntermediateTarget(Instrumentee, Location);
+  auto NewTarget =
+      ITargetBuilder::createIntermediateTarget(Instrumentee, Location);
   return WG.getInternalNode(NewTarget);
 }
 

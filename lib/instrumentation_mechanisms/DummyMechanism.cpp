@@ -57,9 +57,17 @@ void DummyMechanism::insertCheck(ITarget &Target) const {
   auto *Witness = cast<DummyWitness>(Target.getBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
-  auto *Size = Target.is(ITarget::Kind::ConstSizeCheck)
-                   ? ConstantInt::get(SizeType, Target.getAccessSize())
-                   : Target.getAccessSizeVal();
+
+  Value *Size = nullptr;
+  if (isa<CallCheckIT>(&Target)) {
+    Size = ConstantInt::get(SizeType, 1);
+  }
+  if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&Target)) {
+    Size = ConstantInt::get(SizeType, constSizeTarget->getAccessSize());
+  }
+  if (auto varSizeTarget = dyn_cast<VarSizeCheckIT>(&Target)) {
+    Size = varSizeTarget->getAccessSizeVal();
+  }
 
   insertCall(Builder, CheckAccessFunction,
              std::vector<Value *>{CastVal, WitnessVal, Size}, "check");

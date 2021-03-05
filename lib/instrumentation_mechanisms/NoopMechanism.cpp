@@ -49,13 +49,17 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
   auto *Lower = Builder.CreateLoad(LowerBoundLocation, /* isVolatile */ true);
   auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
-  Value *AccessUpper = nullptr;
-  if (Target.is(ITarget::Kind::ConstSizeCheck)) {
-    AccessUpper = Builder.CreateAdd(
-        Ptr2Int, ConstantInt::get(SizeType, Target.getAccessSize()));
-  } else {
-    AccessUpper = Builder.CreateAdd(Ptr2Int, Target.getAccessSizeVal());
+  Value *Size = nullptr;
+  if (isa<CallCheckIT>(&Target)) {
+    Size = ConstantInt::get(SizeType, 1);
   }
+  if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&Target)) {
+    Size = ConstantInt::get(SizeType, constSizeTarget->getAccessSize());
+  }
+  if (auto varSizeTarget = dyn_cast<VarSizeCheckIT>(&Target)) {
+    Size = varSizeTarget->getAccessSizeVal();
+  }
+  auto AccessUpper = Builder.CreateAdd(Ptr2Int, Size);
 
   auto *Upper = Builder.CreateLoad(UpperBoundLocation, /* isVolatile */ true);
   auto *CmpUpper = Builder.CreateICmpUGT(AccessUpper, Upper);

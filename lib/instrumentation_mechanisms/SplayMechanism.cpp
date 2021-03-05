@@ -74,7 +74,7 @@ void SplayMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
-  assert(Target.isCheck() || Target.is(ITarget::Kind::Invariant));
+  assert(Target.isCheck() || Target.isInvariant());
 
   Module *M = Target.getLocation()->getModule();
   bool Verbose = globalConfig.hasInstrumentVerbose();
@@ -111,14 +111,14 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
     // Determine the access width depending on the target kind
     Value *Size = nullptr;
-    if (Target.is(ITarget::Kind::CallCheck)) {
+    if (isa<CallCheckIT>(&Target)) {
       Size = ConstantInt::get(SizeType, 1);
     }
-    if (Target.is(ITarget::Kind::ConstSizeCheck)) {
-      Size = ConstantInt::get(SizeType, Target.getAccessSize());
+    if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&Target)) {
+      Size = ConstantInt::get(SizeType, constSizeTarget->getAccessSize());
     }
-    if (Target.is(ITarget::Kind::VarSizeCheck)) {
-      Size = Target.getAccessSizeVal();
+    if (auto varSizeTarget = dyn_cast<VarSizeCheckIT>(&Target)) {
+      Size = varSizeTarget->getAccessSizeVal();
     }
 
     assert(Size);
@@ -132,7 +132,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
     }
     ++SplayNumDereferenceChecks;
   } else {
-    assert(Target.is(ITarget::Kind::Invariant));
+    assert(Target.isInvariant());
     if (Verbose) {
       insertCall(Builder, CheckInboundsFunction,
                  std::vector<Value *>{WitnessVal, CastVal, NameVal});

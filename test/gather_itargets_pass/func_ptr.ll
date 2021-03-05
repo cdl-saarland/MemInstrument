@@ -1,10 +1,10 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s > /dev/null 2> %t.log
 ; RUN: fgrep "<call check for arg at bar_bb::res>" %t.log
-; RUN: fgrep "<invariant check for a at bar_bb::res>" %t.log
-; RUN: fgrep "<invariant check for b at bar_bb::res>" %t.log
-; RUN: fgrep "<invariant check for baz at foo_bb::res>" %t.log
-; RUN: fgrep "<invariant check for x at foo_bb::res>" %t.log
-; RUN: fgrep "<invariant check for y at foo_bb::res>" %t.log
+; RUN: fgrep "<argument 0 invariant for a at bar_bb::res>" %t.log
+; RUN: fgrep "<argument 1 invariant for b at bar_bb::res>" %t.log
+; RUN: fgrep "<argument 0 invariant for baz at foo_bb::res>" %t.log
+; RUN: fgrep "<argument 1 invariant for x at foo_bb::res>" %t.log
+; RUN: fgrep "<argument 2 invariant for y at foo_bb::res>" %t.log
 ; REQUIRES: asserts
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
