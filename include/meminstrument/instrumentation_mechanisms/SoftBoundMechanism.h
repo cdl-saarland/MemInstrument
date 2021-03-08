@@ -98,6 +98,14 @@ private:
   /// instead, which then calls the renamed main
   void renameMain(llvm::Module &) const;
 
+  /// Transform all functions that have byval arguments to functions without
+  /// byval arguments (allocate memory for them at every call site).
+  void transformByValFunctions(llvm::Module &) const;
+
+  /// Transform the given call byval arguments (if any) to hand over a pointer
+  /// to the call site allocated stuff.
+  void transformCallByValArgs(llvm::CallBase &, llvm::IRBuilder<> &) const;
+
   /// Take care of running the SoftBound setup in the very beginning (including
   /// globally initialized variables)
   void setUpGlobals(llvm::Module &) const;
