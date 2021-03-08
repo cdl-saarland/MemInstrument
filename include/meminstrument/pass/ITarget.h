@@ -240,6 +240,8 @@ class CallCheckIT : public CheckIT {
 public:
   CallCheckIT(llvm::Value *instrumentee, llvm::CallBase *call);
 
+  llvm::CallBase *getCall() const;
+
   void dump(llvm::raw_ostream &) const override;
 
   bool operator==(const ITarget &) const override;
@@ -301,6 +303,8 @@ public:
 
   unsigned getArgNum() const;
 
+  llvm::CallBase *getCall() const;
+
   void dump(llvm::raw_ostream &) const override;
 
   bool operator==(const ITarget &) const override;
@@ -316,6 +320,8 @@ public:
   CallInvariantIT(llvm::CallBase *);
 
   bool needsNoBoundWitness() const override;
+
+  llvm::CallBase *getCall() const;
 
   void dump(llvm::raw_ostream &) const override;
 

@@ -805,8 +805,8 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
   // Upon a call, the base and bound for all pointer arguments need to be stored
   // to the shadow stack.
   if (auto argIT = dyn_cast<ArgInvariantIT>(&target)) {
-    auto locIndex = computeShadowStackLocation(
-        instrumentee, cast<CallBase>(loc), argIT->getArgNum());
+    auto locIndex = computeShadowStackLocation(instrumentee, argIT->getCall(),
+                                               argIT->getArgNum());
     insertShadowStackStore(builder, lb, ub, locIndex);
     DEBUG_WITH_TYPE(
         "softbound-genchecks",
@@ -830,7 +830,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 void SoftBoundMechanism::handleCallInvariant(
     const CallInvariantIT &target) const {
 
-  auto call = cast<CallBase>(target.getLocation());
+  auto call = target.getCall();
 
   // Intrinsics might need additional calls for metadata copying, insert them
   if (auto intrinsic = dyn_cast<IntrinsicInst>(call)) {
@@ -1372,10 +1372,7 @@ void SoftBoundMechanism::insertSpatialDereferenceCheck(
 void SoftBoundMechanism::insertSpatialCallCheck(
     const CallCheckIT &target) const {
 
-  auto *loc = target.getLocation();
-  assert(isa<CallBase>(loc));
-
-  IRBuilder<> builder(cast<CallBase>(loc));
+  IRBuilder<> builder(target.getLocation());
 
   auto *instrumentee = target.getInstrumentee();
 

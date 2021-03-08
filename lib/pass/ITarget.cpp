@@ -296,6 +296,11 @@ CallCheckIT::CallCheckIT(Value *instrumentee, CallBase *call)
               /*checkUpper*/ true, /*checkLower*/ true,
               /*checkTemporal*/ false) {}
 
+llvm::CallBase *CallCheckIT::getCall() const {
+  assert(isValid());
+  return cast<CallBase>(location);
+}
+
 void CallCheckIT::dump(raw_ostream &os) const { os << "call check"; }
 
 bool CallCheckIT::operator==(const ITarget &other) const {
@@ -400,6 +405,11 @@ unsigned ArgInvariantIT::getArgNum() const {
   return argNum;
 }
 
+CallBase *ArgInvariantIT::getCall() const {
+  assert(isValid());
+  return cast<CallBase>(location);
+}
+
 void ArgInvariantIT::dump(raw_ostream &os) const {
   os << "argument " << argNum << " invariant";
 }
@@ -421,10 +431,14 @@ CallInvariantIT::CallInvariantIT(CallBase *call)
 
 bool CallInvariantIT::needsNoBoundWitness() const { return true; }
 
+CallBase *CallInvariantIT::getCall() const {
+  assert(isValid());
+  return cast<CallBase>(location);
+}
+
 void CallInvariantIT::dump(raw_ostream &os) const {
   os << "call invariant";
-  const auto *call = cast<CallBase>(getLocation());
-  const auto *calledFun = call->getCalledFunction();
+  const auto *calledFun = getCall()->getCalledFunction();
   if (calledFun && calledFun->hasName()) {
     os << " for " << calledFun->getName();
   }
