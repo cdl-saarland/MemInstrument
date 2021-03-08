@@ -56,7 +56,7 @@ STATISTIC(ZeroSizedArrayBoundsRequested,
 // The setup phase detected code in the module which will prevent the
 // instrumentation from making the program safe.
 STATISTIC(
-    SetupErrror,
+    SetupError,
     "Number of modules for which the setup phase already detected problems");
 
 // Detailed statistics on which setup error occurred:
@@ -144,7 +144,7 @@ void SoftBoundMechanism::initialize(Module &module) {
   checkModule(module);
 
   if (globalConfig.hasErrors()) {
-    ++SetupErrror;
+    ++SetupError;
   }
 
   // Insert the declarations for basic metadata and check functions
@@ -160,7 +160,7 @@ void SoftBoundMechanism::initialize(Module &module) {
   setUpGlobals(module);
 
   if (globalConfig.hasErrors()) {
-    ++SetupErrror;
+    ++SetupError;
   }
 }
 
