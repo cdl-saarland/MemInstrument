@@ -69,7 +69,7 @@ void PointerBoundsPolicy::addCallTargets(
 
   auto *calledFun = call->getCalledFunction();
   if (!calledFun) {
-    // if we cannot identify the called function create a target to check the
+    // If we cannot identify the called function create a target to check the
     // validity of the pointer value called
     dest.push_back(
         ITargetBuilder::createCallCheckTarget(call->getCalledOperand(), call));

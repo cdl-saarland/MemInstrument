@@ -840,10 +840,6 @@ void SoftBoundMechanism::handleCallInvariant(
 
   // Take care of shadow stack allocation and deallocation
   handleShadowStackAllocation(call);
-  auto calledFun = call->getCalledFunction();
-  if (!calledFun || !calledFun->hasName()) {
-    return;
-  }
 }
 
 void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
