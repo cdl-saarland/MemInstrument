@@ -25,7 +25,7 @@ class WitnessStrategy;
 
 struct WitnessGraphNode {
   WitnessGraph &Graph;
-  std::shared_ptr<ITarget> Target;
+  ITargetPtr Target;
 
   /// Gets a vector of nodes that are required by this node.
   ///
@@ -53,7 +53,7 @@ struct WitnessGraphNode {
   ~WitnessGraphNode(void);
 
 private:
-  WitnessGraphNode(WitnessGraph &WG, std::shared_ptr<ITarget> Target)
+  WitnessGraphNode(WitnessGraph &WG, ITargetPtr Target)
       : Graph(WG), Target(Target) {
     static unsigned long RunningId = 0;
     id = RunningId++;

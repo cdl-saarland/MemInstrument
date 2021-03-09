@@ -26,7 +26,7 @@ class InstrumentationPolicy {
 public:
   /// Add the ITargets necessary at instruction Loc to ensure memory safety to
   /// Dest.
-  virtual void classifyTargets(std::vector<std::shared_ptr<ITarget>> &Dest,
+  virtual void classifyTargets(std::vector<ITargetPtr> &Dest,
                                llvm::Instruction *Loc) = 0;
 
   /// Returns the name of the instrumentation policy for printing and easy

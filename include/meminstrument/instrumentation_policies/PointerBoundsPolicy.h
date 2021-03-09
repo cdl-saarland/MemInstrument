@@ -26,12 +26,10 @@ public:
 
   auto getName() const -> const char * override;
 
-  void classifyTargets(std::vector<std::shared_ptr<ITarget>> &,
-                       llvm::Instruction *) override;
+  void classifyTargets(std::vector<ITargetPtr> &, llvm::Instruction *) override;
 
 private:
-  void addCallTargets(std::vector<std::shared_ptr<ITarget>> &,
-                      llvm::CallInst *);
+  void addCallTargets(std::vector<ITargetPtr> &, llvm::CallInst *);
 };
 
 } // namespace meminstrument

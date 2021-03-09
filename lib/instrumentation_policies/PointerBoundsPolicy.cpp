@@ -39,8 +39,8 @@ auto PointerBoundsPolicy::getName() const -> const char * {
   return "PointerBoundsPolicy";
 }
 
-void PointerBoundsPolicy::classifyTargets(
-    std::vector<std::shared_ptr<ITarget>> &dest, Instruction *loc) {
+void PointerBoundsPolicy::classifyTargets(std::vector<ITargetPtr> &dest,
+                                          Instruction *loc) {
 
   switch (loc->getOpcode()) {
   case Instruction::Call:
@@ -60,8 +60,8 @@ void PointerBoundsPolicy::classifyTargets(
   }
 }
 
-void PointerBoundsPolicy::addCallTargets(
-    std::vector<std::shared_ptr<ITarget>> &dest, CallInst *call) {
+void PointerBoundsPolicy::addCallTargets(std::vector<ITargetPtr> &dest,
+                                         CallInst *call) {
 
   if (auto *II = dyn_cast<IntrinsicInst>(call)) {
     insertCheckTargetsForIntrinsic(dest, II);

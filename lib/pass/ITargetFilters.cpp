@@ -158,9 +158,7 @@ void meminstrument::filterITargetsRandomly(
 
   if (FilterOrderingOpt != FO_random) {
     std::stable_sort(
-        cpy.begin(), cpy.end(),
-        [&](const std::shared_ptr<ITarget> &a,
-            const std::shared_ptr<ITarget> &b) {
+        cpy.begin(), cpy.end(), [&](const ITargetPtr &a, const ITargetPtr &b) {
           Function *funA = a->getLocation()->getParent()->getParent();
           Function *funB = b->getLocation()->getParent()->getParent();
           Module *mod = funA->getParent();
