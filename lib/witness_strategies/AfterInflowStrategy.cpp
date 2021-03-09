@@ -189,7 +189,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
   // Get the location right at the beginning of the function. We want to place
   // witnesses for arguments, global values and constants here.
-  auto *Fun = Target->getLocation()->getParent()->getParent();
+  auto *Fun = Target->getLocation()->getFunction();
   auto &EntryBB = Fun->getEntryBlock();
 
   Instruction *EntryLoc = nullptr;

@@ -159,8 +159,8 @@ void meminstrument::filterITargetsRandomly(
   if (FilterOrderingOpt != FO_random) {
     std::stable_sort(
         cpy.begin(), cpy.end(), [&](const ITargetPtr &a, const ITargetPtr &b) {
-          Function *funA = a->getLocation()->getParent()->getParent();
-          Function *funB = b->getLocation()->getParent()->getParent();
+          Function *funA = a->getLocation()->getFunction();
+          Function *funB = b->getLocation()->getFunction();
           Module *mod = funA->getParent();
           assert(mod == funB->getParent());
 
