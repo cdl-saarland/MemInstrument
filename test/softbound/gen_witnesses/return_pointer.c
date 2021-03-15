@@ -17,8 +17,8 @@
 // CHECK: Insert witness {{.*}}intermediate target for call at entry
 // CHECK-NEXT: Instrumentee{{.*}} call {{.*}}@f
 // CHECK-NEXT: Created bounds:
-// CHECK-NEXT: Base{{.*}} @__softboundcets_load_base_shadow_stack(i32 0), !SoftBound !3
-// CHECK-NEXT: Bound{{.*}} @__softboundcets_load_bound_shadow_stack(i32 0), !SoftBound !3
+// CHECK-NEXT: Base{{.*}} @__softboundcets_load_base_shadow_stack(i32 0)
+// CHECK-NEXT: Bound{{.*}} @__softboundcets_load_bound_shadow_stack(i32 0)
 
 // REQUIRES: asserts
 
