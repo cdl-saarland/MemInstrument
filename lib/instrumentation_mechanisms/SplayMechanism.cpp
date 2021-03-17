@@ -55,21 +55,66 @@ bool SplayWitness::hasBoundsMaterialized(void) const {
   return UpperBound != nullptr && LowerBound != nullptr;
 }
 
-void SplayMechanism::insertWitness(ITarget &Target) const {
-  auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
-                             Target.getLocation(), "_witness");
-  Target.setBoundWitness(
-      std::make_shared<SplayWitness>(CastVal, Target.getLocation()));
-  ++SplayNumWitnessLookups;
+void SplayMechanism::insertWitnesses(ITarget &Target) const {
+  // There should be no targets without an instrumentee for splay
+  assert(Target.hasInstrumentee());
+
+  auto instrumentee = Target.getInstrumentee();
+
+  assert(!isa<ExtractValueInst>(instrumentee));
+
+  if (!instrumentee->getType()->isAggregateType()) {
+    auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
+                               Target.getLocation(), "_witness");
+    Target.setSingleBoundWitness(
+        std::make_shared<SplayWitness>(CastVal, Target.getLocation()));
+
+    ++SplayNumWitnessLookups;
+    return;
+  }
+
+  // The witnesses for pointers returned from a call/landingpad are the values
+  // in the aggregate themselves.
+  if (isa<CallBase>(instrumentee) || isa<LandingPadInst>(instrumentee)) {
+    IRBuilder<> builder(Target.getLocation());
+    // Find all locations of pointer values in the aggregate type
+    auto indices = computePointerIndices(instrumentee->getType());
+    for (auto index : indices) {
+      // Extract the pointer to have the witness at hand.
+      auto ptr = builder.CreateExtractValue(instrumentee, index);
+      auto *castVal = insertCast(WitnessType, ptr, builder);
+      Target.setBoundWitness(
+          std::make_shared<SplayWitness>(castVal, Target.getLocation()), index);
+    }
+    return;
+  }
+
+  // The only aggregates that do not need a source are those that are constant
+  assert(isa<Constant>(instrumentee));
+  auto con = cast<Constant>(instrumentee);
+
+  auto indexToPtr =
+      InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
+  for (auto KV : indexToPtr) {
+    auto *CastVal =
+        insertCast(WitnessType, KV.second, Target.getLocation(), "_witness");
+    Target.setBoundWitness(
+        std::make_shared<SplayWitness>(CastVal, Target.getLocation()),
+        KV.first);
+
+    ++SplayNumWitnessLookups;
+  }
 }
 
-void SplayMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
-  auto *SW = dyn_cast<SplayWitness>(&W);
-  assert(SW != nullptr);
+std::shared_ptr<Witness>
+SplayMechanism::getRelocatedClone(const Witness &wit,
+                                  Instruction *location) const {
+  const auto *splayWit = dyn_cast<SplayWitness>(&wit);
+  assert(splayWit != nullptr);
 
-  Target.setBoundWitness(std::shared_ptr<SplayWitness>(
-      new SplayWitness(SW->WitnessValue, Target.getLocation())));
   ++SplayNumWitnessLookups;
+
+  return std::make_shared<SplayWitness>(splayWit->WitnessValue, location);
 }
 
 void SplayMechanism::insertCheck(ITarget &Target) const {
@@ -81,7 +126,7 @@ void SplayMechanism::insertCheck(ITarget &Target) const {
 
   IRBuilder<> Builder(Target.getLocation());
 
-  auto *Witness = cast<SplayWitness>(Target.getBoundWitness().get());
+  auto *Witness = cast<SplayWitness>(Target.getSingleBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
@@ -148,44 +193,50 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
 
-  auto *Witness = cast<SplayWitness>(Target.getBoundWitness().get());
+  auto witnesses = Target.getBoundWitnesses();
 
-  if (Witness->hasBoundsMaterialized()) {
-    return;
+  for (auto kv : witnesses) {
+
+    auto *Witness = cast<SplayWitness>(kv.second.get());
+
+    if (Witness->hasBoundsMaterialized()) {
+      continue;
+    }
+
+    auto *WitnessVal = Witness->WitnessValue;
+
+    const auto key = std::tuple<const Instruction *, Value *, unsigned>(
+        Target.getLocation(), Target.getInstrumentee(), kv.first);
+    const auto &lookup = MaterializedBounds.find(key);
+    if (lookup != MaterializedBounds.end()) {
+      auto &map_value = lookup->second;
+      Value *lower = map_value.first;
+      Value *upper = map_value.second;
+      Witness->LowerBound = lower;
+      Witness->UpperBound = upper;
+      continue;
+    }
+
+    IRBuilder<> Builder(Witness->getInsertionLocation());
+
+    if (Target.hasUpperBoundFlag()) {
+      auto *UpperVal =
+          insertCall(Builder, GetUpperBoundFunction, WitnessVal, "upper_bound");
+      Witness->UpperBound = UpperVal;
+    }
+    if (Target.hasLowerBoundFlag()) {
+      auto *LowerVal =
+          insertCall(Builder, GetLowerBoundFunction, WitnessVal, "lower_bound");
+      Witness->LowerBound = LowerVal;
+    }
+
+    MaterializedBounds.emplace(
+        std::make_tuple(Target.getLocation(), Target.getInstrumentee(),
+                        kv.first),
+        std::make_pair(Witness->LowerBound, Witness->UpperBound));
+
+    ++SplayNumBounds;
   }
-
-  auto *WitnessVal = Witness->WitnessValue;
-
-  const auto key = std::pair<const Instruction *, Value *>(
-      Target.getLocation(), Target.getInstrumentee());
-  const auto &lookup = MaterializedBounds.find(key);
-  if (lookup != MaterializedBounds.end()) {
-    auto &map_value = lookup->second;
-    Value *lower = map_value.first;
-    Value *upper = map_value.second;
-    Witness->LowerBound = lower;
-    Witness->UpperBound = upper;
-    return;
-  }
-
-  IRBuilder<> Builder(Witness->getInsertionLocation());
-
-  if (Target.hasUpperBoundFlag()) {
-    auto *UpperVal =
-        insertCall(Builder, GetUpperBoundFunction, WitnessVal, "upper_bound");
-    Witness->UpperBound = UpperVal;
-  }
-  if (Target.hasLowerBoundFlag()) {
-    auto *LowerVal =
-        insertCall(Builder, GetLowerBoundFunction, WitnessVal, "lower_bound");
-    Witness->LowerBound = LowerVal;
-  }
-
-  MaterializedBounds.emplace(
-      std::make_pair(Target.getLocation(), Target.getInstrumentee()),
-      std::make_pair(Witness->LowerBound, Witness->UpperBound));
-
-  ++SplayNumBounds;
 }
 
 Value *SplayMechanism::getFailFunction(void) const { return FailFunction; }
@@ -445,19 +496,13 @@ void SplayMechanism::initialize(Module &M) {
   }
 }
 
-std::shared_ptr<Witness>
-SplayMechanism::insertWitnessPhi(ITarget &Target) const {
-  assert(Target.isValid());
-  auto *Phi = cast<PHINode>(Target.getInstrumentee());
+std::shared_ptr<Witness> SplayMechanism::getWitnessPhi(PHINode *Phi) const {
 
   IRBuilder<> builder(Phi);
-
-  // auto Name = Phi->getName() + "_witness";
   auto *NewPhi = builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
 
-  Target.setBoundWitness(std::make_shared<SplayWitness>(NewPhi, Phi));
   ++SplayNumWitnessPhis;
-  return Target.getBoundWitness();
+  return std::make_shared<SplayWitness>(NewPhi, Phi);
 }
 
 void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
@@ -470,12 +515,10 @@ void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
-std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
-    ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-    std::shared_ptr<Witness> &FalseWitness) const {
-  assert(Target.isValid());
-  auto *Sel = cast<SelectInst>(Target.getInstrumentee());
-
+std::shared_ptr<Witness>
+SplayMechanism::getWitnessSelect(SelectInst *Sel,
+                                 std::shared_ptr<Witness> &TrueWitness,
+                                 std::shared_ptr<Witness> &FalseWitness) const {
   IRBuilder<> builder(Sel);
 
   auto *TrueVal = cast<SplayWitness>(TrueWitness.get())->WitnessValue;
@@ -484,7 +527,6 @@ std::shared_ptr<Witness> SplayMechanism::insertWitnessSelect(
   // auto Name = Sel->getName() + "_witness";
   auto *NewSel = builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal);
 
-  Target.setBoundWitness(std::make_shared<SplayWitness>(NewSel, Sel));
   ++SplayNumWitnessSelects;
-  return Target.getBoundWitness();
+  return std::make_shared<SplayWitness>(NewSel, Sel);
 }

@@ -28,13 +28,34 @@ Value *NoopWitness::getUpperBound(void) const { return nullptr; }
 
 NoopWitness::NoopWitness(void) : Witness(WK_Noop) {}
 
-void NoopMechanism::insertWitness(ITarget &Target) const {
+void NoopMechanism::insertWitnesses(ITarget &Target) const {
   assert(Target.isValid());
-  Target.setBoundWitness(std::make_shared<NoopWitness>());
+  // There should be no targets without an instrumentee
+  assert(Target.hasInstrumentee());
+
+  auto instrumentee = Target.getInstrumentee();
+
+  if (!instrumentee->getType()->isAggregateType()) {
+    Target.setSingleBoundWitness(std::make_shared<NoopWitness>());
+    return;
+  }
+
+  // TODO see splay for additional changes
+
+  // The only aggregates that do not need a source are those that are constant
+  assert(isa<Constant>(instrumentee));
+  auto con = cast<Constant>(instrumentee);
+
+  auto indexToPtr =
+      InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
+  for (auto KV : indexToPtr) {
+    Target.setBoundWitness(std::make_shared<NoopWitness>(), KV.first);
+  }
 }
 
-void NoopMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
-  Target.setBoundWitness(std::shared_ptr<NoopWitness>(new NoopWitness()));
+std::shared_ptr<Witness> NoopMechanism::getRelocatedClone(const Witness &,
+                                                          Instruction *) const {
+  return std::make_shared<NoopWitness>();
 }
 
 void NoopMechanism::insertCheck(ITarget &Target) const {
@@ -75,7 +96,7 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
   ++NoopMechanismAnnotated;
 }
 
-void NoopMechanism::materializeBounds(ITarget &Target) {
+void NoopMechanism::materializeBounds(ITarget &) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
@@ -111,9 +132,9 @@ void NoopMechanism::initialize(Module &M) {
           .getCallee();
 }
 
-std::shared_ptr<Witness> NoopMechanism::insertWitnessPhi(ITarget &) const {
+std::shared_ptr<Witness> NoopMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
-  return std::shared_ptr<Witness>(nullptr);
+  return nullptr;
 }
 
 void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
@@ -123,8 +144,8 @@ void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
 }
 
 std::shared_ptr<Witness>
-NoopMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
-                                   std::shared_ptr<Witness> &) const {
+NoopMechanism::getWitnessSelect(SelectInst *, std::shared_ptr<Witness> &,
+                                std::shared_ptr<Witness> &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
-  return std::shared_ptr<Witness>(nullptr);
+  return nullptr;
 }

@@ -50,14 +50,35 @@ Value *RuntimeStatWitness::getUpperBound(void) const { return nullptr; }
 
 RuntimeStatWitness::RuntimeStatWitness(void) : Witness(WK_RuntimeStat) {}
 
-void RuntimeStatMechanism::insertWitness(ITarget &Target) const {
+void RuntimeStatMechanism::insertWitnesses(ITarget &Target) const {
   assert(Target.isValid());
-  Target.setBoundWitness(std::make_shared<RuntimeStatWitness>());
+  // There should be no targets without an instrumentee
+  assert(Target.hasInstrumentee());
+
+  auto instrumentee = Target.getInstrumentee();
+
+  if (!instrumentee->getType()->isAggregateType()) {
+    Target.setSingleBoundWitness(std::make_shared<RuntimeStatWitness>());
+
+    return;
+  }
+
+  // TODO see splay for additional changes
+
+  // The only aggregates that do not need a source are those that are constant
+  assert(isa<Constant>(instrumentee));
+  auto con = cast<Constant>(instrumentee);
+
+  auto indexToPtr =
+      InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
+  for (auto KV : indexToPtr) {
+    Target.setBoundWitness(std::make_shared<RuntimeStatWitness>(), KV.first);
+  }
 }
 
-void RuntimeStatMechanism::relocCloneWitness(Witness &, ITarget &Target) const {
-  Target.setBoundWitness(
-      std::shared_ptr<RuntimeStatWitness>(new RuntimeStatWitness()));
+std::shared_ptr<Witness>
+RuntimeStatMechanism::getRelocatedClone(const Witness &, Instruction *) const {
+  return std::make_shared<RuntimeStatWitness>();
 }
 
 void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
@@ -116,7 +137,7 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
              std::vector<Value *>{tableID, ConstantInt::get(SizeType, idx)});
 }
 
-void RuntimeStatMechanism::materializeBounds(ITarget &Target) {
+void RuntimeStatMechanism::materializeBounds(ITarget &) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
@@ -289,10 +310,9 @@ void RuntimeStatMechanism::initialize(Module &M) {
   Builder.CreateRetVoid();
 }
 
-std::shared_ptr<Witness>
-RuntimeStatMechanism::insertWitnessPhi(ITarget &) const {
+std::shared_ptr<Witness> RuntimeStatMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
-  return std::shared_ptr<Witness>(nullptr);
+  return nullptr;
 }
 
 void RuntimeStatMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
@@ -302,8 +322,8 @@ void RuntimeStatMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
 }
 
 std::shared_ptr<Witness>
-RuntimeStatMechanism::insertWitnessSelect(ITarget &, std::shared_ptr<Witness> &,
-                                          std::shared_ptr<Witness> &) const {
+RuntimeStatMechanism::getWitnessSelect(SelectInst *, std::shared_ptr<Witness> &,
+                                       std::shared_ptr<Witness> &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
-  return std::shared_ptr<Witness>(nullptr);
+  return nullptr;
 }

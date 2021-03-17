@@ -163,25 +163,47 @@ bool ITarget::requiresExplicitBounds() const {
   return false;
 }
 
-bool ITarget::hasBoundWitness() const {
+bool ITarget::hasBoundWitnesses() const {
   assert(isValid());
-  return boundWitness.get() != nullptr;
+  return !boundWitnesses.empty();
 }
 
-bool ITarget::needsNoBoundWitness() const { return false; }
+bool ITarget::needsNoBoundWitnesses() const { return false; }
 
-bool ITarget::hasWitnessIfNeeded() const {
-  return needsNoBoundWitness() || hasBoundWitness();
+bool ITarget::hasWitnessesIfNeeded() const {
+  return needsNoBoundWitnesses() || hasBoundWitnesses();
 }
 
-std::shared_ptr<Witness> ITarget::getBoundWitness() const {
+std::shared_ptr<Witness> ITarget::getSingleBoundWitness() const {
   assert(isValid());
-  assert(hasBoundWitness());
-  return boundWitness;
+  assert(boundWitnesses.size() == 1);
+  return boundWitnesses.at(0);
 }
 
-void ITarget::setBoundWitness(std::shared_ptr<Witness> BoundWitness) {
-  boundWitness = BoundWitness;
+std::shared_ptr<Witness> ITarget::getBoundWitness(unsigned index) const {
+  assert(isValid());
+  return boundWitnesses.at(index);
+}
+
+std::map<unsigned, std::shared_ptr<Witness>>
+ITarget::getBoundWitnesses() const {
+  assert(isValid());
+  return boundWitnesses;
+}
+
+void ITarget::setSingleBoundWitness(std::shared_ptr<Witness> boundWitness) {
+  assert(boundWitnesses.size() <= 1);
+  boundWitnesses[0] = boundWitness;
+}
+
+void ITarget::setBoundWitness(std::shared_ptr<Witness> boundWitness,
+                              unsigned index) {
+  boundWitnesses[index] = boundWitness;
+}
+
+void ITarget::setBoundWitnesses(
+    std::map<unsigned, std::shared_ptr<Witness>> bWitnesses) {
+  boundWitnesses = bWitnesses;
 }
 
 bool ITarget::isValid() const { return not invalidated; }
@@ -192,8 +214,8 @@ ITarget::ITarget(ITargetKind k, Value *instrumentee, Instruction *location,
                  bool checkUpper, bool checkLower, bool checkTemporal)
     : kind(k), instrumentee(instrumentee), location(location),
       checkUpperBoundFlag(checkUpper), checkLowerBoundFlag(checkLower),
-      checkTemporalFlag(checkTemporal), invalidated(false),
-      boundWitness(nullptr) {}
+      checkTemporalFlag(checkTemporal), invalidated(false), boundWitnesses({}) {
+}
 
 void ITarget::printLocation(raw_ostream &Stream) const {
   auto *L = this->getLocation();
@@ -253,7 +275,7 @@ raw_ostream &meminstrument::operator<<(raw_ostream &Stream, const ITarget &IT) {
   }
   Stream << " at ";
   IT.printLocation(Stream);
-  if (IT.hasBoundWitness()) {
+  if (IT.hasBoundWitnesses()) {
     Stream << " with witness";
   }
   Stream << '>';
@@ -296,7 +318,7 @@ CallCheckIT::CallCheckIT(Value *instrumentee, CallBase *call)
               /*checkUpper*/ true, /*checkLower*/ true,
               /*checkTemporal*/ false) {}
 
-llvm::CallBase *CallCheckIT::getCall() const {
+CallBase *CallCheckIT::getCall() const {
   assert(isValid());
   return cast<CallBase>(location);
 }
@@ -429,7 +451,7 @@ bool ArgInvariantIT::classof(const ITarget *T) {
 CallInvariantIT::CallInvariantIT(CallBase *call)
     : InvariantIT(ITargetKind::ITK_CallInvariant, nullptr, call) {}
 
-bool CallInvariantIT::needsNoBoundWitness() const { return true; }
+bool CallInvariantIT::needsNoBoundWitnesses() const { return true; }
 
 CallBase *CallInvariantIT::getCall() const {
   assert(isValid());

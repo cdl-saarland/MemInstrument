@@ -60,6 +60,11 @@ protected:
   /// Iff a pointer is returned from a function, create an
   /// invariant target for the returned pointer.
   void insertInvariantTargetReturn(ITargetVector &Dest, llvm::ReturnInst *);
+
+  /// Iff a pointer is inserted into an aggregate, create an
+  /// invariant target for the stored value.
+  void insertInvariantTargetInsertVal(ITargetVector &,
+                                      llvm::InsertValueInst *) const;
 };
 
 } // namespace meminstrument

@@ -158,20 +158,24 @@ public:
   virtual bool requiresExplicitBounds() const;
 
   /// Indicator whether a bound witness is available.
-  bool hasBoundWitness() const;
+  bool hasBoundWitnesses() const;
 
   /// Indicator whether a bound witness is required for this target.
-  virtual bool needsNoBoundWitness() const;
+  virtual bool needsNoBoundWitnesses() const;
 
   /// Indicator whether a bound witness is available if required.
-  bool hasWitnessIfNeeded() const;
+  bool hasWitnessesIfNeeded() const;
 
-  /// Returns the bound witness of the target. Make sure to check that it has a
-  /// bound witness before requesting it.
-  std::shared_ptr<Witness> getBoundWitness() const;
+  /// Returns the bound witness(es) of the target. Make sure to check that it
+  /// has a bound witness before requesting it.
+  std::shared_ptr<Witness> getSingleBoundWitness() const;
+  std::shared_ptr<Witness> getBoundWitness(unsigned index) const;
+  std::map<unsigned, std::shared_ptr<Witness>> getBoundWitnesses() const;
 
-  /// Add a bound witness to the target.
-  void setBoundWitness(std::shared_ptr<Witness> BoundWitness);
+  /// Adds (a) bound witness(es) to the target.
+  void setSingleBoundWitness(std::shared_ptr<Witness>);
+  void setBoundWitness(std::shared_ptr<Witness>, unsigned index);
+  void setBoundWitnesses(std::map<unsigned, std::shared_ptr<Witness>>);
 
   /// Indicator whether the ITarget has been invalidated and should therefore
   /// not be realized.
@@ -213,7 +217,13 @@ protected:
 
   bool invalidated;
 
-  std::shared_ptr<Witness> boundWitness;
+  /// List of bound witnesses for this target.
+  /// This will only contain more than one element for aggregate type. These can
+  /// contain several pointers and therefore require a witness for each of them.
+  /// The individual witnesses will be inserted in an arbitrary order, the index
+  /// into the map describes to which value in the aggregate the witness
+  /// belongs.
+  std::map<unsigned, std::shared_ptr<Witness>> boundWitnesses;
 
   virtual void dump(llvm::raw_ostream &) const = 0;
 
@@ -319,7 +329,7 @@ class CallInvariantIT : public InvariantIT {
 public:
   CallInvariantIT(llvm::CallBase *);
 
-  bool needsNoBoundWitness() const override;
+  bool needsNoBoundWitnesses() const override;
 
   llvm::CallBase *getCall() const;
 

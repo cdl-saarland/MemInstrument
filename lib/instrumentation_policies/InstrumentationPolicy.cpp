@@ -20,7 +20,9 @@ using namespace llvm;
 
 namespace {
 STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
-}
+STATISTIC(InsertAggregateIntoAggregate,
+          "modules discarded because of sub-aggregate inserts");
+} // namespace
 
 InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg)
     : globalConfig(cfg) {}
@@ -95,4 +97,25 @@ void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
   }
 
   Dest.push_back(ITargetBuilder::createValInvariantTarget(Operand, Ret));
+}
+
+void InstrumentationPolicy::insertInvariantTargetInsertVal(
+    ITargetVector &dest, InsertValueInst *iVal) const {
+
+  auto *iValOp = iVal->getInsertedValueOperand();
+
+  // If the inserted value is an aggregate, we are operating on a complex
+  // aggregate, skip for now
+  if (iValOp->getType()->isAggregateType()) {
+    ++InsertAggregateIntoAggregate;
+    return;
+  }
+
+  // Non-pointer inserts do not matter
+  if (!iValOp->getType()->isPointerTy()) {
+    return;
+  }
+
+  auto newTar = ITargetBuilder::createValInvariantTarget(iValOp, iVal);
+  dest.push_back(newTar);
 }

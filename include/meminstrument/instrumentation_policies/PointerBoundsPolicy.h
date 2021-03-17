@@ -29,7 +29,21 @@ public:
   void classifyTargets(std::vector<ITargetPtr> &, llvm::Instruction *) override;
 
 private:
+  /// Add all targets required upon a call.
   void addCallTargets(std::vector<ITargetPtr> &, llvm::CallInst *);
+
+  /// Insert an invariant target if the current instruction returns or stores an
+  /// aggregate type.
+  void insertInvariantTargetAggregate(std::vector<ITargetPtr> &,
+                                      llvm::Instruction *);
+
+  /// Check if the given type is not a nested aggregate, e.g. a struct
+  /// containing struct members.
+  bool isNested(const llvm::Type *Aggregate) const;
+
+  /// Checks if the given aggregate type contains pointer values.
+  /// Does not work for nested aggregates.
+  bool containsPointer(const llvm::Type *Aggregate) const;
 };
 
 } // namespace meminstrument

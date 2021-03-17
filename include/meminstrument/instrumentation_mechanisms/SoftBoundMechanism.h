@@ -30,20 +30,22 @@ public:
 
   virtual void initialize(llvm::Module &) override;
 
-  virtual void insertWitness(ITarget &) const override;
+  virtual void insertWitnesses(ITarget &) const override;
 
-  virtual void relocCloneWitness(Witness &, ITarget &) const override;
+  virtual auto getRelocatedClone(const Witness &,
+                                 llvm::Instruction *location) const
+      -> std::shared_ptr<Witness> override;
 
-  virtual auto insertWitnessPhi(ITarget &) const
+  virtual auto getWitnessPhi(llvm::PHINode *) const
       -> std::shared_ptr<Witness> override;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                        std::shared_ptr<Witness> &Incoming,
                                        llvm::BasicBlock *InBB) const override;
 
-  virtual auto insertWitnessSelect(ITarget &Target,
-                                   std::shared_ptr<Witness> &TrueWitness,
-                                   std::shared_ptr<Witness> &FalseWitness) const
+  virtual auto getWitnessSelect(llvm::SelectInst *,
+                                std::shared_ptr<Witness> &TrueWitness,
+                                std::shared_ptr<Witness> &FalseWitness) const
       -> std::shared_ptr<Witness> override;
 
   virtual void materializeBounds(ITarget &) override;
@@ -200,24 +202,29 @@ private:
   /// The shadow stack stores bound information for pointers handed over to
   /// functions and pointers returned from functions.
   /// The location on the stack is build up follows:
-  ///   retptr, arg0 bounds, arg1 boundes, ..., argn bounds
+  ///   retptr0 bounds, retptr1 bounds, ..., retptrn bounds,
+  ///   arg0 bounds, arg1 bounds, ..., argn bounds
   /// As there is nothing to put on the stack for non-pointer values, the
-  /// location on the stack is not the argument number (+1), but rather the
-  /// number of pointers before the requested argument bounds.
-  /// To avoid flaws in the shadow stack location computation, this functions
-  /// provides a consistent look up of the correct index.
+  /// location on the stack is not the argument number (+ number of returned
+  /// pointers), but rather the number of pointers before the requested argument
+  /// bounds. To avoid flaws in the shadow stack location computation, these
+  /// functions provides a consistent look up of the correct index.
   ///
-  /// The first value describes which argument/returned pointer should be looked
-  /// up, the second one specifies in which call/function to search for the
-  /// argument. The second argument is not needed for returned pointer values,
-  /// as they can be identified as call/return.
-  auto computeShadowStackLocation(const llvm::Instruction *) const -> unsigned;
-  auto computeShadowStackLocation(const llvm::Argument *,
-                                  const llvm::Function *usedIn) const
+  /// The first version computes the number of the argument in the function
+  /// signature.
+  /// The other version computes the index in the given call for argument number
+  /// argNum.
+  auto computeShadowStackLocation(const llvm::Argument *) const -> unsigned;
+  auto computeShadowStackLocation(const llvm::CallBase *, unsigned argNum) const
       -> unsigned;
-  auto computeShadowStackLocation(const llvm::Value *,
-                                  const llvm::CallBase *usedIn,
-                                  unsigned argNum) const -> unsigned;
+
+  /// Determine how many pointers can be stored in the given type.
+  /// Is only accurate for non-nested aggregates.
+  auto determineNumberOfPointers(const llvm::Type *) const -> unsigned;
+
+  /// Compute the set of indices of pointer types for the given return/callbase.
+  auto computeIndices(const llvm::Instruction *) const
+      -> llvm::SmallVector<unsigned, 1>;
 
   /// Computes how many elements the shadow stack needs to be capable to store
   /// for a given call.

@@ -67,12 +67,6 @@ STATISTIC(
 STATISTIC(InAllocaArg,
           "[setup error] Number of inalloca arguments encountered");
 
-// In our setup extract value arguments are weird because the address of their
-// elements is unclear. Disallow them for now. Find more details in
-// `checkModule`.
-STATISTIC(ExtractValuePointer,
-          "[setup error] Number of extract value instructions that "
-          "extract pointer values from an aggregate");
 STATISTIC(
     ExceptionHandlingInst,
     "[setup error] Number of exception handling instructions encountered");
@@ -168,7 +162,7 @@ void SoftBoundMechanism::initialize(Module &module) {
   }
 }
 
-void SoftBoundMechanism::insertWitness(ITarget &target) const {
+void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
 
   LLVM_DEBUG(dbgs() << "Insert witness for: " << target << "\n";);
 
@@ -185,14 +179,31 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
     unsigned locIndex;
     // Look up the function argument shadow stack index
     if (auto arg = dyn_cast<Argument>(instrumentee)) {
-      auto fun = arg->getParent();
-      locIndex = computeShadowStackLocation(arg, fun);
+      locIndex = computeShadowStackLocation(arg);
+      std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
     }
     // Look up the shadow stack index for the returned pointer bounds
     if (auto cb = dyn_cast<CallBase>(instrumentee)) {
-      locIndex = computeShadowStackLocation(cb);
+
+      // Compute the locations of pointers with bounds in the witness
+      auto locs = computeIndices(cb);
+      unsigned shadowStackIndex = 0;
+      for (auto locIndex : locs) {
+        // Insert the loads of bounds
+        std::tie(base, bound) =
+            insertShadowStackLoad(builder, shadowStackIndex);
+        LLVM_DEBUG({
+          dbgs() << "Created bounds: "
+                 << "\n\tBase: " << *base << "\n\tBound: " << *bound << "\n";
+        });
+        // Set the loaded bounds as witness for this pointer
+        target.setBoundWitness(
+            std::make_shared<SoftBoundWitness>(base, bound, instrumentee),
+            locIndex);
+        shadowStackIndex++;
+      }
+      return;
     }
-    std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
   }
 
   if (AllocaInst *alloc = dyn_cast<AllocaInst>(instrumentee)) {
@@ -210,6 +221,20 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
   }
 
   if (auto constant = dyn_cast<Constant>(instrumentee)) {
+
+    // If we have a constant initializer for an aggregate, witnesses for every
+    // element have to be generated.
+    if (constant->getType()->isAggregateType()) {
+      auto indexToPtr =
+          InstrumentationMechanism::getAggregatePointerIndicesAndValues(
+              constant);
+      for (auto KV : indexToPtr) {
+        std::tie(base, bound) = getBoundsForWitness(cast<Constant>(KV.second));
+        auto wi = std::make_shared<SoftBoundWitness>(base, bound, KV.second);
+        target.setBoundWitness(wi, KV.first);
+      }
+      return;
+    }
     std::tie(base, bound) = getBoundsForWitness(constant);
   }
 
@@ -234,19 +259,19 @@ void SoftBoundMechanism::insertWitness(ITarget &target) const {
            << "\n\tBase: " << *base << "\n\tBound: " << *bound << "\n";
   });
 
-  target.setBoundWitness(
+  target.setSingleBoundWitness(
       std::make_shared<SoftBoundWitness>(base, bound, instrumentee));
 }
 
-void SoftBoundMechanism::relocCloneWitness(Witness &toReloc,
-                                           ITarget &target) const {
-  target.setBoundWitness(std::make_shared<SoftBoundWitness>(
-      toReloc.getLowerBound(), toReloc.getUpperBound(), target.getLocation()));
+auto SoftBoundMechanism::getRelocatedClone(const Witness &w,
+                                           Instruction *location) const
+    -> std::shared_ptr<Witness> {
+  return std::make_shared<SoftBoundWitness>(w.getLowerBound(),
+                                            w.getUpperBound(), location);
 }
 
-auto SoftBoundMechanism::insertWitnessPhi(ITarget &target) const
+auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const
     -> std::shared_ptr<Witness> {
-  auto *phi = cast<PHINode>(target.getInstrumentee());
 
   IRBuilder<> builder(phi);
 
@@ -257,9 +282,7 @@ auto SoftBoundMechanism::insertWitnessPhi(ITarget &target) const
       builder.CreatePHI(handles.boundTy, phi->getNumIncomingValues());
   boundPhi->setName("bound.phi");
 
-  target.setBoundWitness(
-      std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi));
-  return target.getBoundWitness();
+  return std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi);
 }
 
 void SoftBoundMechanism::addIncomingWitnessToPhi(
@@ -273,11 +296,9 @@ void SoftBoundMechanism::addIncomingWitnessToPhi(
   upperPhi->addIncoming(incoming->getUpperBound(), inBB);
 }
 
-auto SoftBoundMechanism::insertWitnessSelect(
-    ITarget &target, std::shared_ptr<Witness> &trueWitness,
+auto SoftBoundMechanism::getWitnessSelect(
+    SelectInst *sel, std::shared_ptr<Witness> &trueWitness,
     std::shared_ptr<Witness> &falseWitness) const -> std::shared_ptr<Witness> {
-
-  auto *sel = cast<SelectInst>(target.getInstrumentee());
   auto *cond = sel->getCondition();
 
   IRBuilder<> builder(sel);
@@ -288,9 +309,7 @@ auto SoftBoundMechanism::insertWitnessSelect(
                                         falseWitness->getUpperBound());
   upperSel->setName("bound.sel");
 
-  target.setBoundWitness(
-      std::make_shared<SoftBoundWitness>(lowerSel, upperSel, sel));
-  return target.getBoundWitness();
+  return std::make_shared<SoftBoundWitness>(lowerSel, upperSel, sel);
 }
 
 void SoftBoundMechanism::materializeBounds(ITarget &) {
@@ -773,6 +792,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 }
 
 void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
+
   if (auto cInvIT = dyn_cast<CallInvariantIT>(&target)) {
     handleCallInvariant(*cInvIT);
     return;
@@ -780,13 +800,17 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
   Value *instrumentee = target.getInstrumentee();
   Instruction *loc = target.getLocation();
-  const auto bw = target.getBoundWitness();
 
   IRBuilder<> builder(loc);
 
   // Stores of pointer values to memory require a metadata store.
   if (auto store = dyn_cast<StoreInst>(loc)) {
     assert(instrumentee->getType()->isPointerTy());
+    // TODO This triggers if an aggregate is stored to memory
+    // This is not too tricky to implement, but we had no use case for this so
+    // far.
+    assert(target.getBoundWitnesses().size() == 1);
+    const auto bw = target.getSingleBoundWitness();
     if (instrumentee->getType() != handles.voidPtrTy) {
       instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
     }
@@ -799,15 +823,20 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     return;
   }
 
-  auto lb = target.getBoundWitness()->getLowerBound();
-  auto ub = target.getBoundWitness()->getUpperBound();
+  if (isa<InsertValueInst>(loc)) {
+    DEBUG_WITH_TYPE("softbound-genchecks", dbgs() << "Nothing to do.\n";);
+    return;
+  }
 
   // Upon a call, the base and bound for all pointer arguments need to be stored
   // to the shadow stack.
   if (auto argIT = dyn_cast<ArgInvariantIT>(&target)) {
-    auto locIndex = computeShadowStackLocation(instrumentee, argIT->getCall(),
-                                               argIT->getArgNum());
-    insertShadowStackStore(builder, lb, ub, locIndex);
+    auto locIndex =
+        computeShadowStackLocation(argIT->getCall(), argIT->getArgNum());
+
+    const auto bw = target.getSingleBoundWitness();
+    insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
+                           locIndex);
     DEBUG_WITH_TYPE(
         "softbound-genchecks",
         dbgs() << "Passed pointer information stored to shadow stack.\n";);
@@ -816,8 +845,15 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
   // If a pointer is returned, its bounds need to be stored to the shadow stack.
   if (auto retInst = dyn_cast<ReturnInst>(loc)) {
-    auto locIndex = computeShadowStackLocation(retInst);
-    insertShadowStackStore(builder, lb, ub, locIndex);
+    auto locs = computeIndices(retInst);
+    unsigned shadowStackIndex = 0;
+    auto bWitnesses = target.getBoundWitnesses();
+    for (auto locIndex : locs) {
+      auto bw = bWitnesses.at(locIndex);
+      insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
+                             shadowStackIndex);
+      shadowStackIndex++;
+    }
     DEBUG_WITH_TYPE(
         "softbound-genchecks",
         dbgs() << "Returned pointer information stored to shadow stack.\n";);
@@ -1222,24 +1258,15 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
                     << "\n\tBound store: " << *callStoreBound << "\n";);
 }
 
-auto SoftBoundMechanism::computeShadowStackLocation(
-    const Instruction *inst) const -> unsigned {
-  assert(isa<CallBase>(inst) || isa<ReturnInst>(inst));
-  return 0;
-}
-
-auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg,
-                                                    const Function *fun) const
+auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg) const
     -> unsigned {
   assert(arg->getType()->isPointerTy());
 
   unsigned shadowStackLoc = 0;
 
-  // The returned pointer will have location 0, skip it in case something else
-  // is requested
-  if (fun->getReturnType()->isPointerTy()) {
-    shadowStackLoc++;
-  }
+  // Skip shadow stack locations of returned values
+  auto fun = arg->getParent();
+  shadowStackLoc += determineNumberOfPointers(fun->getReturnType());
 
   for (const auto &funArg : fun->args()) {
 
@@ -1263,16 +1290,14 @@ auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg,
   llvm_unreachable(
       "Argument not found, shadow stack location cannot be determined");
 }
-auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
-                                                    const CallBase *call,
+
+auto SoftBoundMechanism::computeShadowStackLocation(const CallBase *call,
                                                     unsigned argNum) const
     -> unsigned {
   unsigned shadowStackLoc = 0;
-  // The returned pointer will have location 0, skip it in case something else
-  // is requested
-  if (call->getType()->isPointerTy()) {
-    shadowStackLoc++;
-  }
+
+  // Skip shadow stack locations of returned values
+  shadowStackLoc += determineNumberOfPointers(call->getType());
 
   for (const auto &use : call->args()) {
 
@@ -1288,7 +1313,6 @@ auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
     }
 
     if (argNum == use.getOperandNo()) {
-      assert(val == use.get());
       return shadowStackLoc;
     }
     shadowStackLoc++;
@@ -1298,13 +1322,84 @@ auto SoftBoundMechanism::computeShadowStackLocation(const Value *val,
       "Argument not found, shadow stack location cannot be determined");
 }
 
+auto SoftBoundMechanism::determineNumberOfPointers(const Type *ty) const
+    -> unsigned {
+
+  if (ty->isPointerTy()) {
+    return 1;
+  }
+
+  if (ty->isAggregateType()) {
+    unsigned numPtrs = 0;
+
+    if (const auto *sTy = dyn_cast<StructType>(ty)) {
+      for (const auto &elem : sTy->elements()) {
+        if (elem->isPointerTy()) {
+          numPtrs++;
+        }
+      }
+    }
+
+    if (const auto *aTy = dyn_cast<ArrayType>(ty)) {
+      numPtrs += aTy->getNumElements();
+    }
+
+    return numPtrs;
+  }
+
+  return 0;
+}
+
+auto SoftBoundMechanism::computeIndices(const Instruction *inst) const
+    -> SmallVector<unsigned, 1> {
+  assert(isa<CallBase>(inst) || isa<ReturnInst>(inst));
+
+  const Type *ty = nullptr;
+  if (auto cb = dyn_cast<CallBase>(inst)) {
+    ty = cb->getType();
+  }
+
+  if (auto ri = dyn_cast<ReturnInst>(inst)) {
+    ty = ri->getReturnValue()->getType();
+  }
+
+  SmallVector<unsigned, 1> indices;
+  if (!ty->isAggregateType()) {
+    assert(ty->isPointerTy());
+    indices.push_back(0);
+    return indices;
+  }
+
+  unsigned index = 0;
+  if (const auto *sTy = dyn_cast<StructType>(ty)) {
+    for (const auto &elem : sTy->elements()) {
+      if (elem->isPointerTy()) {
+        indices.push_back(index);
+      }
+      index++;
+    }
+  }
+
+  if (const auto *aTy = dyn_cast<ArrayType>(ty)) {
+    assert(aTy->getElementType()->isPointerTy());
+    int num = aTy->getNumElements();
+    for (int i = 0; i < num; i++) {
+      indices.push_back(i);
+    }
+  }
+
+  assert(indices.size() == determineNumberOfPointers(ty));
+  assert(indices.size() > 0);
+  return indices;
+}
+
 auto SoftBoundMechanism::computeSizeShadowStack(const CallBase *call) const
     -> int {
 
   int size = 0;
-  if (call->getType()->isPointerTy()) {
-    size++;
-  }
+
+  // Determine the number of returned pointer values
+  size += determineNumberOfPointers(call->getType());
 
   // Count every real pointer argument
   for (const auto &use : call->args()) {
@@ -1351,7 +1446,7 @@ void SoftBoundMechanism::insertSpatialDereferenceCheck(
 
   assert(size);
 
-  const auto bw = target.getBoundWitness();
+  const auto bw = target.getSingleBoundWitness();
   SmallVector<Value *, 4> args = {bw->getLowerBound(), bw->getUpperBound(),
                                   instrumentee, size};
 
@@ -1376,7 +1471,7 @@ void SoftBoundMechanism::insertSpatialCallCheck(
     instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
   }
 
-  const auto bw = target.getBoundWitness();
+  const auto bw = target.getSingleBoundWitness();
   SmallVector<Value *, 3> args = {bw->getLowerBound(), bw->getUpperBound(),
                                   instrumentee};
 
@@ -1491,23 +1586,6 @@ void SoftBoundMechanism::checkModule(Module &module) {
 
     for (const auto &bb : fun) {
       for (const Instruction &inst : bb) {
-
-        if (inst.getType()->isPointerTy() && isa<ExtractValueInst>(inst)) {
-          // Extract value instructions work on aggregate types and return an
-          // element of the aggregate. The problem with these aggregates is
-          // that our metadata propagation has the assumption that one pointer
-          // that is stored to memory has one unit of metadata, which is not
-          // true for aggregate types. If an aggregate has multiple pointer
-          // elements, we would need to associate all of them with the one
-          // pointer value of the aggregate (the sub-fields of an aggregate do
-          // not have an address).
-          //
-          // Side note: The shadow stack could be adapted to this easily by
-          // reserving one slot for each pointer argument of an aggregate type.
-          ++ExtractValuePointer;
-          globalConfig.noteError();
-          return;
-        }
 
         if (isUnsupportedInstruction(inst.getOpcode())) {
           globalConfig.noteError();

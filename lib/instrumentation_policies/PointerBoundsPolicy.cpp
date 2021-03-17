@@ -16,6 +16,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_policies/PointerBoundsPolicy.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/ADT/Statistic.h"
 
@@ -27,6 +28,8 @@
 
 using namespace llvm;
 using namespace meminstrument;
+
+STATISTIC(NumComplexAggregateTypes, "Number of complex aggregates encountered");
 
 //===----------------------------------------------------------------------===//
 //                   Implementation of PointerBoundsPolicy
@@ -47,14 +50,20 @@ void PointerBoundsPolicy::classifyTargets(std::vector<ITargetPtr> &dest,
     addCallTargets(dest, cast<CallInst>(loc));
     break;
   case Instruction::Ret:
+    insertInvariantTargetAggregate(dest, loc);
     insertInvariantTargetReturn(dest, cast<ReturnInst>(loc));
     break;
   case Instruction::Store:
+    insertInvariantTargetAggregate(dest, loc);
     insertInvariantTargetStore(dest, cast<StoreInst>(loc));
     // falls through
   case Instruction::Load:
     insertCheckTargetsLoadStore(dest, loc);
     break;
+  case Instruction::InsertValue: {
+    insertInvariantTargetInsertVal(dest, cast<InsertValueInst>(loc));
+    break;
+  }
   default:
     break;
   }
@@ -106,4 +115,85 @@ void PointerBoundsPolicy::addCallTargets(std::vector<ITargetPtr> &dest,
     dest.push_back(ITargetBuilder::createArgInvariantTarget(
         arg, call, arg.getOperandNo()));
   }
+}
+
+void PointerBoundsPolicy::insertInvariantTargetAggregate(
+    std::vector<ITargetPtr> &vec, Instruction *inst) {
+  assert(isa<ReturnInst>(inst) || isa<StoreInst>(inst));
+  // Return and store (note error upon store)
+  Value *agg = nullptr;
+  if (auto *ret = dyn_cast<ReturnInst>(inst)) {
+    agg = ret->getReturnValue();
+    // Nothing is returned, so no invariant is required
+    if (!agg) {
+      return;
+    }
+  }
+
+  if (auto *store = dyn_cast<StoreInst>(inst)) {
+    agg = store->getValueOperand();
+  }
+  assert(agg);
+
+  // Nothing to do if this isn't an aggregate
+  if (!agg->getType()->isAggregateType()) {
+    return;
+  }
+
+  // No handling for nested aggregates implemented yet
+  if (isNested(agg->getType())) {
+    globalConfig.noteError();
+    return;
+  }
+
+  // An invariant target is only required if the aggregate contains at least
+  // one pointer
+  if (!containsPointer(agg->getType())) {
+    return;
+  }
+  vec.push_back(ITargetBuilder::createValInvariantTarget(agg, inst));
+}
+
+bool PointerBoundsPolicy::isNested(const Type *Aggregate) const {
+  assert(Aggregate->isAggregateType());
+
+  if (const auto *arTy = dyn_cast<ArrayType>(Aggregate)) {
+    if (arTy->getElementType()->isPointerTy()) {
+      ++NumComplexAggregateTypes;
+      return true;
+    }
+    return false;
+  }
+
+  if (const auto *strTy = dyn_cast<StructType>(Aggregate)) {
+    if (std::any_of(strTy->element_begin(), strTy->element_end(),
+                    [](const Type *t) { return t->isAggregateType(); })) {
+      ++NumComplexAggregateTypes;
+      return true;
+    }
+    return false;
+  }
+
+  llvm_unreachable(
+      "Aggregate type that is neither array nor struct encountered");
+}
+
+bool PointerBoundsPolicy::containsPointer(const Type *Aggregate) const {
+  assert(Aggregate->isAggregateType());
+  // It seems that nested aggregates are converted to function arguments early
+  // on and do not show up as return types. Bail on complex aggregates for
+  // now.
+  assert(!isNested(Aggregate));
+
+  // Check if the aggregate contains pointer values
+  bool containsPtr = false;
+  if (const auto *strTy = dyn_cast<StructType>(Aggregate)) {
+    containsPtr = std::any_of(strTy->element_begin(), strTy->element_end(),
+                              [](Type *t) { return t->isPointerTy(); });
+  }
+  if (const auto *arTy = dyn_cast<ArrayType>(Aggregate)) {
+    containsPtr = arTy->getElementType()->isPointerTy();
+  }
+
+  return containsPtr;
 }

@@ -44,9 +44,11 @@ class LowfatMechanism : public InstrumentationMechanism {
 public:
   LowfatMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
 
-  virtual void insertWitness(ITarget &Target) const override;
+  virtual void insertWitnesses(ITarget &Target) const override;
 
-  virtual void relocCloneWitness(Witness &W, ITarget &Target) const override;
+  virtual std::shared_ptr<Witness>
+  getRelocatedClone(const Witness &,
+                    llvm::Instruction *location) const override;
 
   virtual void insertCheck(ITarget &Target) const override;
 
@@ -57,15 +59,14 @@ public:
   virtual llvm::Value *getVerboseFailFunction(void) const override;
 
   virtual std::shared_ptr<Witness>
-  insertWitnessPhi(ITarget &Target) const override;
+  getWitnessPhi(llvm::PHINode *) const override;
 
   virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
                                        std::shared_ptr<Witness> &Incoming,
                                        llvm::BasicBlock *InBB) const override;
-
   virtual std::shared_ptr<Witness>
-  insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-                      std::shared_ptr<Witness> &FalseWitness) const override;
+  getWitnessSelect(llvm::SelectInst *, std::shared_ptr<Witness> &TrueWitness,
+                   std::shared_ptr<Witness> &FalseWitness) const override;
 
   virtual void initialize(llvm::Module &M) override;
 

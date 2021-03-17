@@ -112,7 +112,6 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::Alloca:
     case Instruction::Call:
     case Instruction::LandingPad:
-    case Instruction::ExtractValue:
     case Instruction::Load:
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
@@ -174,6 +173,21 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       return;
     }
 
+    case Instruction::ExtractValue: {
+      auto *eVal = cast<ExtractValueInst>(Instrumentee);
+      requireRecursively(Node, eVal->getAggregateOperand(), eVal);
+      return;
+    }
+
+    case Instruction::InsertValue: {
+      auto *iVal = cast<InsertValueInst>(Instrumentee);
+      requireRecursively(Node, iVal->getAggregateOperand(), iVal);
+      if (iVal->getInsertedValueOperand()->getType()->isPointerTy()) {
+        requireRecursively(Node, iVal->getInsertedValueOperand(), iVal);
+      }
+      return;
+    }
+
     case Instruction::ExtractElement:
     case Instruction::InsertElement:
     case Instruction::ShuffleVector:
@@ -202,12 +216,25 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   }
   assert(EntryLoc != nullptr);
 
-  if (isa<Argument>(Target->getInstrumentee())) {
-    requireSource(Node, Target->getInstrumentee(), EntryLoc);
+  auto *toInstrument = Target->getInstrumentee();
+
+  if (isa<Argument>(toInstrument)) {
+    requireSource(Node, toInstrument, EntryLoc);
     return;
   }
 
-  if (auto *C = dyn_cast<Constant>(Target->getInstrumentee())) {
+  if (auto *C = dyn_cast<Constant>(toInstrument)) {
+
+    if (C->getType()->isAggregateType()) {
+      requireSource(Node, toInstrument, Target->getLocation());
+      return;
+    }
+
+    if (isa<UndefValue>(toInstrument)) {
+      requireSource(Node, toInstrument, Target->getLocation());
+      return;
+    }
+
     std::vector<Value *> Pointers;
     getPointerOperands(Pointers, C);
     for (auto *V : Pointers) {
@@ -222,7 +249,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
 
   ++NumUnsupportedValOps;
   LLVM_DEBUG(dbgs() << "Unsupported value operand:\n"
-                    << *Target->getInstrumentee() << "\n\n";);
+                    << *toInstrument << "\n\n";);
   globalConfig.noteError();
   return;
 }
@@ -231,12 +258,13 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
                                         WitnessGraphNode *Node) const {
 
   auto &Target = Node->Target;
-  if (Target->hasBoundWitness()) {
+
+  if (Target->hasBoundWitnesses()) {
     // We already handled this node.
     return;
   }
 
-  if (Target->needsNoBoundWitness()) {
+  if (Target->needsNoBoundWitnesses()) {
     // No witness required.
     return;
   }
@@ -244,7 +272,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   if (Node->getRequiredNodes().size() == 0) {
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
-    IM.insertWitness(*(Target));
+    IM.insertWitnesses(*(Target));
     return;
   }
 
@@ -252,10 +280,29 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     // We just use the witness of the single requirement, nothing to combine.
     auto *Requirement = Node->getRequiredNodes()[0];
     createWitness(IM, Requirement);
+    auto witnesses = Requirement->Target->getBoundWitnesses();
+    // Extract value instructions shrink the witnesses from a vector to a single
+    // witness
+    if (Target->hasInstrumentee()) {
+      auto instrumentee = Target->getInstrumentee();
+      if (auto eValInst = dyn_cast<ExtractValueInst>(instrumentee)) {
+        std::map<unsigned, std::shared_ptr<Witness>> singleWit;
+        auto indices = eValInst->getIndices();
+        assert(indices.size() == 1);
+        singleWit[0] = witnesses[indices[0]];
+        witnesses = singleWit;
+      }
+    }
+
     if (ShareBoundsOpt) {
-      Target->setBoundWitness(Requirement->Target->getBoundWitness());
+      Target->setBoundWitnesses(witnesses);
     } else {
-      IM.relocCloneWitness(*Requirement->Target->getBoundWitness(), *Target);
+      std::map<unsigned, std::shared_ptr<Witness>> newWitnesses;
+      for (auto &KV : witnesses) {
+        auto newW = IM.getRelocatedClone(*KV.second, Target->getLocation());
+        newWitnesses[KV.first] = newW;
+      }
+      Target->setBoundWitnesses(newWitnesses);
     }
     return;
   }
@@ -264,27 +311,76 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
   Instruction *Instrumentee = dyn_cast<Instruction>(Target->getInstrumentee());
   assert(Instrumentee);
 
+  if (InsertValueInst *iValInst = dyn_cast<InsertValueInst>(Instrumentee)) {
+    assert(Node->getRequiredNodes().size() == 2);
+
+    auto &reqNodes = Node->getRequiredNodes();
+    for (auto *reqNode : reqNodes) {
+      createWitness(IM, reqNode);
+    }
+
+    auto valOp = iValInst->getInsertedValueOperand();
+    auto targetOne = reqNodes[0]->Target;
+    auto targetTwo = reqNodes[1]->Target;
+
+    // One of the two targets has to provide the bounds for the inserted value,
+    // determine which one
+    ITargetPtr valOpTarget =
+        targetOne->getInstrumentee() == valOp ? targetOne : targetTwo;
+    ITargetPtr aggrTarget =
+        targetOne->getInstrumentee() == valOp ? targetTwo : targetOne;
+
+    assert(valOpTarget->getInstrumentee() == valOp);
+
+    // Consider only simple aggregates
+    auto indices = iValInst->getIndices();
+    assert(indices.size() == 1);
+    auto index = indices[0];
+
+    // Request all bounds of values in the aggregate known so far
+    auto previousWitnesses = aggrTarget->getBoundWitnesses();
+
+    // Update the bound witness for the value stored to the aggregate with this
+    // instruction and store it to the current target.
+    previousWitnesses[index] = valOpTarget->getSingleBoundWitness();
+    Target->setBoundWitnesses(previousWitnesses);
+    return;
+  }
+
   if (auto *Phi = dyn_cast<PHINode>(Instrumentee)) {
+    auto &ReqNodes = Node->getRequiredNodes();
     // Insert new phis that use the witnesses of the operands of the
     // instrumentee. This has to happen in two separate steps to break loops.
     assert(Node->getRequiredNodes().size() == Phi->getNumIncomingValues());
 
-    // First insert phis with no arguments.
-    auto PhiWitness = IM.insertWitnessPhi(*(Node->Target));
+    SmallVector<unsigned, 1> indices;
+    indices.push_back(0);
+    if (Phi->getType()->isAggregateType()) {
+      indices = InstrumentationMechanism::computePointerIndices(Phi->getType());
+    }
+
+    for (auto index : indices) {
+      // Insert phis with no arguments.
+      auto PhiWitness = IM.getWitnessPhi(Phi);
+      Target->setBoundWitness(PhiWitness, index);
+    }
 
     // Now, add the corresponding incoming values for the operands.
     unsigned int i = 0;
-    for (auto *ReqNode : Node->getRequiredNodes()) {
+    for (auto *ReqNode : ReqNodes) {
       createWitness(IM, ReqNode);
       auto *BB = Phi->getIncomingBlock(i);
-      auto bw = ReqNode->Target->getBoundWitness();
-      IM.addIncomingWitnessToPhi(PhiWitness, bw, BB);
+      for (auto &KV : ReqNode->Target->getBoundWitnesses()) {
+        // Look up the corresponding phi
+        auto PhiWitness = Target->getBoundWitness(KV.first);
+        IM.addIncomingWitnessToPhi(PhiWitness, KV.second, BB);
+      }
       i++;
     }
     return;
   }
 
-  if (isa<SelectInst>(Instrumentee)) {
+  if (auto sel = dyn_cast<SelectInst>(Instrumentee)) {
     // Insert new selects that use the witnesses of the operands of the
     // instrumentee.
     assert(Node->getRequiredNodes().size() == 2);
@@ -293,9 +389,16 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
       createWitness(IM, ReqNode);
     }
 
-    auto bm0 = Node->getRequiredNodes()[0]->Target->getBoundWitness();
-    auto bm1 = Node->getRequiredNodes()[1]->Target->getBoundWitness();
-    IM.insertWitnessSelect(*(Node->Target), bm0, bm1);
+    auto target1 = Node->getRequiredNodes()[0]->Target;
+    auto target2 = Node->getRequiredNodes()[1]->Target;
+    assert(target1->getBoundWitnesses().size() ==
+           target2->getBoundWitnesses().size());
+    for (const auto &KV : target1->getBoundWitnesses()) {
+      auto wt1 = KV.second;
+      auto wt2 = target2->getBoundWitness(KV.first);
+      auto WSel = IM.getWitnessSelect(sel, wt1, wt2);
+      Target->setBoundWitness(WSel, KV.first);
+    }
 
     return;
   }
@@ -326,6 +429,12 @@ void updateWitnessNode(std::map<WitnessGraphNode *, WitnessGraphNode *> &ReqMap,
         break;
       }
     }
+
+    if (N->Target->isValid() && N->Target->hasInstrumentee() &&
+        isa<ExtractValueInst>(N->Target->getInstrumentee())) {
+      Reference = N;
+    }
+
     if (AllSame) {
       ReqMap.at(N) = Reference;
     } else {
@@ -359,6 +468,11 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
     if (!GEP->hasAllZeroIndices()) {
       return false;
     }
+  }
+
+  if (N->Target->hasInstrumentee() &&
+      isa<ExtractElementInst>(N->Target->getInstrumentee())) {
+    return false;
   }
 
   for (auto *req : N->getRequiredNodes()) {

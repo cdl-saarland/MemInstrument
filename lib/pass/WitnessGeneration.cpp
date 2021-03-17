@@ -61,16 +61,16 @@ void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
     if (!T->isValid()) {
       continue;
     }
-    assert(T->hasWitnessIfNeeded());
+    assert(T->hasWitnessesIfNeeded());
     if (T->requiresExplicitBounds()) {
       LLVM_DEBUG(dbgs() << "Materializing explicit bounds for " << *T << "\n";);
       IM.materializeBounds(*T);
       LLVM_DEBUG({
-        dbgs() << "  resulting explicit bounds for " << *T << ":\n";
-        dbgs() << "    upper: " << *T->getBoundWitness()->getUpperBound()
-               << "\n";
-        dbgs() << "    lower: " << *T->getBoundWitness()->getLowerBound()
-               << "\n";
+        for (const auto &KV : T->getBoundWitnesses()) {
+          dbgs() << "  resulting explicit bounds for " << *T << ":\n";
+          dbgs() << "    upper: " << *KV.second->getUpperBound() << "\n";
+          dbgs() << "    lower: " << *KV.second->getLowerBound() << "\n";
+        }
       });
     }
   }

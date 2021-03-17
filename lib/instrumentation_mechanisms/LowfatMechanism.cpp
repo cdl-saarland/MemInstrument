@@ -46,21 +46,50 @@ bool LowfatWitness::hasBoundsMaterialized(void) const {
   return UpperBound != nullptr && LowerBound != nullptr;
 }
 
-void LowfatMechanism::insertWitness(ITarget &Target) const {
-  auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
-                             Target.getLocation(), "_witness");
-  Target.setBoundWitness(
-      std::make_shared<LowfatWitness>(CastVal, Target.getLocation()));
-  ++LowfatNumWitnessLookups;
+void LowfatMechanism::insertWitnesses(ITarget &Target) const {
+  // There should be no targets without an instrumentee for lowfat
+  assert(Target.hasInstrumentee());
+
+  auto instrumentee = Target.getInstrumentee();
+
+  if (!instrumentee->getType()->isAggregateType()) {
+    auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
+                               Target.getLocation(), "_witness");
+    Target.setSingleBoundWitness(
+        std::make_shared<LowfatWitness>(CastVal, Target.getLocation()));
+
+    ++LowfatNumWitnessLookups;
+    return;
+  }
+
+  // TODO see splay for additional changes
+
+  // The only aggregates that do not need a source are those that are constant
+  assert(isa<Constant>(instrumentee));
+  auto con = cast<Constant>(instrumentee);
+
+  auto indexToPtr =
+      InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
+  for (auto KV : indexToPtr) {
+    auto *CastVal =
+        insertCast(WitnessType, KV.second, Target.getLocation(), "_witness");
+    Target.setBoundWitness(
+        std::make_shared<LowfatWitness>(CastVal, Target.getLocation()),
+        KV.first);
+
+    ++LowfatNumWitnessLookups;
+  }
 }
 
-void LowfatMechanism::relocCloneWitness(Witness &W, ITarget &Target) const {
-  auto *SW = dyn_cast<LowfatWitness>(&W);
-  assert(SW != nullptr);
+std::shared_ptr<Witness>
+LowfatMechanism::getRelocatedClone(const Witness &wit,
+                                   Instruction *location) const {
+  const auto *lowfatWit = dyn_cast<LowfatWitness>(&wit);
+  assert(lowfatWit != nullptr);
 
-  Target.setBoundWitness(std::shared_ptr<LowfatWitness>(
-      new LowfatWitness(SW->WitnessValue, Target.getLocation())));
   ++LowfatNumWitnessLookups;
+
+  return std::make_shared<LowfatWitness>(lowfatWit->WitnessValue, location);
 }
 
 void LowfatMechanism::insertCheck(ITarget &Target) const {
@@ -69,7 +98,7 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
 
   IRBuilder<> Builder(Target.getLocation());
 
-  auto *Witness = cast<LowfatWitness>(Target.getBoundWitness().get());
+  auto *Witness = cast<LowfatWitness>(Target.getSingleBoundWitness().get());
   auto *WitnessVal = Witness->WitnessValue;
   auto *CastVal = insertCast(PtrArgType, Target.getInstrumentee(), Builder);
 
@@ -102,30 +131,34 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
 void LowfatMechanism::materializeBounds(ITarget &Target) {
   assert(Target.isValid());
   assert(Target.requiresExplicitBounds());
+  auto witnesses = Target.getBoundWitnesses();
 
-  auto *Witness = cast<LowfatWitness>(Target.getBoundWitness().get());
+  for (auto kv : witnesses) {
 
-  if (Witness->hasBoundsMaterialized()) {
-    return;
+    auto *Witness = cast<LowfatWitness>(kv.second.get());
+
+    if (Witness->hasBoundsMaterialized()) {
+      return;
+    }
+
+    auto *WitnessVal = Witness->WitnessValue;
+
+    IRBuilder<> Builder(Witness->getInsertionLocation());
+
+    if (Target.hasUpperBoundFlag()) {
+      auto Name = Target.getInstrumentee()->getName() + "_upper";
+      auto *UpperVal = insertCall(Builder, GetUpperBoundFunction,
+                                  std::vector<Value *>{WitnessVal}, Name);
+      Witness->UpperBound = UpperVal;
+    }
+    if (Target.hasLowerBoundFlag()) {
+      auto Name = Target.getInstrumentee()->getName() + "_lower";
+      auto *LowerVal = insertCall(Builder, GetLowerBoundFunction,
+                                  std::vector<Value *>{WitnessVal}, Name);
+      Witness->LowerBound = LowerVal;
+    }
+    ++LowfatNumBounds;
   }
-
-  auto *WitnessVal = Witness->WitnessValue;
-
-  IRBuilder<> Builder(Witness->getInsertionLocation());
-
-  if (Target.hasUpperBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_upper";
-    auto *UpperVal = insertCall(Builder, GetUpperBoundFunction,
-                                std::vector<Value *>{WitnessVal}, Name);
-    Witness->UpperBound = UpperVal;
-  }
-  if (Target.hasLowerBoundFlag()) {
-    auto Name = Target.getInstrumentee()->getName() + "_lower";
-    auto *LowerVal = insertCall(Builder, GetLowerBoundFunction,
-                                std::vector<Value *>{WitnessVal}, Name);
-    Witness->LowerBound = LowerVal;
-  }
-  ++LowfatNumBounds;
 }
 
 Value *LowfatMechanism::getFailFunction(void) const { return FailFunction; }
@@ -165,20 +198,15 @@ void LowfatMechanism::initialize(Module &M) {
   insertFunctionDeclarations(M);
 }
 
-std::shared_ptr<Witness>
-LowfatMechanism::insertWitnessPhi(ITarget &Target) const {
-  assert(Target.isValid());
-  auto *Phi = cast<PHINode>(Target.getInstrumentee());
-
+std::shared_ptr<Witness> LowfatMechanism::getWitnessPhi(PHINode *Phi) const {
   IRBuilder<> builder(Phi);
 
   auto Name = Phi->getName() + "_witness";
   auto *NewPhi =
       builder.CreatePHI(WitnessType, Phi->getNumIncomingValues(), Name);
 
-  Target.setBoundWitness(std::make_shared<LowfatWitness>(NewPhi, Phi));
   ++LowfatNumWitnessPhis;
-  return Target.getBoundWitness();
+  return std::make_shared<LowfatWitness>(NewPhi, Phi);
 }
 
 void LowfatMechanism::addIncomingWitnessToPhi(
@@ -191,11 +219,9 @@ void LowfatMechanism::addIncomingWitnessToPhi(
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
-std::shared_ptr<Witness> LowfatMechanism::insertWitnessSelect(
-    ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
+std::shared_ptr<Witness> LowfatMechanism::getWitnessSelect(
+    SelectInst *Sel, std::shared_ptr<Witness> &TrueWitness,
     std::shared_ptr<Witness> &FalseWitness) const {
-  assert(Target.isValid());
-  auto *Sel = cast<SelectInst>(Target.getInstrumentee());
 
   IRBuilder<> builder(Sel);
 
@@ -206,7 +232,6 @@ std::shared_ptr<Witness> LowfatMechanism::insertWitnessSelect(
   auto *NewSel =
       builder.CreateSelect(Sel->getCondition(), TrueVal, FalseVal, Name);
 
-  Target.setBoundWitness(std::make_shared<LowfatWitness>(NewSel, Sel));
   ++LowfatNumWitnessSelects;
-  return Target.getBoundWitness();
+  return std::make_shared<LowfatWitness>(NewSel, Sel);
 }

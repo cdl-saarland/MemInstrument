@@ -17,17 +17,17 @@ void NoneStrategy::addRequired(WitnessGraphNode *Node) const {
 
 void NoneStrategy::createWitness(InstrumentationMechanism &IM,
                                  WitnessGraphNode *Node) const {
-  if (Node->Target->hasBoundWitness()) {
+  if (Node->Target->hasBoundWitnesses()) {
     // We already handled this node.
     return;
   }
 
-  if (Node->Target->needsNoBoundWitness()) {
+  if (Node->Target->needsNoBoundWitnesses()) {
     // No witness required.
     return;
   }
 
-  IM.insertWitness(*(Node->Target));
+  IM.insertWitnesses(*(Node->Target));
 }
 
 void NoneStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {}

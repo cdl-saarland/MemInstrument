@@ -74,7 +74,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
 }
 
 void DummyExternalChecksPass::materializeExternalChecksForFunction(
-    MemInstrumentPass &P, ITargetVector &Vec, Function &F) {
+    MemInstrumentPass &P, ITargetVector &, Function &F) {
   auto &CFG = P.getConfig();
   auto &IM = CFG.getInstrumentationMechanism();
   auto &Ctx = F.getContext();
@@ -88,14 +88,14 @@ void DummyExternalChecksPass::materializeExternalChecksForFunction(
 
     auto *Ptr2Int = Builder.CreatePtrToInt(IT->getInstrumentee(), I64Ty);
 
-    auto *LowerPtr = IT->getBoundWitness()->getLowerBound();
+    auto *LowerPtr = IT->getSingleBoundWitness()->getLowerBound();
     auto *Lower = Builder.CreatePtrToInt(LowerPtr, I64Ty);
     auto *CmpLower = Builder.CreateICmpULT(Ptr2Int, Lower);
 
     auto acc_size = getPointerAccessSize(F.getParent()->getDataLayout(),
                                          IT->getInstrumentee());
     auto *Sum = Builder.CreateAdd(Ptr2Int, ConstantInt::get(I64Ty, acc_size));
-    auto *UpperPtr = IT->getBoundWitness()->getUpperBound();
+    auto *UpperPtr = IT->getSingleBoundWitness()->getUpperBound();
     auto *Upper = Builder.CreatePtrToInt(UpperPtr, I64Ty);
     auto *CmpUpper = Builder.CreateICmpUGT(Sum, Upper);
 

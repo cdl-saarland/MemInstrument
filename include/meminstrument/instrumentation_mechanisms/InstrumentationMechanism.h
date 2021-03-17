@@ -36,23 +36,22 @@ public:
   /// declarations and creating relevant LLVM types for later use.
   virtual void initialize(llvm::Module &M) = 0;
 
-  /// Generates a Witness for the instrumentee of the Target at the location of
-  /// the Target and store it in the target.
+  /// Generates a Witness for the instrumentee of the target at the location of
+  /// the target and store it in the target.
   /// Typically used to get witnesses for sources of pointer computations in a
   /// function.
-  virtual void insertWitness(ITarget &Target) const = 0;
+  virtual void insertWitnesses(ITarget &) const = 0;
 
-  /// Inserts a new witness for Target at Target's location, with the same
-  /// information as W.
-  /// This is an unelegant hack to force the instrumentation to materialize
-  /// bounds at specific locations.
-  virtual void relocCloneWitness(Witness &W, ITarget &Target) const = 0;
+  /// Inserts a new witness at the given location, with the same information as
+  /// the given one. This is an unelegant hack to force the instrumentation to
+  /// materialize bounds at specific locations.
+  virtual std::shared_ptr<Witness>
+  getRelocatedClone(const Witness &, llvm::Instruction *location) const = 0;
 
-  /// Insert phis for all Values necessary for the Witness for Target at the
-  /// location of Target without filling in phi operands.
+  /// Generate a witness phi for the given one without filling in phi operands.
   /// This is a component of the propagation of Witnesses through the program
-  /// for phis with pointer type.
-  virtual std::shared_ptr<Witness> insertWitnessPhi(ITarget &Target) const = 0;
+  /// for phis with pointer or aggregate type.
+  virtual std::shared_ptr<Witness> getWitnessPhi(llvm::PHINode *) const = 0;
 
   /// Add the Witness Values from Incoming as phi arguments to the Witness phi
   /// Phi as coming from InBB.
@@ -62,25 +61,24 @@ public:
                                        std::shared_ptr<Witness> &Incoming,
                                        llvm::BasicBlock *InBB) const = 0;
 
-  /// Insert selects for all Values necessary for the Witness for Target at the
-  /// location of Target.
-  /// This is a component of the propagation of Witnesses through the program
-  /// for selects with pointer type.
+  /// Insert selects for all Values necessary for the Witness of the given
+  /// Select. This is a component of the propagation of Witnesses through the
+  /// program for selects with pointer type.
   virtual std::shared_ptr<Witness>
-  insertWitnessSelect(ITarget &Target, std::shared_ptr<Witness> &TrueWitness,
-                      std::shared_ptr<Witness> &FalseWitness) const = 0;
+  getWitnessSelect(llvm::SelectInst *, std::shared_ptr<Witness> &TrueWitness,
+                   std::shared_ptr<Witness> &FalseWitness) const = 0;
 
   /// Make sure that explicit bounds are available in the witness for the
   /// instrumentee of the Target at the location of Target.
-  virtual void materializeBounds(ITarget &Target) = 0;
+  virtual void materializeBounds(ITarget &) = 0;
 
   /// Insert a check to check whether the instrumentee of Target is valid
   /// according to the witness stored in Target at the location of Target.
-  virtual void insertCheck(ITarget &Target) const = 0;
+  virtual void insertCheck(ITarget &) const = 0;
 
   /// The module should be skipped; in case this still requires some IR changes,
   /// this function can be used. Returns true iff the module was changed.
-  virtual bool skipInstrumentation(llvm::Module &M) const { return false; }
+  virtual bool skipInstrumentation(llvm::Module &) const { return false; }
 
   /// Provides an llvm Function in the module that can be called to abort the
   /// execution of the instrumented program.
@@ -190,6 +188,17 @@ protected:
   static llvm::Value *insertCast(llvm::Type *DestType, llvm::Value *FromVal,
                                  llvm::Instruction *Location,
                                  llvm::StringRef Suffix);
+
+public:
+  /// Determine the indices of pointers in the given type.
+  /// Call only on types that are pointers or that are aggregates and contain
+  /// at least one pointer.
+  static llvm::SmallVector<unsigned, 1> computePointerIndices(llvm::Type *);
+
+  /// Compute all indices and values of pointers in the given constant
+  /// aggregate.
+  static std::map<unsigned, llvm::Value *>
+  getAggregatePointerIndicesAndValues(llvm::Constant *);
 };
 
 } // end namespace meminstrument

@@ -175,20 +175,24 @@ void WitnessGraph::printWitnessClasses(raw_ostream &Stream) const {
 
   for (auto &Node : ExternalNodes) {
     auto &Target = Node->Target;
-    if (Target->needsNoBoundWitness()) {
+    if (Target->needsNoBoundWitnesses()) {
       continue;
     }
-    assert(Target->hasBoundWitness());
-    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
+    assert(Target->hasBoundWitnesses());
+    for (auto &KV : Target->getBoundWitnesses()) {
+      PrintMap[KV.second.get()].insert(Target.get());
+    }
   }
 
   for (auto *Node : InternalNodes) {
     auto &Target = Node->Target;
-    if (Target->needsNoBoundWitness()) {
+    if (Target->needsNoBoundWitnesses()) {
       continue;
     }
-    assert(Target->hasBoundWitness());
-    PrintMap[Target->getBoundWitness().get()].insert(Target.get());
+    assert(Target->hasBoundWitnesses());
+    for (auto &KV : Target->getBoundWitnesses()) {
+      PrintMap[KV.second.get()].insert(Target.get());
+    }
   }
 
   for (auto &Pair : PrintMap) {

@@ -173,3 +173,72 @@ Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
   IRBuilder<> Builder(Location);
   return insertCast(DestType, FromVal, Builder, Suffix);
 }
+
+SmallVector<unsigned, 1>
+InstrumentationMechanism::computePointerIndices(Type *ty) {
+  SmallVector<unsigned, 1> indices;
+  if (!ty->isAggregateType()) {
+    assert(ty->isPointerTy());
+    indices.push_back(0);
+    return indices;
+  }
+
+  unsigned index = 0;
+  if (const auto *sTy = dyn_cast<StructType>(ty)) {
+    for (const auto &elem : sTy->elements()) {
+      if (elem->isPointerTy()) {
+        indices.push_back(index);
+      }
+      index++;
+    }
+  }
+
+  if (const auto *aTy = dyn_cast<ArrayType>(ty)) {
+    assert(aTy->getElementType()->isPointerTy());
+    int num = aTy->getNumElements();
+    for (int i = 0; i < num; i++) {
+      indices.push_back(i);
+    }
+  }
+
+  assert(indices.size() > 0);
+  return indices;
+}
+
+std::map<unsigned, Value *>
+InstrumentationMechanism::getAggregatePointerIndicesAndValues(
+    Constant *constVal) {
+  auto constTy = constVal->getType();
+  assert(constTy->isAggregateType());
+
+  // Find all locations of pointer values in the aggregate type
+  auto indices = computePointerIndices(constTy);
+
+  std::map<unsigned, Value *> result;
+  if (auto unDef = dyn_cast<UndefValue>(constVal)) {
+    for (auto index : indices) {
+      result[index] = unDef;
+    }
+  }
+
+  if (auto constZero = dyn_cast<ConstantAggregateZero>(constVal)) {
+    for (auto index : indices) {
+      result[index] = constZero->getElementValue(index);
+    }
+  }
+
+  if (ConstantAggregate *constAgg = dyn_cast<ConstantAggregate>(constVal)) {
+    assert(!isa<ConstantVector>(constAgg));
+    auto numOps = constAgg->getNumOperands();
+    for (unsigned numOp = 0; numOp < numOps; numOp++) {
+      auto op = constAgg->getOperand(numOp);
+      if (op->getType()->isPointerTy()) {
+        result[numOp] = op;
+      }
+    }
+  }
+
+  assert(result.size() == indices.size());
+
+  return result;
+}

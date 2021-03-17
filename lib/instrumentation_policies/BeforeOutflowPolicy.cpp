@@ -89,6 +89,9 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
 
     break;
   }
+  case Instruction::InsertValue:
+    insertInvariantTargetInsertVal(Dest, cast<InsertValueInst>(Location));
+    break;
   case Instruction::Store:
     insertInvariantTargetStore(Dest, cast<StoreInst>(Location));
     // falls through
