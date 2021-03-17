@@ -26,8 +26,7 @@ class InstrumentationPolicy {
 public:
   /// Add the ITargets necessary at instruction Loc to ensure memory safety to
   /// Dest.
-  virtual void classifyTargets(std::vector<ITargetPtr> &Dest,
-                               llvm::Instruction *Loc) = 0;
+  virtual void classifyTargets(ITargetVector &Dest, llvm::Instruction *Loc) = 0;
 
   /// Returns the name of the instrumentation policy for printing and easy
   /// recognition.
@@ -47,7 +46,7 @@ protected:
 
   /// Create check targets for the given intrinsic.
   bool insertCheckTargetsForIntrinsic(ITargetVector &Dest,
-                                      llvm::IntrinsicInst *II);
+                                      llvm::IntrinsicInst *II) const;
 
   /// Create check targets for a load or store instruction.
   void insertCheckTargetsLoadStore(ITargetVector &Dest,
@@ -55,11 +54,12 @@ protected:
 
   /// Iff a pointer is stored to memory, this function will create an invariant
   /// target for the stored pointer.
-  void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *);
+  void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *) const;
 
   /// Iff a pointer is returned from a function, create an
   /// invariant target for the returned pointer.
-  void insertInvariantTargetReturn(ITargetVector &Dest, llvm::ReturnInst *);
+  void insertInvariantTargetReturn(ITargetVector &Dest,
+                                   llvm::ReturnInst *) const;
 
   /// Iff a pointer is inserted into an aggregate, create an
   /// invariant target for the stored value.

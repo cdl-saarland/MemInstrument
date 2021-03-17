@@ -42,7 +42,7 @@ auto PointerBoundsPolicy::getName() const -> const char * {
   return "PointerBoundsPolicy";
 }
 
-void PointerBoundsPolicy::classifyTargets(std::vector<ITargetPtr> &dest,
+void PointerBoundsPolicy::classifyTargets(ITargetVector &dest,
                                           Instruction *loc) {
 
   switch (loc->getOpcode()) {
@@ -69,8 +69,8 @@ void PointerBoundsPolicy::classifyTargets(std::vector<ITargetPtr> &dest,
   }
 }
 
-void PointerBoundsPolicy::addCallTargets(std::vector<ITargetPtr> &dest,
-                                         CallInst *call) {
+void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
+                                         CallInst *call) const {
 
   if (auto *II = dyn_cast<IntrinsicInst>(call)) {
     insertCheckTargetsForIntrinsic(dest, II);
@@ -117,8 +117,8 @@ void PointerBoundsPolicy::addCallTargets(std::vector<ITargetPtr> &dest,
   }
 }
 
-void PointerBoundsPolicy::insertInvariantTargetAggregate(
-    std::vector<ITargetPtr> &vec, Instruction *inst) {
+void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
+                                                         Instruction *inst) {
   assert(isa<ReturnInst>(inst) || isa<StoreInst>(inst));
   // Return and store (note error upon store)
   Value *agg = nullptr;

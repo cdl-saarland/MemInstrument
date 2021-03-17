@@ -26,16 +26,15 @@ public:
 
   auto getName() const -> const char * override;
 
-  void classifyTargets(std::vector<ITargetPtr> &, llvm::Instruction *) override;
+  void classifyTargets(ITargetVector &, llvm::Instruction *) override;
 
 private:
   /// Add all targets required upon a call.
-  void addCallTargets(std::vector<ITargetPtr> &, llvm::CallInst *);
+  void addCallTargets(ITargetVector &, llvm::CallInst *) const;
 
   /// Insert an invariant target if the current instruction returns or stores an
   /// aggregate type.
-  void insertInvariantTargetAggregate(std::vector<ITargetPtr> &,
-                                      llvm::Instruction *);
+  void insertInvariantTargetAggregate(ITargetVector &, llvm::Instruction *);
 
   /// Check if the given type is not a nested aggregate, e.g. a struct
   /// containing struct members.

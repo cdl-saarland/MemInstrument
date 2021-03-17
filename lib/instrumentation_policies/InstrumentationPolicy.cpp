@@ -37,8 +37,8 @@ bool InstrumentationPolicy::validateSize(Value *Ptr) {
   return true;
 }
 
-bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(ITargetVector &Dest,
-                                                           IntrinsicInst *II) {
+bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(
+    ITargetVector &Dest, IntrinsicInst *II) const {
   switch (II->getIntrinsicID()) {
   case Intrinsic::memcpy:
   case Intrinsic::memmove: {
@@ -78,7 +78,7 @@ void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
 }
 
 void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
-                                                       StoreInst *Store) {
+                                                       StoreInst *Store) const {
 
   auto *StoreOperand = Store->getValueOperand();
   if (!StoreOperand->getType()->isPointerTy()) {
@@ -89,7 +89,7 @@ void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,
 }
 
 void InstrumentationPolicy::insertInvariantTargetReturn(ITargetVector &Dest,
-                                                        ReturnInst *Ret) {
+                                                        ReturnInst *Ret) const {
 
   auto *Operand = Ret->getReturnValue();
   if (!Operand || !Operand->getType()->isPointerTy()) {
