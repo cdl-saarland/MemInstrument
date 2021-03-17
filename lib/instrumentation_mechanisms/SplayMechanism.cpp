@@ -106,9 +106,8 @@ void SplayMechanism::insertWitnesses(ITarget &Target) const {
   }
 }
 
-std::shared_ptr<Witness>
-SplayMechanism::getRelocatedClone(const Witness &wit,
-                                  Instruction *location) const {
+WitnessPtr SplayMechanism::getRelocatedClone(const Witness &wit,
+                                             Instruction *location) const {
   const auto *splayWit = dyn_cast<SplayWitness>(&wit);
   assert(splayWit != nullptr);
 
@@ -496,7 +495,7 @@ void SplayMechanism::initialize(Module &M) {
   }
 }
 
-std::shared_ptr<Witness> SplayMechanism::getWitnessPhi(PHINode *Phi) const {
+WitnessPtr SplayMechanism::getWitnessPhi(PHINode *Phi) const {
 
   IRBuilder<> builder(Phi);
   auto *NewPhi = builder.CreatePHI(WitnessType, Phi->getNumIncomingValues());
@@ -505,8 +504,8 @@ std::shared_ptr<Witness> SplayMechanism::getWitnessPhi(PHINode *Phi) const {
   return std::make_shared<SplayWitness>(NewPhi, Phi);
 }
 
-void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
-                                             std::shared_ptr<Witness> &Incoming,
+void SplayMechanism::addIncomingWitnessToPhi(WitnessPtr &Phi,
+                                             WitnessPtr &Incoming,
                                              BasicBlock *InBB) const {
   auto *PhiWitness = cast<SplayWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
@@ -515,10 +514,9 @@ void SplayMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
-std::shared_ptr<Witness>
-SplayMechanism::getWitnessSelect(SelectInst *Sel,
-                                 std::shared_ptr<Witness> &TrueWitness,
-                                 std::shared_ptr<Witness> &FalseWitness) const {
+WitnessPtr SplayMechanism::getWitnessSelect(SelectInst *Sel,
+                                            WitnessPtr &TrueWitness,
+                                            WitnessPtr &FalseWitness) const {
   IRBuilder<> builder(Sel);
 
   auto *TrueVal = cast<SplayWitness>(TrueWitness.get())->WitnessValue;

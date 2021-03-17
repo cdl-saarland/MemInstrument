@@ -10,7 +10,15 @@
 #include "llvm/IR/Value.h"
 #include "llvm/Support/Casting.h"
 
+#include <map>
+
 namespace meminstrument {
+
+class Witness;
+
+using WitnessPtr = std::shared_ptr<Witness>;
+
+using WitnessMap = std::map<unsigned, WitnessPtr>;
 
 /// A Witness is the information that an instrumentation needs to verify that
 /// an access to a pointer is valid. This is typically a set of LLVM values that

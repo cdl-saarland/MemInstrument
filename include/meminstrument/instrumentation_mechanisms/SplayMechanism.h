@@ -48,7 +48,7 @@ public:
 
   virtual void insertWitnesses(ITarget &Target) const override;
 
-  virtual std::shared_ptr<Witness>
+  virtual WitnessPtr
   getRelocatedClone(const Witness &,
                     llvm::Instruction *location) const override;
 
@@ -62,16 +62,14 @@ public:
 
   virtual llvm::Value *getVerboseFailFunction(void) const override;
 
-  virtual std::shared_ptr<Witness>
-  getWitnessPhi(llvm::PHINode *) const override;
+  virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const override;
 
-  virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
-                                       std::shared_ptr<Witness> &Incoming,
+  virtual void addIncomingWitnessToPhi(WitnessPtr &Phi, WitnessPtr &Incoming,
                                        llvm::BasicBlock *InBB) const override;
 
-  virtual std::shared_ptr<Witness>
-  getWitnessSelect(llvm::SelectInst *, std::shared_ptr<Witness> &TrueWitness,
-                   std::shared_ptr<Witness> &FalseWitness) const override;
+  virtual WitnessPtr getWitnessSelect(llvm::SelectInst *,
+                                      WitnessPtr &TrueWitness,
+                                      WitnessPtr &FalseWitness) const override;
 
   virtual void initialize(llvm::Module &M) override;
 

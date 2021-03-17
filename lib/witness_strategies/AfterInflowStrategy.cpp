@@ -286,7 +286,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     if (Target->hasInstrumentee()) {
       auto instrumentee = Target->getInstrumentee();
       if (auto eValInst = dyn_cast<ExtractValueInst>(instrumentee)) {
-        std::map<unsigned, std::shared_ptr<Witness>> singleWit;
+        WitnessMap singleWit;
         auto indices = eValInst->getIndices();
         assert(indices.size() == 1);
         singleWit[0] = witnesses[indices[0]];
@@ -297,7 +297,7 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     if (ShareBoundsOpt) {
       Target->setBoundWitnesses(witnesses);
     } else {
-      std::map<unsigned, std::shared_ptr<Witness>> newWitnesses;
+      WitnessMap newWitnesses;
       for (auto &KV : witnesses) {
         auto newW = IM.getRelocatedClone(*KV.second, Target->getLocation());
         newWitnesses[KV.first] = newW;

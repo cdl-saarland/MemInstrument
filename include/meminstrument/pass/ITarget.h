@@ -27,9 +27,9 @@ namespace meminstrument {
 
 class ITarget;
 
-typedef std::shared_ptr<ITarget> ITargetPtr;
+using ITargetPtr = std::shared_ptr<ITarget>;
 
-typedef std::vector<ITargetPtr> ITargetVector;
+using ITargetVector = std::vector<ITargetPtr>;
 
 class ITargetBuilder {
 public:
@@ -168,14 +168,14 @@ public:
 
   /// Returns the bound witness(es) of the target. Make sure to check that it
   /// has a bound witness before requesting it.
-  std::shared_ptr<Witness> getSingleBoundWitness() const;
-  std::shared_ptr<Witness> getBoundWitness(unsigned index) const;
-  std::map<unsigned, std::shared_ptr<Witness>> getBoundWitnesses() const;
+  WitnessPtr getSingleBoundWitness() const;
+  WitnessPtr getBoundWitness(unsigned index) const;
+  WitnessMap getBoundWitnesses() const;
 
   /// Adds (a) bound witness(es) to the target.
-  void setSingleBoundWitness(std::shared_ptr<Witness>);
-  void setBoundWitness(std::shared_ptr<Witness>, unsigned index);
-  void setBoundWitnesses(std::map<unsigned, std::shared_ptr<Witness>>);
+  void setSingleBoundWitness(WitnessPtr);
+  void setBoundWitness(WitnessPtr, unsigned index);
+  void setBoundWitnesses(const WitnessMap &);
 
   /// Indicator whether the ITarget has been invalidated and should therefore
   /// not be realized.
@@ -223,7 +223,7 @@ protected:
   /// The individual witnesses will be inserted in an arbitrary order, the index
   /// into the map describes to which value in the aggregate the witness
   /// belongs.
-  std::map<unsigned, std::shared_ptr<Witness>> boundWitnesses;
+  WitnessMap boundWitnesses;
 
   virtual void dump(llvm::raw_ostream &) const = 0;
 

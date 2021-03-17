@@ -81,9 +81,8 @@ void LowfatMechanism::insertWitnesses(ITarget &Target) const {
   }
 }
 
-std::shared_ptr<Witness>
-LowfatMechanism::getRelocatedClone(const Witness &wit,
-                                   Instruction *location) const {
+WitnessPtr LowfatMechanism::getRelocatedClone(const Witness &wit,
+                                              Instruction *location) const {
   const auto *lowfatWit = dyn_cast<LowfatWitness>(&wit);
   assert(lowfatWit != nullptr);
 
@@ -198,7 +197,7 @@ void LowfatMechanism::initialize(Module &M) {
   insertFunctionDeclarations(M);
 }
 
-std::shared_ptr<Witness> LowfatMechanism::getWitnessPhi(PHINode *Phi) const {
+WitnessPtr LowfatMechanism::getWitnessPhi(PHINode *Phi) const {
   IRBuilder<> builder(Phi);
 
   auto Name = Phi->getName() + "_witness";
@@ -209,9 +208,9 @@ std::shared_ptr<Witness> LowfatMechanism::getWitnessPhi(PHINode *Phi) const {
   return std::make_shared<LowfatWitness>(NewPhi, Phi);
 }
 
-void LowfatMechanism::addIncomingWitnessToPhi(
-    std::shared_ptr<Witness> &Phi, std::shared_ptr<Witness> &Incoming,
-    BasicBlock *InBB) const {
+void LowfatMechanism::addIncomingWitnessToPhi(WitnessPtr &Phi,
+                                              WitnessPtr &Incoming,
+                                              BasicBlock *InBB) const {
   auto *PhiWitness = cast<LowfatWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
 
@@ -219,9 +218,9 @@ void LowfatMechanism::addIncomingWitnessToPhi(
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
-std::shared_ptr<Witness> LowfatMechanism::getWitnessSelect(
-    SelectInst *Sel, std::shared_ptr<Witness> &TrueWitness,
-    std::shared_ptr<Witness> &FalseWitness) const {
+WitnessPtr LowfatMechanism::getWitnessSelect(SelectInst *Sel,
+                                             WitnessPtr &TrueWitness,
+                                             WitnessPtr &FalseWitness) const {
 
   IRBuilder<> builder(Sel);
 

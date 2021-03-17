@@ -63,8 +63,8 @@ void DummyMechanism::insertWitnesses(ITarget &Target) const {
   }
 }
 
-std::shared_ptr<Witness>
-DummyMechanism::getRelocatedClone(const Witness &wit, Instruction *) const {
+WitnessPtr DummyMechanism::getRelocatedClone(const Witness &wit,
+                                             Instruction *) const {
   auto dwit = dyn_cast<DummyWitness>(&wit);
   assert(dwit != nullptr);
   return std::make_shared<DummyWitness>(dwit->WitnessValue);
@@ -140,7 +140,7 @@ void DummyMechanism::initialize(Module &M) {
   FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", NoReturnAttr, VoidTy);
 }
 
-std::shared_ptr<Witness> DummyMechanism::getWitnessPhi(PHINode *Phi) const {
+WitnessPtr DummyMechanism::getWitnessPhi(PHINode *Phi) const {
   IRBuilder<> builder(Phi);
 
   auto Name = Phi->getName() + "_witness";
@@ -150,8 +150,8 @@ std::shared_ptr<Witness> DummyMechanism::getWitnessPhi(PHINode *Phi) const {
   return std::make_shared<DummyWitness>(NewPhi);
 }
 
-void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
-                                             std::shared_ptr<Witness> &Incoming,
+void DummyMechanism::addIncomingWitnessToPhi(WitnessPtr &Phi,
+                                             WitnessPtr &Incoming,
                                              BasicBlock *InBB) const {
   auto *PhiWitness = cast<DummyWitness>(Phi.get());
   auto *PhiVal = cast<PHINode>(PhiWitness->WitnessValue);
@@ -160,10 +160,9 @@ void DummyMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
   PhiVal->addIncoming(InWitness->WitnessValue, InBB);
 }
 
-std::shared_ptr<Witness>
-DummyMechanism::getWitnessSelect(SelectInst *Sel,
-                                 std::shared_ptr<Witness> &TrueWitness,
-                                 std::shared_ptr<Witness> &FalseWitness) const {
+WitnessPtr DummyMechanism::getWitnessSelect(SelectInst *Sel,
+                                            WitnessPtr &TrueWitness,
+                                            WitnessPtr &FalseWitness) const {
 
   IRBuilder<> builder(Sel);
 

@@ -265,13 +265,12 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
 
 auto SoftBoundMechanism::getRelocatedClone(const Witness &w,
                                            Instruction *location) const
-    -> std::shared_ptr<Witness> {
+    -> WitnessPtr {
   return std::make_shared<SoftBoundWitness>(w.getLowerBound(),
                                             w.getUpperBound(), location);
 }
 
-auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const
-    -> std::shared_ptr<Witness> {
+auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const -> WitnessPtr {
 
   IRBuilder<> builder(phi);
 
@@ -285,9 +284,9 @@ auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const
   return std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi);
 }
 
-void SoftBoundMechanism::addIncomingWitnessToPhi(
-    std::shared_ptr<Witness> &phi, std::shared_ptr<Witness> &incoming,
-    BasicBlock *inBB) const {
+void SoftBoundMechanism::addIncomingWitnessToPhi(WitnessPtr &phi,
+                                                 WitnessPtr &incoming,
+                                                 BasicBlock *inBB) const {
 
   auto *lowerPhi = cast<PHINode>(phi->getLowerBound());
   auto *upperPhi = cast<PHINode>(phi->getUpperBound());
@@ -296,9 +295,10 @@ void SoftBoundMechanism::addIncomingWitnessToPhi(
   upperPhi->addIncoming(incoming->getUpperBound(), inBB);
 }
 
-auto SoftBoundMechanism::getWitnessSelect(
-    SelectInst *sel, std::shared_ptr<Witness> &trueWitness,
-    std::shared_ptr<Witness> &falseWitness) const -> std::shared_ptr<Witness> {
+auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
+                                          WitnessPtr &trueWitness,
+                                          WitnessPtr &falseWitness) const
+    -> WitnessPtr {
   auto *cond = sel->getCondition();
 
   IRBuilder<> builder(sel);

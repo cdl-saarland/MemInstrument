@@ -76,8 +76,8 @@ void RuntimeStatMechanism::insertWitnesses(ITarget &Target) const {
   }
 }
 
-std::shared_ptr<Witness>
-RuntimeStatMechanism::getRelocatedClone(const Witness &, Instruction *) const {
+WitnessPtr RuntimeStatMechanism::getRelocatedClone(const Witness &,
+                                                   Instruction *) const {
   return std::make_shared<RuntimeStatWitness>();
 }
 
@@ -310,20 +310,18 @@ void RuntimeStatMechanism::initialize(Module &M) {
   Builder.CreateRetVoid();
 }
 
-std::shared_ptr<Witness> RuntimeStatMechanism::getWitnessPhi(PHINode *) const {
+WitnessPtr RuntimeStatMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
   return nullptr;
 }
 
-void RuntimeStatMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
-                                                   std::shared_ptr<Witness> &,
+void RuntimeStatMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
                                                    BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
-std::shared_ptr<Witness>
-RuntimeStatMechanism::getWitnessSelect(SelectInst *, std::shared_ptr<Witness> &,
-                                       std::shared_ptr<Witness> &) const {
+WitnessPtr RuntimeStatMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
+                                                  WitnessPtr &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
   return nullptr;
 }

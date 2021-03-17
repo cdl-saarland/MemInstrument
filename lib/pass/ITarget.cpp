@@ -174,35 +174,32 @@ bool ITarget::hasWitnessesIfNeeded() const {
   return needsNoBoundWitnesses() || hasBoundWitnesses();
 }
 
-std::shared_ptr<Witness> ITarget::getSingleBoundWitness() const {
+WitnessPtr ITarget::getSingleBoundWitness() const {
   assert(isValid());
   assert(boundWitnesses.size() == 1);
   return boundWitnesses.at(0);
 }
 
-std::shared_ptr<Witness> ITarget::getBoundWitness(unsigned index) const {
+WitnessPtr ITarget::getBoundWitness(unsigned index) const {
   assert(isValid());
   return boundWitnesses.at(index);
 }
 
-std::map<unsigned, std::shared_ptr<Witness>>
-ITarget::getBoundWitnesses() const {
+WitnessMap ITarget::getBoundWitnesses() const {
   assert(isValid());
   return boundWitnesses;
 }
 
-void ITarget::setSingleBoundWitness(std::shared_ptr<Witness> boundWitness) {
+void ITarget::setSingleBoundWitness(WitnessPtr boundWitness) {
   assert(boundWitnesses.size() <= 1);
   boundWitnesses[0] = boundWitness;
 }
 
-void ITarget::setBoundWitness(std::shared_ptr<Witness> boundWitness,
-                              unsigned index) {
+void ITarget::setBoundWitness(WitnessPtr boundWitness, unsigned index) {
   boundWitnesses[index] = boundWitness;
 }
 
-void ITarget::setBoundWitnesses(
-    std::map<unsigned, std::shared_ptr<Witness>> bWitnesses) {
+void ITarget::setBoundWitnesses(const WitnessMap &bWitnesses) {
   boundWitnesses = bWitnesses;
 }
 

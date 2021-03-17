@@ -45,28 +45,27 @@ public:
   /// Inserts a new witness at the given location, with the same information as
   /// the given one. This is an unelegant hack to force the instrumentation to
   /// materialize bounds at specific locations.
-  virtual std::shared_ptr<Witness>
-  getRelocatedClone(const Witness &, llvm::Instruction *location) const = 0;
+  virtual WitnessPtr getRelocatedClone(const Witness &,
+                                       llvm::Instruction *location) const = 0;
 
   /// Generate a witness phi for the given one without filling in phi operands.
   /// This is a component of the propagation of Witnesses through the program
   /// for phis with pointer or aggregate type.
-  virtual std::shared_ptr<Witness> getWitnessPhi(llvm::PHINode *) const = 0;
+  virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const = 0;
 
   /// Add the Witness Values from Incoming as phi arguments to the Witness phi
   /// Phi as coming from InBB.
   /// This is a component of the propagation of Witnesses through the program
   /// for phis with pointer type.
-  virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
-                                       std::shared_ptr<Witness> &Incoming,
+  virtual void addIncomingWitnessToPhi(WitnessPtr &Phi, WitnessPtr &Incoming,
                                        llvm::BasicBlock *InBB) const = 0;
 
   /// Insert selects for all Values necessary for the Witness of the given
   /// Select. This is a component of the propagation of Witnesses through the
   /// program for selects with pointer type.
-  virtual std::shared_ptr<Witness>
-  getWitnessSelect(llvm::SelectInst *, std::shared_ptr<Witness> &TrueWitness,
-                   std::shared_ptr<Witness> &FalseWitness) const = 0;
+  virtual WitnessPtr getWitnessSelect(llvm::SelectInst *,
+                                      WitnessPtr &TrueWitness,
+                                      WitnessPtr &FalseWitness) const = 0;
 
   /// Make sure that explicit bounds are available in the witness for the
   /// instrumentee of the Target at the location of Target.

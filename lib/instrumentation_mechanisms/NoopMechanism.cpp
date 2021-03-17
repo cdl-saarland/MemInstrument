@@ -53,8 +53,8 @@ void NoopMechanism::insertWitnesses(ITarget &Target) const {
   }
 }
 
-std::shared_ptr<Witness> NoopMechanism::getRelocatedClone(const Witness &,
-                                                          Instruction *) const {
+WitnessPtr NoopMechanism::getRelocatedClone(const Witness &,
+                                            Instruction *) const {
   return std::make_shared<NoopWitness>();
 }
 
@@ -132,20 +132,18 @@ void NoopMechanism::initialize(Module &M) {
           .getCallee();
 }
 
-std::shared_ptr<Witness> NoopMechanism::getWitnessPhi(PHINode *) const {
+WitnessPtr NoopMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
   return nullptr;
 }
 
-void NoopMechanism::addIncomingWitnessToPhi(std::shared_ptr<Witness> &,
-                                            std::shared_ptr<Witness> &,
+void NoopMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
                                             BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
-std::shared_ptr<Witness>
-NoopMechanism::getWitnessSelect(SelectInst *, std::shared_ptr<Witness> &,
-                                std::shared_ptr<Witness> &) const {
+WitnessPtr NoopMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
+                                           WitnessPtr &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
   return nullptr;
 }

@@ -34,19 +34,16 @@ public:
 
   virtual auto getRelocatedClone(const Witness &,
                                  llvm::Instruction *location) const
-      -> std::shared_ptr<Witness> override;
+      -> WitnessPtr override;
 
-  virtual auto getWitnessPhi(llvm::PHINode *) const
-      -> std::shared_ptr<Witness> override;
+  virtual auto getWitnessPhi(llvm::PHINode *) const -> WitnessPtr override;
 
-  virtual void addIncomingWitnessToPhi(std::shared_ptr<Witness> &Phi,
-                                       std::shared_ptr<Witness> &Incoming,
+  virtual void addIncomingWitnessToPhi(WitnessPtr &Phi, WitnessPtr &Incoming,
                                        llvm::BasicBlock *InBB) const override;
 
-  virtual auto getWitnessSelect(llvm::SelectInst *,
-                                std::shared_ptr<Witness> &TrueWitness,
-                                std::shared_ptr<Witness> &FalseWitness) const
-      -> std::shared_ptr<Witness> override;
+  virtual auto getWitnessSelect(llvm::SelectInst *, WitnessPtr &TrueWitness,
+                                WitnessPtr &FalseWitness) const
+      -> WitnessPtr override;
 
   virtual void materializeBounds(ITarget &) override;
 
