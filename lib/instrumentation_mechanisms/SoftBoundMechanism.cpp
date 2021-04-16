@@ -1040,10 +1040,10 @@ auto SoftBoundMechanism::getBoundsForZeroSizedArray(GlobalVariable *gv) const
   }
 
   IRBuilder<> builder(*context);
-  auto *base = builder.CreateConstGEP1_32(gv, 0);
+  Value *base = gv;
 
   if (ZeroSizedArrayHandling == BadPtrSrc::NullBounds) {
-    auto *bound = builder.CreateConstGEP1_32(gv, 1);
+    Value *bound = gv;
     std::tie(base, bound) = addBitCasts(builder, base, bound);
     return std::make_pair(base, bound);
   }
