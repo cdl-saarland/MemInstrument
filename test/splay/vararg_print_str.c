@@ -4,20 +4,21 @@
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
-void testVaCopyArg(char *fmt, ...) {
-  va_list ap, aq;
-  char *s;
-  va_start(ap, fmt);
-  va_copy(aq, ap);    /* test va_copy */
+void printargs(int num, ...) {
+  va_list args;
+  va_start(args, num);
 
-  s = va_arg(aq, char *);
-  printf("string %s\n", s + 1);
+  for (int i = 0; i < num; i++) {
+    char *next = va_arg(args, char *);
+    printf("%s\n", next + 1);
+  }
+  va_end(args);
 }
 
-int main() {
-  testVaCopyArg("s", "abc");
-  return 0;
+int main(int argc, char const *argv[]) {
+    printargs(3, "ab", "cd", "ef");
+    return 0;
 }

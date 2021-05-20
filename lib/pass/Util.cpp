@@ -102,4 +102,56 @@ size_t getPointerAccessSize(const DataLayout &DL, Value *V) {
 
   return Size;
 }
+
+bool isVarArgMetadataType(Type *type) {
+  auto vaargStructName = "struct.__va_list_tag";
+  if (PointerType *pTy = dyn_cast<PointerType>(type)) {
+    type = pTy->getPointerElementType();
+  }
+  if (StructType *sTy = dyn_cast<StructType>(type)) {
+    if (sTy->hasName() && sTy->getName() == vaargStructName) {
+      return true;
+    }
+  }
+  if (ArrayType *arTy = dyn_cast<ArrayType>(type)) {
+    Type *someTy = arTy->getElementType();
+    if (StructType *stTy = dyn_cast<StructType>(someTy)) {
+      if (stTy->hasName() && stTy->getName() == vaargStructName) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+SmallVector<Value *, 2> getVarArgHandles(Function &F) {
+
+  SmallVector<Value *, 2> handles;
+  if (F.isDeclaration()) {
+    return handles;
+  }
+
+  auto &entry = F.getEntryBlock();
+  for (auto &inst : entry) {
+    // Search for allocations of the vararg type in the entry block
+    if (AllocaInst *allocInst = dyn_cast<AllocaInst>(&inst)) {
+      if (auto allocedType = allocInst->getAllocatedType()) {
+        if (isVarArgMetadataType(allocedType)) {
+          handles.push_back(allocInst);
+        }
+      }
+    }
+  }
+
+  // Search for va_list arguments
+  for (auto &arg : F.args()) {
+    Type *argTy = arg.getType();
+    if (isVarArgMetadataType(argTy)) {
+      handles.push_back(&arg);
+    }
+  }
+
+  return handles;
+}
+
 } // namespace meminstrument

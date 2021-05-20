@@ -60,6 +60,11 @@ bool hasPointerAccessSize(const llvm::Value *V);
 /// Get the size of an access to the pointer Value V.
 size_t getPointerAccessSize(const llvm::DataLayout &DL, llvm::Value *V);
 
+/// If the function has varargs or a va_list as argument, return the values
+/// through which the varargs can be accessed.
+/// For non-vararg function or declarations, the returned list is empty.
+llvm::SmallVector<llvm::Value *, 2> getVarArgHandles(llvm::Function &F);
+
 } // namespace meminstrument
 
 #endif

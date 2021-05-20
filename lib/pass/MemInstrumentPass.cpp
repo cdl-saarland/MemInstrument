@@ -45,7 +45,9 @@ cl::opt<bool>
 
 #endif
 
-STATISTIC(NumVarArgs, "The # of function ignored because of varargs");
+STATISTIC(NumVarArgs, "The # of function using varargs or a va_list");
+STATISTIC(NumVarArgMetadataLoadStore,
+          "The # of loads and stores tagged as varargs metadata management");
 
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
@@ -55,22 +57,99 @@ GlobalConfig &MemInstrumentPass::getConfig(void) { return *CFG; }
 
 namespace {
 
-void labelAccesses(Module &M) {
+void labelAccesses(Function &F) {
   // This heavily relies on clang and llvm behaving deterministically
   // (which may or may not be the case)
-  auto &Ctx = M.getContext();
-  for (auto &F : M) {
-    uint64_t idx = 0;
-    for (auto &BB : F) {
-      for (auto &I : BB) {
-        if (isa<StoreInst>(&I) || isa<LoadInst>(&I)) {
-          MDNode *N =
-              MDNode::get(Ctx, MDString::get(Ctx, std::to_string(idx++)));
-          I.setMetadata("mi_access_id", N);
-        }
+  auto &Ctx = F.getContext();
+  uint64_t idx = 0;
+  for (auto &BB : F) {
+    for (auto &I : BB) {
+      if (isa<StoreInst>(&I) || isa<LoadInst>(&I)) {
+        MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, std::to_string(idx++)));
+        I.setMetadata("mi_access_id", N);
       }
     }
   }
+}
+
+bool markVarargInsts(Function &F) {
+
+  // Determine which value contains the metadata for vararg accesses
+  SmallVector<Value *, 2> handles = getVarArgHandles(F);
+  if (handles.empty()) {
+    // If there are not varargs, we have nothing to do.
+    return false;
+  }
+
+  // Determine loads and stores to this data structure.
+  SmallVector<std::pair<Instruction *, unsigned>, 12> worklist;
+  for (auto *handle : handles) {
+
+    DEBUG_WITH_TYPE("MIVarArg",
+                    { dbgs() << "Vararg handle: " << *handle << "\n"; });
+
+    // Mark the handle itself `noinstrument` if possible.
+    if (auto inst = dyn_cast<Instruction>(handle)) {
+      setNoInstrument(inst);
+    }
+
+    // Initialize the work list with all direct users of the vargargs
+    for (auto *user : handle->users()) {
+      if (auto inst = dyn_cast<Instruction>(user)) {
+        worklist.push_back(std::make_pair(inst, 2));
+      }
+    }
+  }
+
+  while (!worklist.empty()) {
+    Instruction *entry;
+    unsigned propLevel;
+    std::tie(entry, propLevel) = worklist.pop_back_val();
+
+    // Don't mark calls no instrument just because varargs are handed over
+    if (isa<CallBase>(entry)) {
+      continue;
+    }
+
+    // If the instruction is already marked as no instrument, ignore it
+    if (hasNoInstrument(entry)) {
+      continue;
+    }
+
+    // Collect some statistics on how many loads/stores belong to the vararg
+    // metadata handling
+    if (isa<LoadInst>(entry) || isa<StoreInst>(entry)) {
+      ++NumVarArgMetadataLoadStore;
+    }
+
+    DEBUG_WITH_TYPE("MIVarArg", {
+      dbgs() << "Vararg handle (Lvl " << propLevel << "): " << *entry << "\n";
+    });
+
+    // Don't instrument this vararg related instruction or value
+    setNoInstrument(entry);
+
+    // The vararg metadata has two levels of metadata loads, decrease the level
+    // when encountering a load
+    if (isa<LoadInst>(entry)) {
+      assert(propLevel > 0);
+      propLevel--;
+    }
+
+    // Stop following users when the propagation level hits zero
+    if (propLevel == 0) {
+      continue;
+    }
+
+    // Add all users to the worklist
+    for (auto *user : entry->users()) {
+      if (auto inst = dyn_cast<Instruction>(user)) {
+        worklist.push_back(std::make_pair(inst, propLevel));
+      }
+    }
+  }
+
+  return true;
 }
 
 } // namespace
@@ -95,7 +174,18 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   LLVM_DEBUG(dbgs() << "Dumped module:\n"; M.dump();
              dbgs() << "\nEnd of dumped module.\n";);
 
-  labelAccesses(M);
+  for (auto &F : M) {
+    if (F.isDeclaration()) {
+      continue;
+    }
+
+    labelAccesses(F);
+    // If the function has varargs or a va_list, mark bookkeeping loads and
+    // stores for the vararg handling as no instrument.
+    if (markVarargInsts(F)) {
+      NumVarArgs++;
+    }
+  }
 
   LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `"
                     << M.getName().str() << "`\n";);
@@ -130,13 +220,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   std::map<Function *, ITargetVector> TargetMap;
 
   for (auto &F : M) {
-    if (F.empty() || hasNoInstrument(&F)) {
-      continue;
-    }
-    if (F.isVarArg()) {
-      ++NumVarArgs;
-      LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip function `"
-                        << F.getName().str() << "` because of varargs\n";);
+    if (F.isDeclaration() || hasNoInstrument(&F)) {
       continue;
     }
 
@@ -171,7 +255,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   filterITargetsRandomly(*CFG, TargetMap);
 
   for (auto &F : M) {
-    if (F.empty() || hasNoInstrument(&F) || F.isVarArg()) {
+    if (F.isDeclaration() || hasNoInstrument(&F)) {
       continue;
     }
 
