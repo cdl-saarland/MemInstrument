@@ -19,6 +19,7 @@ using namespace meminstrument;
 #define MEMINSTRUMENT_MD "meminstrument"
 #define NOINSTRUMENT_MD "no_instrument"
 #define BYVAL_HANDLING_MD "byval_handling"
+#define VARARG_MD "vararg_handling"
 
 namespace {
 bool hasMDStrImpl(const char *ref, const MDNode *N) {
@@ -57,6 +58,8 @@ namespace meminstrument {
 
 void setNoInstrument(Value *V) { addMIMetadata(V, NOINSTRUMENT_MD); }
 
+void setVarArgHandling(Value *V) { addMIMetadata(V, VARARG_MD); }
+
 void setByvalHandling(Instruction *I) { addMIMetadata(I, BYVAL_HANDLING_MD); }
 
 bool hasNoInstrument(const GlobalObject *O) {
@@ -65,6 +68,10 @@ bool hasNoInstrument(const GlobalObject *O) {
 
 bool hasNoInstrument(const Instruction *I) {
   return hasMDStrImpl(NOINSTRUMENT_MD, I->getMetadata(MEMINSTRUMENT_MD));
+}
+
+bool hasVarArgHandling(const Instruction *I) {
+  return hasMDStrImpl(VARARG_MD, I->getMetadata(MEMINSTRUMENT_MD));
 }
 
 bool hasByvalHandling(const Instruction *I) {

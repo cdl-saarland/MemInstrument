@@ -35,6 +35,10 @@ namespace meminstrument {
 /// steps. Limited to GlobalObjects and Instructions.
 void setNoInstrument(llvm::Value *V);
 
+/// Add metadata to a Value to indicate that it was identified as vaarg
+/// handling.
+void setVarArgHandling(llvm::Value *V);
+
 /// Add metadata an instruction to indicate that it was introduced by the
 /// instrumentation to handle byval arguments.
 void setByvalHandling(llvm::Instruction *I);
@@ -48,6 +52,10 @@ bool hasNoInstrument(const llvm::GlobalObject *O);
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps.
 bool hasNoInstrument(const llvm::Instruction *I);
+
+/// Check an Instruction for metadata that indicates that this instruction was
+/// identified as vararg handling.
+bool hasVarArgHandling(const llvm::Instruction *I);
 
 /// Check for metadata on an instruction to indicate that it was introduced by
 /// the instrumentation to handle byval arguments.

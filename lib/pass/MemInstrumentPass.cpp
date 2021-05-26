@@ -91,6 +91,7 @@ bool markVarargInsts(Function &F) {
     // Mark the handle itself `noinstrument` if possible.
     if (auto inst = dyn_cast<Instruction>(handle)) {
       setNoInstrument(inst);
+      setVarArgHandling(inst);
     }
 
     // Initialize the work list with all direct users of the vargargs
@@ -106,8 +107,19 @@ bool markVarargInsts(Function &F) {
     unsigned propLevel;
     std::tie(entry, propLevel) = worklist.pop_back_val();
 
-    // Don't mark calls no instrument just because varargs are handed over
-    if (isa<CallBase>(entry)) {
+    // Don't mark calls no instrument just because varargs are handed over, but
+    // label vararg specific calls.
+    if (CallBase *cb = dyn_cast<CallBase>(entry)) {
+      if (auto fun = cb->getCalledFunction()) {
+        if (fun->hasName()) {
+          StringRef name = fun->getName();
+          if (name.equals("llvm.va_start") || name.equals("llvm.va_end") ||
+              name.equals("llvm.va_copy")) {
+            setNoInstrument(cb);
+            setVarArgHandling(cb);
+          }
+        }
+      }
       continue;
     }
 
@@ -128,6 +140,7 @@ bool markVarargInsts(Function &F) {
 
     // Don't instrument this vararg related instruction or value
     setNoInstrument(entry);
+    setVarArgHandling(entry);
 
     // The vararg metadata has two levels of metadata loads, decrease the level
     // when encountering a load
