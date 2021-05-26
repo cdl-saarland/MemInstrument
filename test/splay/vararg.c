@@ -15,6 +15,8 @@ void testVaCopyArg(char *fmt, ...) {
 
   s = va_arg(aq, char *);
   printf("string %s\n", s + 1);
+  va_end(ap);
+  va_end(aq);
 }
 
 int main() {
