@@ -26,46 +26,49 @@ bool hasMDStrImpl(const char *ref, const MDNode *N) {
     return false;
   }
 
-  if (const auto *Str = dyn_cast<MDString>(N->getOperand(0))) {
-    if (Str->getString().equals(ref)) {
-      return true;
+  for (unsigned i = 0; i < N->getNumOperands(); i++) {
+    if (const auto *Str = dyn_cast<MDString>(N->getOperand(i))) {
+      if (Str->getString().equals(ref)) {
+        return true;
+      }
     }
   }
 
   return false;
 }
-} // namespace
 
-namespace meminstrument {
-
-void setNoInstrument(Value *V) {
+void addMIMetadata(Value *V, const char *toAdd) {
   auto &Ctx = V->getContext();
-  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, NOINSTRUMENT_MD));
+  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, toAdd));
   if (auto *O = dyn_cast<GlobalObject>(V)) {
+    N = MDNode::concatenate(O->getMetadata(MEMINSTRUMENT_MD), N);
     O->setMetadata(MEMINSTRUMENT_MD, N);
   } else if (auto *I = dyn_cast<Instruction>(V)) {
+    N = MDNode::concatenate(I->getMetadata(MEMINSTRUMENT_MD), N);
     I->setMetadata(MEMINSTRUMENT_MD, N);
   } else {
     llvm_unreachable("Value not supported for setting metadata!");
   }
 }
 
-void setByvalHandling(Instruction *I) {
-  auto &Ctx = I->getContext();
-  MDNode *N = MDNode::get(Ctx, MDString::get(Ctx, BYVAL_HANDLING_MD));
-  I->setMetadata(BYVAL_HANDLING_MD, N);
-}
+} // namespace
+
+namespace meminstrument {
+
+void setNoInstrument(Value *V) { addMIMetadata(V, NOINSTRUMENT_MD); }
+
+void setByvalHandling(Instruction *I) { addMIMetadata(I, BYVAL_HANDLING_MD); }
 
 bool hasNoInstrument(const GlobalObject *O) {
   return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
 
-bool hasNoInstrument(const Instruction *O) {
-  return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
+bool hasNoInstrument(const Instruction *I) {
+  return hasMDStrImpl(NOINSTRUMENT_MD, I->getMetadata(MEMINSTRUMENT_MD));
 }
 
-bool hasByvalHandling(const Instruction *O) {
-  return hasMDStrImpl(BYVAL_HANDLING_MD, O->getMetadata(BYVAL_HANDLING_MD));
+bool hasByvalHandling(const Instruction *I) {
+  return hasMDStrImpl(BYVAL_HANDLING_MD, I->getMetadata(MEMINSTRUMENT_MD));
 }
 
 bool hasPointerAccessSize(const Value *V) {
