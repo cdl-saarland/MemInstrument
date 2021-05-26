@@ -30,26 +30,26 @@
 
 namespace meminstrument {
 
-/// Add metadata to a Value to indiate that it was introduced by the
+/// Add metadata to a Value to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps. Limited to GlobalObjects and Instructions.
 void setNoInstrument(llvm::Value *V);
 
-/// Add metadata an instruction to indiate that it was introduced by the
+/// Add metadata an instruction to indicate that it was introduced by the
 /// instrumentation to handle byval arguments.
 void setByvalHandling(llvm::Instruction *I);
 
-/// Check a Value for metadata to indiate that it was introduced by the
+/// Check a Value for metadata to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps.
 bool hasNoInstrument(const llvm::GlobalObject *O);
 
-/// Check a Value for metadata to indiate that it was introduced by the
+/// Check a Value for metadata to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps.
 bool hasNoInstrument(const llvm::Instruction *I);
 
-/// Check for metadata on an instruction to indiate that it was introduced by
+/// Check for metadata on an instruction to indicate that it was introduced by
 /// the instrumentation to handle byval arguments.
 bool hasByvalHandling(const llvm::Instruction *I);
 
