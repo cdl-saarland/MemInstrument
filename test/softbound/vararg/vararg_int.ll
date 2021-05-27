@@ -1,8 +1,5 @@
-; RUN: %opt %loadlibs -meminstrument -stats -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=VarArgImpl %s 2>&1 | %fileCheck %s
-
-; CHECK: 6 meminstrument{{.*}}The # of loads and stores tagged as varargs metadata management
-
-; REQUIRES: asserts
+; RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound %linksb -o %t
+; RUN: %t
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
