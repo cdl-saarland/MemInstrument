@@ -934,9 +934,9 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
     case Intrinsic::memcpy:
     case Intrinsic::memmove: {
       SmallVector<Value *, 3> args;
-      args.push_back(intrInst->getOperand(0));
-      args.push_back(intrInst->getOperand(1));
-      args.push_back(intrInst->getOperand(2));
+      args.push_back(intrInst->getArgOperand(0));
+      args.push_back(intrInst->getArgOperand(1));
+      args.push_back(intrInst->getArgOperand(2));
       auto cpyCall = builder.CreateCall(
           FunctionCallee(handles.copyInMemoryMetadata), args);
       cpyCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
