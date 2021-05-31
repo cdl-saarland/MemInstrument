@@ -5,7 +5,7 @@
 ; CHECK: call void @llvm.va_end({{.*}}), !meminstrument
 ; CHECK: %vaarg.addr.in = phi i8* [ %3, %vaarg.in_reg ], [ %overflow_arg_area, %vaarg.in_mem ], !meminstrument
 ; CHECK: load i32, i32* %vaarg.addr{{.*}} !meminstrument
-; CHECK: !"no_instrument"{{.*}}!"vararg_handling"
+; CHECK: !"vararg_handling"
 
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"

@@ -18,6 +18,10 @@ using namespace llvm;
 void AccessOnlyPolicy::classifyTargets(ITargetVector &Destination,
                                        Instruction *Location) {
 
+  if (hasVarArgHandling(Location)) {
+    return;
+  }
+
   if (isa<LoadInst>(Location) || isa<StoreInst>(Location)) {
     insertCheckTargetsLoadStore(Destination, Location);
     return;

@@ -17,6 +17,7 @@
 
 #include "meminstrument/instrumentation_policies/PointerBoundsPolicy.h"
 #include "meminstrument/Config.h"
+#include "meminstrument/pass/Util.h"
 
 #include "llvm/ADT/Statistic.h"
 
@@ -44,6 +45,11 @@ auto PointerBoundsPolicy::getName() const -> const char * {
 
 void PointerBoundsPolicy::classifyTargets(ITargetVector &dest,
                                           Instruction *loc) {
+
+  if (hasVarArgHandling(loc)) {
+    insertVarArgTarget(dest, loc);
+    return;
+  }
 
   switch (loc->getOpcode()) {
   case Instruction::Call:
@@ -116,6 +122,8 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
         arg, call, arg.getOperandNo()));
   }
 }
+
+void PointerBoundsPolicy::insertVarArgTarget(ITargetVector &, Instruction *) {}
 
 void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
                                                          Instruction *inst) {

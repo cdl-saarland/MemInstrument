@@ -90,7 +90,6 @@ bool markVarargInsts(Function &F) {
 
     // Mark the handle itself `noinstrument` if possible.
     if (auto inst = dyn_cast<Instruction>(handle)) {
-      setNoInstrument(inst);
       setVarArgHandling(inst);
     }
 
@@ -115,7 +114,6 @@ bool markVarargInsts(Function &F) {
           StringRef name = fun->getName();
           if (name.equals("llvm.va_start") || name.equals("llvm.va_end") ||
               name.equals("llvm.va_copy")) {
-            setNoInstrument(cb);
             setVarArgHandling(cb);
           }
         }
@@ -124,7 +122,7 @@ bool markVarargInsts(Function &F) {
     }
 
     // If the instruction is already marked as no instrument, ignore it
-    if (hasNoInstrument(entry)) {
+    if (hasNoInstrument(entry) || hasVarArgHandling(entry)) {
       continue;
     }
 
@@ -139,7 +137,6 @@ bool markVarargInsts(Function &F) {
     });
 
     // Don't instrument this vararg related instruction or value
-    setNoInstrument(entry);
     setVarArgHandling(entry);
 
     // The vararg metadata has two levels of metadata loads, decrease the level
@@ -194,7 +191,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     labelAccesses(F);
     // If the function has varargs or a va_list, mark bookkeeping loads and
-    // stores for the vararg handling as no instrument.
+    // stores for the vararg handling as such.
     if (markVarargInsts(F)) {
       NumVarArgs++;
     }

@@ -22,6 +22,12 @@ using namespace llvm;
 
 void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
                                           Instruction *Location) {
+
+  // Ignore instructions that are metadata propagation for varargs
+  if (hasVarArgHandling(Location)) {
+    return;
+  }
+
   switch (Location->getOpcode()) {
   case Instruction::Ret:
     insertInvariantTargetReturn(Dest, cast<ReturnInst>(Location));
