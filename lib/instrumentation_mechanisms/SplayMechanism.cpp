@@ -374,7 +374,7 @@ void SplayMechanism::setupGlobals(Module &M) {
 }
 
 void SplayMechanism::instrumentAlloca(Module &M, AllocaInst *AI) {
-  if (hasNoInstrument(AI)) {
+  if (hasNoInstrument(AI) || hasVarArgHandling(AI)) {
     return;
   }
 
