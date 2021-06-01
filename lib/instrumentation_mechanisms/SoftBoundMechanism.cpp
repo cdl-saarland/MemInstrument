@@ -175,35 +175,31 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
   auto *instrumentee = target.getInstrumentee();
   LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
 
-  if (isa<Argument>(instrumentee) || isa<CallBase>(instrumentee)) {
-    unsigned locIndex;
-    // Look up the function argument shadow stack index
-    if (auto arg = dyn_cast<Argument>(instrumentee)) {
-      locIndex = computeShadowStackLocation(arg);
-      std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
-    }
-    // Look up the shadow stack index for the returned pointer bounds
-    if (auto cb = dyn_cast<CallBase>(instrumentee)) {
+  if (auto cb = dyn_cast<CallBase>(instrumentee)) {
 
-      // Compute the locations of pointers with bounds in the witness
-      auto locs = computeIndices(cb);
-      unsigned shadowStackIndex = 0;
-      for (auto locIndex : locs) {
-        // Insert the loads of bounds
-        std::tie(base, bound) =
-            insertShadowStackLoad(builder, shadowStackIndex);
-        LLVM_DEBUG({
-          dbgs() << "Created bounds: "
-                 << "\n\tBase: " << *base << "\n\tBound: " << *bound << "\n";
-        });
-        // Set the loaded bounds as witness for this pointer
-        target.setBoundWitness(
-            std::make_shared<SoftBoundWitness>(base, bound, instrumentee),
-            locIndex);
-        shadowStackIndex++;
-      }
-      return;
+    // Compute the locations of pointers with bounds in the witness
+    auto locs = computeIndices(cb);
+    unsigned shadowStackIndex = 0;
+    for (auto locIndex : locs) {
+      // Insert the loads of bounds
+      std::tie(base, bound) = insertShadowStackLoad(builder, shadowStackIndex);
+      LLVM_DEBUG({
+        dbgs() << "Created bounds: "
+               << "\n\tBase: " << *base << "\n\tBound: " << *bound << "\n";
+      });
+      // Set the loaded bounds as witness for this pointer
+      target.setBoundWitness(
+          std::make_shared<SoftBoundWitness>(base, bound, instrumentee),
+          locIndex);
+      shadowStackIndex++;
     }
+    return;
+  }
+
+  if (auto arg = dyn_cast<Argument>(instrumentee)) {
+    // Look up the function argument shadow stack index
+    auto locIndex = computeShadowStackLocation(arg);
+    std::tie(base, bound) = insertShadowStackLoad(builder, locIndex);
   }
 
   if (AllocaInst *alloc = dyn_cast<AllocaInst>(instrumentee)) {
@@ -267,10 +263,10 @@ auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const -> WitnessPtr {
 
   auto *basePhi =
       builder.CreatePHI(handles.baseTy, phi->getNumIncomingValues());
-  basePhi->setName("base.phi");
+  basePhi->setName("sb.base.phi");
   auto *boundPhi =
       builder.CreatePHI(handles.boundTy, phi->getNumIncomingValues());
-  boundPhi->setName("bound.phi");
+  boundPhi->setName("sb.bound.phi");
 
   return std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi);
 }
@@ -295,10 +291,10 @@ auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
   IRBuilder<> builder(sel);
   auto *lowerSel = builder.CreateSelect(cond, trueWitness->getLowerBound(),
                                         falseWitness->getLowerBound());
-  lowerSel->setName("base.sel");
+  lowerSel->setName("sb.base.sel");
   auto *upperSel = builder.CreateSelect(cond, trueWitness->getUpperBound(),
                                         falseWitness->getUpperBound());
-  upperSel->setName("bound.sel");
+  upperSel->setName("sb.bound.sel");
 
   return std::make_shared<SoftBoundWitness>(lowerSel, upperSel, sel);
 }
@@ -335,7 +331,7 @@ bool SoftBoundMechanism::skipInstrumentation(Module &module) const {
 
   // Even if the module should not be instrumented, we need to make sure to
   // rename the main function. Linking against the SoftBound run-time
-  // causes a crash otherwise (multiple definitions of the main).
+  // causes a crash otherwise (multiple definitions of the main function).
   renameMain(module);
   return change;
 }
@@ -929,7 +925,7 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
       MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
 
   // Copy pointer metadata upon memcpy and memmove
-  if (intrInst->getOpcode())
+  if (intrInst->getOpcode()) {
     switch (intrInst->getIntrinsicID()) {
     case Intrinsic::memcpy:
     case Intrinsic::memmove: {
@@ -953,6 +949,9 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
     default:
       break;
     }
+  }
+
+  llvm_unreachable("Invariant for unsupported intrinsic requested.");
 }
 
 auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,

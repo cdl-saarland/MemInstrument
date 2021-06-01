@@ -106,8 +106,8 @@ bool markVarargInsts(Function &F) {
     unsigned propLevel;
     std::tie(entry, propLevel) = worklist.pop_back_val();
 
-    // Don't mark calls no instrument just because varargs are handed over, but
-    // label vararg specific calls.
+    // Don't mark calls just because varargs are handed over, but label vararg
+    // specific calls.
     if (CallBase *cb = dyn_cast<CallBase>(entry)) {
       if (auto fun = cb->getCalledFunction()) {
         if (fun->hasName()) {
