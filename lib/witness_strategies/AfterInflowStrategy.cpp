@@ -112,10 +112,21 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::Alloca:
     case Instruction::Call:
     case Instruction::LandingPad:
-    case Instruction::Load:
     case Instruction::IntToPtr: {
       // Introduce a target without requirements for these values. We assume
       // that these are valid pointers.
+      requireSource(Node, Instrumentee, Instrumentee->getNextNode());
+      return;
+    }
+    case Instruction::Load: {
+      auto load = dyn_cast<LoadInst>(Instrumentee);
+      // If this load is not actually loading from the vaargs handed over to the
+      // function, require bounds for its source structure
+      if (!hasVarArgLoadArg(load) && hasVarArgHandling(load)) {
+        requireRecursively(Node, load->getPointerOperand(), load);
+        return;
+      }
+      // Require bounds for loads of pointers
       requireSource(Node, Instrumentee, Instrumentee->getNextNode());
       return;
     }
