@@ -144,6 +144,12 @@ bool markVarargInsts(Function &F) {
     if (isa<LoadInst>(entry)) {
       assert(propLevel > 0);
       propLevel--;
+
+      // This load does actually load arguments that are handed over to the
+      // function, mark it.
+      if (propLevel == 0) {
+        setVarArgLoadArg(entry);
+      }
     }
 
     // Stop following users when the propagation level hits zero
