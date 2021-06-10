@@ -35,12 +35,12 @@ namespace meminstrument {
 /// steps. Limited to GlobalObjects and Instructions.
 void setNoInstrument(llvm::Value *V);
 
-/// Add metadata to a Value to indicate that it was identified as vaarg
+/// Add metadata to a Value to indicate that it was identified as vararg
 /// handling.
 void setVarArgHandling(llvm::Value *V);
 
-/// Add metadata to a Value to indicate that it was identified as a load of an
-/// vaarg.
+/// Add metadata to a Value to indicate that it was identified as a load of a
+/// vararg.
 void setVarArgLoadArg(llvm::Value *V);
 
 /// Add metadata an instruction to indicate that it was introduced by the
