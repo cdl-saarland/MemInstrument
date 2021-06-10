@@ -130,7 +130,7 @@ private:
   void handleShadowStackAllocation(llvm::CallBase *) const;
 
   /// Insert metadata calls for invariants of intrinsic function if necessary.
-  void handleIntrinsicInvariant(llvm::IntrinsicInst *) const;
+  void handleIntrinsicInvariant(const CallInvariantIT &) const;
 
   /// Add bit casts if the types are not yet those that base and bound should
   /// have.

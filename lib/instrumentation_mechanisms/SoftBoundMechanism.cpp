@@ -856,8 +856,8 @@ void SoftBoundMechanism::handleCallInvariant(
   auto call = target.getCall();
 
   // Intrinsics might need additional calls for metadata copying, insert them
-  if (auto intrinsic = dyn_cast<IntrinsicInst>(call)) {
-    handleIntrinsicInvariant(intrinsic);
+  if (isa<IntrinsicInst>(call)) {
+    handleIntrinsicInvariant(target);
     return;
   }
 
@@ -916,7 +916,9 @@ void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
 }
 
 void SoftBoundMechanism::handleIntrinsicInvariant(
-    IntrinsicInst *intrInst) const {
+    const CallInvariantIT &target) const {
+
+  IntrinsicInst *intrInst = cast<IntrinsicInst>(target.getCall());
 
   IRBuilder<> builder(intrInst);
 
