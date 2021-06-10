@@ -116,6 +116,9 @@ private:
                          std::vector<llvm::Value *> indices) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 
+  /// Insert code that determines the witness for varargs.
+  void insertVarArgWitness(IntermediateIT &) const;
+
   /// Handles invariant targets that we use for metadata propagation. It
   /// produces stores to propagate bounds and inserts allocations for metadata
   /// data structures if necessary.
@@ -131,6 +134,22 @@ private:
 
   /// Insert metadata calls for invariants of intrinsic function if necessary.
   void handleIntrinsicInvariant(const CallInvariantIT &) const;
+
+  /// Initialize a vararg proxy object.
+  /// The given CallInvariantIT encapsulates a va_start, initialize a proxy
+  /// object that provides metadata for the va_started va_list.
+  void initializeVaListProxy(llvm::IRBuilder<> &,
+                             const CallInvariantIT &) const;
+
+  /// Copy a vararg proxy object.
+  /// The given CallInvariantIT encapsulates a va_copy, so also copy the proxy
+  /// object at this point.
+  void copyVaListProxy(llvm::IRBuilder<> &, const CallInvariantIT &) const;
+
+  /// Free a vararg proxy object.
+  /// The given CallInvariantIT encapsulates a va_end after which the va_list
+  /// should no longer be used. Delete the proxy object at this point as well.
+  void freeVaListProxy(llvm::IRBuilder<> &, const CallInvariantIT &) const;
 
   /// Add bit casts if the types are not yet those that base and bound should
   /// have.
@@ -196,6 +215,14 @@ private:
   void insertShadowStackStore(llvm::IRBuilder<> &, llvm::Value *lowerBound,
                               llvm::Value *upperBound, int locIndex) const;
 
+  /// Load the vararg proxy at the given shadow stack location.
+  auto insertVarArgShadowStackLoad(llvm::IRBuilder<> &, int index) const
+      -> llvm::Instruction *;
+
+  /// Store the vararg proxy on the shadow stack.
+  void insertVarArgShadowStackStore(llvm::IRBuilder<> &, llvm::Value *proxyPtr,
+                                    int index) const;
+
   /// The shadow stack stores bound information for pointers handed over to
   /// functions and pointers returned from functions.
   /// The location on the stack is build up follows:
@@ -218,6 +245,10 @@ private:
   /// Determine how many pointers can be stored in the given type.
   /// Is only accurate for non-nested aggregates.
   auto determineNumberOfPointers(const llvm::Type *) const -> unsigned;
+
+  /// Determine the shadow stack location at which the va args start.
+  auto determineShadowStackLocationFirstVarArg(const llvm::Function *) const
+      -> unsigned;
 
   /// Compute the set of indices of pointer types for the given return/callbase.
   auto computeIndices(const llvm::Instruction *) const
@@ -250,6 +281,10 @@ private:
   /// Check if this module contains any unsupported constructs (e.g. exception
   /// handling)
   void checkModule(llvm::Module &);
+
+  /// Set metadata that indicates the instruction was introduced to deal with
+  /// varargs
+  void setVarArgMetadata(llvm::Instruction *, llvm::StringRef name = "") const;
 
   /// Get the first instruction before/after start, that does not have metadata
   /// containing nodeString.

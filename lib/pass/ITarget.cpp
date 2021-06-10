@@ -64,6 +64,11 @@ ITargetPtr ITargetBuilder::createCallInvariantTarget(CallBase *call) {
   return std::make_shared<CallInvariantIT>(call);
 }
 
+ITargetPtr ITargetBuilder::createCallInvariantTarget(
+    CallBase *call, const std::map<unsigned, Value *> &requiredArgs) {
+  return std::make_shared<CallInvariantIT>(call, requiredArgs);
+}
+
 ITargetPtr ITargetBuilder::createValInvariantTarget(Value *instrumentee,
                                                     Instruction *location) {
   return std::make_shared<ValInvariantIT>(instrumentee, location);
@@ -448,11 +453,22 @@ bool ArgInvariantIT::classof(const ITarget *T) {
 CallInvariantIT::CallInvariantIT(CallBase *call)
     : InvariantIT(ITargetKind::ITK_CallInvariant, nullptr, call) {}
 
-bool CallInvariantIT::needsNoBoundWitnesses() const { return true; }
+CallInvariantIT::CallInvariantIT(
+    CallBase *call, const std::map<unsigned, llvm::Value *> &requiredArgs)
+    : InvariantIT(ITargetKind::ITK_CallInvariant, nullptr, call),
+      requiredArgs(requiredArgs) {}
+
+bool CallInvariantIT::needsNoBoundWitnesses() const {
+  return requiredArgs.empty();
+}
 
 CallBase *CallInvariantIT::getCall() const {
   assert(isValid());
   return cast<CallBase>(location);
+}
+
+std::map<unsigned, llvm::Value *> CallInvariantIT::getRequiredArgs() const {
+  return requiredArgs;
 }
 
 void CallInvariantIT::dump(raw_ostream &os) const {

@@ -62,6 +62,18 @@ public:
   llvm::Type *intTy = nullptr;
   llvm::Type *sizeTTy = nullptr;
 
+  // VarArg handling functions
+  // Type of the proxy object that allows to load bounds for varargs
+  llvm::PointerType *varArgProxyTy = nullptr;
+  llvm::PointerType *varArgProxyPtrTy = nullptr;
+
+  llvm::Function *allocateVarArgProxy;
+  llvm::Function *loadNextInfoVarArgProxy;
+  llvm::Function *copyVarArgProxy;
+  llvm::Function *freeVarArgProxy;
+  llvm::Function *loadVarArgProxyStack;
+  llvm::Function *storeVarArgProxyStack;
+
   // Fail functions and statistics
   llvm::Function *externalCheckCounter = nullptr;
   llvm::Function *failFunction = nullptr;

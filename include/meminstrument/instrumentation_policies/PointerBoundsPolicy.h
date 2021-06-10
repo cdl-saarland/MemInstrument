@@ -32,8 +32,8 @@ private:
   /// Add all targets required upon a call.
   void addCallTargets(ITargetVector &, llvm::CallInst *) const;
 
-  /// TODO
-  void insertVarArgTarget(ITargetVector &, llvm::Instruction *);
+  /// Insert additional targets that make vararg metadata available.
+  void insertVarArgInvariantTargets(ITargetVector &, llvm::Instruction *);
 
   /// Insert an invariant target if the current instruction returns or stores an
   /// aggregate type.

@@ -79,6 +79,11 @@ public:
   /// result is a CallInvariantIT.
   static ITargetPtr createCallInvariantTarget(llvm::CallBase *);
 
+  /// Static factory method for creating an ITarget for a call invariant which
+  /// requires information on its arguments. The result is a CallInvariantIT.
+  static ITargetPtr createCallInvariantTarget(
+      llvm::CallBase *, const std::map<unsigned, llvm::Value *> &requiredArgs);
+
   /// Static factory method for creating an ITarget for an invariant check for
   /// Instrumentee at Location.
   /// The result is a ValInvariantIT.
@@ -329,15 +334,23 @@ class CallInvariantIT : public InvariantIT {
 public:
   CallInvariantIT(llvm::CallBase *);
 
+  CallInvariantIT(llvm::CallBase *,
+                  const std::map<unsigned, llvm::Value *> &requiredArgs);
+
   bool needsNoBoundWitnesses() const override;
 
   llvm::CallBase *getCall() const;
+
+  std::map<unsigned, llvm::Value *> getRequiredArgs() const;
 
   void dump(llvm::raw_ostream &) const override;
 
   bool operator==(const ITarget &) const override;
 
   static bool classof(const ITarget *);
+
+private:
+  std::map<unsigned, llvm::Value *> requiredArgs;
 };
 
 class ValInvariantIT : public InvariantIT {

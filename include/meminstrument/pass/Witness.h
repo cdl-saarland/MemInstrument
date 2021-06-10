@@ -35,6 +35,7 @@ public:
     WK_Noop,
     WK_Lowfat,
     WK_SoftBound,
+    WK_SoftBoundVarArg,
     // Insert new WitnessKinds for each new type of witnesses here!
   };
 

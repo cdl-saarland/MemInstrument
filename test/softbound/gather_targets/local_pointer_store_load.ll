@@ -1,12 +1,11 @@
 ; RUN: %opt -mem2reg %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
 
-; CHECK: dereference check with constant size 4B for retval at entry::[store,5]
-; CHECK-NEXT: dereference check with constant size 4B for x at entry::[store,6]
-; CHECK-NEXT: value invariant for x at entry::[store,7]
-; CHECK-NEXT: dereference check with constant size 8B for y at entry::[store,7]
-; CHECK-NEXT: dereference check with constant size 8B for y at entry::[{{.*}},8]
-; CHECK-NEXT: dereference check with constant size 4B{{.*}}at entry::[{{.*}},9]
-
+; CHECK: dereference check with constant size 4B for retval at entry::[store,{{.*}}]
+; CHECK-NEXT: dereference check with constant size 4B for x at entry::[store,{{.*}}]
+; CHECK-NEXT: value invariant for x at entry::[store,{{.*}}]
+; CHECK-NEXT: dereference check with constant size 8B for y at entry::[store,{{.*}}]
+; CHECK-NEXT: dereference check with constant size 8B for y at entry
+; CHECK-NEXT: dereference check with constant size 4B{{.*}}at entry
 
 ; REQUIRES: asserts
 

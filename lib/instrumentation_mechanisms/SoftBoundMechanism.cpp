@@ -167,13 +167,24 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
   LLVM_DEBUG(dbgs() << "Insert witness for: " << target << "\n";);
 
   assert(isa<IntermediateIT>(&target));
+  IntermediateIT &inTarget = *cast<IntermediateIT>(&target);
+
+  auto *instrumentee = target.getInstrumentee();
+  LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
+  if (isa<Instruction>(instrumentee) &&
+      hasVarArgHandling(cast<Instruction>(instrumentee))) {
+    insertVarArgWitness(inTarget);
+    return;
+  }
+  if (isVarArgMetadataType(instrumentee->getType())) {
+    insertVarArgWitness(inTarget);
+    return;
+  }
 
   IRBuilder<> builder(target.getLocation());
 
   Value *base = nullptr;
   Value *bound = nullptr;
-  auto *instrumentee = target.getInstrumentee();
-  LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
 
   if (auto cb = dyn_cast<CallBase>(instrumentee)) {
 
@@ -253,6 +264,11 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
 auto SoftBoundMechanism::getRelocatedClone(const Witness &w,
                                            Instruction *location) const
     -> WitnessPtr {
+
+  if (auto wProxy = dyn_cast<SoftBoundVarArgWitness>(&w)) {
+    return std::make_shared<SoftBoundVarArgWitness>(wProxy->getProxy());
+  }
+
   return std::make_shared<SoftBoundWitness>(w.getLowerBound(),
                                             w.getUpperBound(), location);
 }
@@ -260,6 +276,14 @@ auto SoftBoundMechanism::getRelocatedClone(const Witness &w,
 auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const -> WitnessPtr {
 
   IRBuilder<> builder(phi);
+
+  // Create a special witness when varargs are handled by this phi
+  if (hasVarArgHandling(phi)) {
+    auto *newPhi = builder.CreatePHI(handles.varArgProxyPtrTy,
+                                     phi->getNumIncomingValues());
+    setVarArgMetadata(newPhi, "sb.vararg.proxy.phi");
+    return std::make_shared<SoftBoundVarArgWitness>(newPhi);
+  }
 
   auto *basePhi =
       builder.CreatePHI(handles.baseTy, phi->getNumIncomingValues());
@@ -275,6 +299,18 @@ void SoftBoundMechanism::addIncomingWitnessToPhi(WitnessPtr &phi,
                                                  WitnessPtr &incoming,
                                                  BasicBlock *inBB) const {
 
+  // Only one phi is required to propagate the vararg proxy
+  if (SoftBoundVarArgWitness *phiProxy =
+          dyn_cast<SoftBoundVarArgWitness>(phi.get())) {
+    auto incomingProxy = cast<SoftBoundVarArgWitness>(incoming.get());
+
+    auto phiSrc = cast<PHINode>(phiProxy->getProxy());
+    auto incomingSrc = incomingProxy->getProxy();
+    phiSrc->addIncoming(incomingSrc, inBB);
+    return;
+  }
+
+  // For regular witnesses, propagate base and bound through their own phis
   auto *lowerPhi = cast<PHINode>(phi->getLowerBound());
   auto *upperPhi = cast<PHINode>(phi->getUpperBound());
 
@@ -287,8 +323,21 @@ auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
                                           WitnessPtr &falseWitness) const
     -> WitnessPtr {
   auto *cond = sel->getCondition();
-
   IRBuilder<> builder(sel);
+
+  // Create a special witness when varargs are handled by this select
+  if (auto trueProxy = dyn_cast<SoftBoundVarArgWitness>(trueWitness.get())) {
+    auto falseProxy = dyn_cast<SoftBoundVarArgWitness>(falseWitness.get());
+
+    auto *newSel = builder.CreateSelect(cond, trueProxy->getProxy(),
+                                        falseProxy->getProxy());
+    if (auto newSelInst = dyn_cast<Instruction>(newSel)) {
+      setVarArgMetadata(newSelInst, "sb.vararg.proxy.sel");
+    }
+    return std::make_shared<SoftBoundVarArgWitness>(newSel);
+  }
+
+  // For regular witnesses, propagate base and bound through their own selects
   auto *lowerSel = builder.CreateSelect(cond, trueWitness->getLowerBound(),
                                         falseWitness->getLowerBound());
   lowerSel->setName("sb.base.sel");
@@ -778,6 +827,97 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   llvm_unreachable("Unimplemented constant global initializer.");
 }
 
+void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
+  auto instrumentee = target.getInstrumentee();
+  IRBuilder<> builder(target.getLocation());
+
+  if (auto load = dyn_cast<LoadInst>(instrumentee)) {
+    assert(hasVarArgLoadArg(load));
+
+    // Load from the allocas that hold base and bound
+    AllocaInst *baseAlloc;
+    AllocaInst *boundAlloc;
+    std::tie(baseAlloc, boundAlloc) = metadataAllocs.at(load->getFunction());
+
+    // Load base and bound
+    auto base = builder.CreateLoad(baseAlloc);
+    setVarArgMetadata(base, "sb.vararg.base");
+
+    auto bound = builder.CreateLoad(boundAlloc);
+    setVarArgMetadata(bound, "sb.vararg.bound");
+
+    target.setSingleBoundWitness(
+        std::make_shared<SoftBoundWitness>(base, bound, load));
+    return;
+  }
+
+  LLVM_DEBUG(dbgs() << "Insert proxy witness for: " << *instrumentee << "\n";);
+
+  Value *proxyPtr = nullptr;
+  if (auto alloc = dyn_cast<AllocaInst>(instrumentee)) {
+
+    // Create an allocation for the proxy object alongside the va_list
+    builder.SetInsertPoint(alloc->getNextNode());
+    auto proxyAlloc = builder.CreateAlloca(handles.varArgProxyTy);
+    setVarArgMetadata(proxyAlloc, "sb.vararg.proxy.alloc");
+    proxyPtr = proxyAlloc;
+  }
+
+  if (Argument *arg = dyn_cast<Argument>(instrumentee)) {
+    // Load the proxy object for this argument in the entry block, otherwise we
+    // might conflict with calls later on in the function that build up new
+    // layers on the shadow stack
+    builder.SetInsertPoint(
+        &(*arg->getParent()->getEntryBlock().getFirstInsertionPt()));
+
+    // Load the proxy object from the shadow stack
+    auto index = computeShadowStackLocation(arg);
+    auto load = insertVarArgShadowStackLoad(builder, index);
+
+    // Store the proxy to a local variable.
+    // This ensures both va_list arguments to a function and regular vararg
+    // functions both store the proxy in their own local variable, and can be
+    // used uniformly by the metadata propagation.
+    auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
+    setVarArgMetadata(alloc, "sb.valist.proxy.alloc");
+
+    // The store to the allocation can be as late as the target wants it to be
+    builder.SetInsertPoint(target.getLocation());
+    auto store = builder.CreateStore(load, alloc);
+    setVarArgMetadata(store);
+
+    proxyPtr = alloc;
+  }
+
+  if (isa<ConstantPointerNull>(instrumentee)) {
+    // In case the va_list is null, propagate null metadata
+    builder.SetInsertPoint(target.getLocation()->getNextNode());
+
+    auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
+    setVarArgMetadata(alloc, "sb.valist.proxy.alloc");
+
+    auto toStore = ConstantPointerNull::get(handles.varArgProxyTy);
+
+    auto store = builder.CreateStore(toStore, alloc);
+    setVarArgMetadata(store);
+
+    proxyPtr = alloc;
+  }
+
+  if (isa<GlobalVariable>(instrumentee)) {
+    llvm_unreachable("Implementation for va_lists stored in globals missing");
+  }
+
+  if (!proxyPtr) {
+    LLVM_DEBUG(dbgs() << "No proxy created for: " << *instrumentee << "\n"
+                      << target << "\n";);
+  }
+
+  assert(proxyPtr);
+  target.setSingleBoundWitness(
+      std::make_shared<SoftBoundVarArgWitness>(proxyPtr));
+}
+
 void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
   if (auto cInvIT = dyn_cast<CallInvariantIT>(&target)) {
@@ -819,8 +959,19 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
   // Upon a call, the base and bound for all pointer arguments need to be stored
   // to the shadow stack.
   if (auto argIT = dyn_cast<ArgInvariantIT>(&target)) {
+
     auto locIndex =
         computeShadowStackLocation(argIT->getCall(), argIT->getArgNum());
+
+    if (isVarArgMetadataType(instrumentee->getType())) {
+      auto varArgWit =
+          cast<SoftBoundVarArgWitness>(target.getSingleBoundWitness().get());
+      auto loadedVal = builder.CreateLoad(varArgWit->getProxy());
+      setVarArgMetadata(loadedVal, "sb.load.proxy");
+
+      insertVarArgShadowStackStore(builder, loadedVal, locIndex);
+      return;
+    }
 
     const auto bw = target.getSingleBoundWitness();
     insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
@@ -848,6 +999,31 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     return;
   }
 
+  if (isa<ValInvariantIT>(&target)) {
+    auto varArgW =
+        dyn_cast<SoftBoundVarArgWitness>(target.getSingleBoundWitness().get());
+    assert(varArgW);
+
+    // Look up which proxy to use
+    auto proxyPtr = varArgW->getProxy();
+
+    // Load the proxy
+    auto load = builder.CreateLoad(proxyPtr);
+    setVarArgMetadata(load, "sb.vararg.load.proxy");
+
+    AllocaInst *baseAlloc;
+    AllocaInst *boundAlloc;
+    std::tie(baseAlloc, boundAlloc) = metadataAllocs.at(loc->getFunction());
+
+    // Load base and bound into the local variables
+    SmallVector<Value *, 3> args = {load, baseAlloc, boundAlloc};
+    auto loadCall = builder.CreateCall(
+        FunctionCallee(handles.loadNextInfoVarArgProxy), args);
+    setVarArgMetadata(loadCall);
+    return;
+  }
+
+  LLVM_DEBUG(dbgs() << target << "\n";);
   llvm_unreachable("Unexpected invariant target.");
 }
 
@@ -949,12 +1125,105 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
       // TODO FIXME what if an in-memory pointer is overwritten here?
       return;
     }
+    case Intrinsic::vastart: {
+      // Call the function to initialize the proxy object
+      initializeVaListProxy(builder, target);
+      return;
+    }
+    case Intrinsic::vacopy: {
+      // Call the function to copy the proxy object
+      copyVaListProxy(builder, target);
+      return;
+    }
+    case Intrinsic::vaend: {
+      // Call the function to free the proxy object
+      freeVaListProxy(builder, target);
+      return;
+    }
     default:
       break;
     }
   }
 
   llvm_unreachable("Invariant for unsupported intrinsic requested.");
+}
+
+void SoftBoundMechanism::initializeVaListProxy(
+    IRBuilder<> &builder, const CallInvariantIT &callIT) const {
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+
+  auto size = determineShadowStackLocationFirstVarArg(
+      callIT.getLocation()->getFunction());
+  auto sizeVal = ConstantInt::get(handles.intTy, size, true);
+  SmallVector<Value *, 1> args = {sizeVal};
+  auto allocProxy =
+      builder.CreateCall(FunctionCallee(handles.allocateVarArgProxy), args);
+  allocProxy->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setVarArgMetadata(allocProxy, "sb.vararg.proxy.start");
+
+  // Store to alloc prepared for this.
+  auto varArgW =
+      cast<SoftBoundVarArgWitness>(callIT.getBoundWitness(0).get())->getProxy();
+  auto store = builder.CreateStore(allocProxy, varArgW);
+  setVarArgMetadata(store);
+  LLVM_DEBUG(dbgs() << "Module after insert of initializing alloc:\n"
+                    << *store->getModule() << "\n";);
+}
+
+void SoftBoundMechanism::copyVaListProxy(IRBuilder<> &builder,
+                                         const CallInvariantIT &callIT) const {
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+
+  // Load the source proxy pointer
+  SoftBoundVarArgWitness *srcWit =
+      cast<SoftBoundVarArgWitness>(&(*callIT.getBoundWitness(1)));
+  LLVM_DEBUG(dbgs() << "Witness value for cpy src: " << *srcWit->getProxy()
+                    << "\n";);
+  auto proxyPtr = builder.CreateLoad(srcWit->getProxy());
+  setVarArgMetadata(proxyPtr, "sb.vararg.proxy.load");
+
+  // Create a copy of the proxy object
+  SmallVector<Value *, 1> args = {proxyPtr};
+  auto copyCall =
+      builder.CreateCall(FunctionCallee(handles.copyVarArgProxy), args);
+  copyCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setVarArgMetadata(copyCall, "sb.vararg.proxy.copy");
+
+  SoftBoundVarArgWitness *trgWit =
+      cast<SoftBoundVarArgWitness>(&(*callIT.getBoundWitness(0)));
+
+  // Store the copied proxy
+  auto store = builder.CreateStore(copyCall, trgWit->getProxy());
+  LLVM_DEBUG(dbgs() << "Witness value for cpy trg: " << *trgWit->getProxy()
+                    << "\n";);
+  setVarArgMetadata(store);
+}
+
+void SoftBoundMechanism::freeVaListProxy(IRBuilder<> &builder,
+                                         const CallInvariantIT &callIT) const {
+
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+
+  // Load the proxy pointer
+  SoftBoundVarArgWitness *proxyWit =
+      cast<SoftBoundVarArgWitness>(&(*callIT.getBoundWitness(0)));
+  auto proxyPtr = builder.CreateLoad(proxyWit->getProxy());
+  setVarArgMetadata(proxyPtr, "sb.vararg.proxy.load");
+
+  // Free it
+  SmallVector<Value *, 1> args = {proxyPtr};
+  auto freeCall =
+      builder.CreateCall(FunctionCallee(handles.freeVarArgProxy), args);
+  freeCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setVarArgMetadata(freeCall);
 }
 
 auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
@@ -1251,6 +1520,43 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
                     << "\n\tBound store: " << *callStoreBound << "\n";);
 }
 
+auto SoftBoundMechanism::insertVarArgShadowStackLoad(IRBuilder<> &builder,
+                                                     int index) const
+    -> Instruction * {
+  // Insert calls to the C run-time that look up the proxy pointer
+  auto indexVal = ConstantInt::get(handles.intTy, index, true);
+  SmallVector<Value *, 1> args = {indexVal};
+  auto proxyPtr =
+      builder.CreateCall(FunctionCallee(handles.loadVarArgProxyStack), args);
+
+  // TODO SoftBound MDNode
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackLoadStr()));
+  proxyPtr->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setVarArgMetadata(proxyPtr, "sb.load.proxy");
+  return proxyPtr;
+}
+
+void SoftBoundMechanism::insertVarArgShadowStackStore(IRBuilder<> &builder,
+                                                      Value *proxyPtr,
+                                                      int index) const {
+  // Insert calls to the C run-time that look up the proxy pointer
+  auto indexVal = ConstantInt::get(handles.intTy, index, true);
+  SmallVector<Value *, 2> args = {proxyPtr, indexVal};
+  auto storeCall =
+      builder.CreateCall(FunctionCallee(handles.storeVarArgProxyStack), args);
+
+  // TODO SoftBound MDNode
+  MDNode *node = MDNode::get(
+      *context,
+      MDString::get(*context,
+                    InternalSoftBoundConfig::getShadowStackStoreStr()));
+  storeCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setVarArgMetadata(storeCall);
+}
+
 auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg) const
     -> unsigned {
   assert(arg->getType()->isPointerTy());
@@ -1341,6 +1647,35 @@ auto SoftBoundMechanism::determineNumberOfPointers(const Type *ty) const
   }
 
   return 0;
+}
+
+/// Determine the shadow stack location at which the va args start
+auto SoftBoundMechanism::determineShadowStackLocationFirstVarArg(
+    const Function *fun) const -> unsigned {
+  assert(fun->isVarArg());
+
+  unsigned shadowStackLoc = 0;
+
+  // Skip shadow stack locations of returned values
+  shadowStackLoc += determineNumberOfPointers(fun->getReturnType());
+
+  for (const auto &use : fun->args()) {
+
+    if (!use.getType()->isPointerTy()) {
+      // Non-pointer arguments are not accounted for in the location
+      // calculation
+      continue;
+    }
+
+    // Skip metadata arguments
+    if (use.getType()->isMetadataTy()) {
+      continue;
+    }
+
+    shadowStackLoc++;
+  }
+
+  return shadowStackLoc;
 }
 
 auto SoftBoundMechanism::computeIndices(const Instruction *inst) const
@@ -1595,6 +1930,15 @@ void SoftBoundMechanism::checkModule(Module &module) {
         }
       }
     }
+  }
+}
+
+void SoftBoundMechanism::setVarArgMetadata(Instruction *inst,
+                                           StringRef name) const {
+  setNoInstrument(inst);
+  setVarArgHandling(inst);
+  if (!name.empty()) {
+    inst->setName(name);
   }
 }
 

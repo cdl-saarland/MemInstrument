@@ -48,6 +48,7 @@ PrototypeInserter::PrototypeInserter(Module &module)
   boundTy = voidPtrTy;
   basePtrTy = PointerType::getUnqual(baseTy);
   boundPtrTy = PointerType::getUnqual(boundTy);
+  varArgProxyTy = PointerType::getUnqual(PointerType::getUnqual(sizeTTy));
 }
 
 auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
@@ -60,6 +61,9 @@ auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
 
   handles.intTy = intTy;
   handles.sizeTTy = sizeTTy;
+
+  handles.varArgProxyTy = varArgProxyTy;
+  handles.varArgProxyPtrTy = PointerType::getUnqual(varArgProxyTy);
 
   if (InternalSoftBoundConfig::ensureOnlySpatial()) {
     insertSpatialOnlyRunTimeProtoypes(handles);
@@ -116,6 +120,11 @@ void PrototypeInserter::insertSpatialRunTimeProtoypes(
   handles.spatialCheck =
       createAndInsertPrototype("__softboundcets_spatial_dereference_check",
                                voidTy, baseTy, boundTy, voidPtrTy, sizeTTy);
+
+  // VarArg related
+  handles.loadNextInfoVarArgProxy =
+      createAndInsertPrototype("__softboundcets_next_va_arg_metadata", voidTy,
+                               varArgProxyTy, basePtrTy, boundPtrTy);
 }
 
 void PrototypeInserter::insertTemporalRunTimeProtoypes(
@@ -146,6 +155,22 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
       "__softboundcets_deallocate_shadow_stack_space", voidTy);
   handles.copyInMemoryMetadata = createAndInsertPrototype(
       "__softboundcets_copy_metadata", voidTy, voidPtrTy, voidPtrTy, sizeTTy);
+
+  // VarArg related
+  handles.allocateVarArgProxy = createAndInsertPrototype(
+      "__softboundcets_allocate_va_arg_proxy", varArgProxyTy, intTy);
+
+  handles.copyVarArgProxy = createAndInsertPrototype(
+      "__softboundcets_copy_va_arg_proxy", varArgProxyTy, varArgProxyTy);
+
+  handles.freeVarArgProxy = createAndInsertPrototype(
+      "__softboundcets_free_va_arg_proxy", voidTy, varArgProxyTy);
+
+  handles.loadVarArgProxyStack = createAndInsertPrototype(
+      "__softboundcets_load_proxy_shadow_stack", varArgProxyTy, intTy);
+
+  handles.storeVarArgProxyStack = createAndInsertPrototype(
+      "__softboundcets_store_proxy_shadow_stack", voidTy, varArgProxyTy, intTy);
 }
 
 void PrototypeInserter::insertFailAndStatsFunctions(

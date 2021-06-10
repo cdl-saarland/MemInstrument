@@ -7,8 +7,13 @@
 //
 //===----------------------------------------------------------------------===//
 ///
+/// SoftBoundWitness:
 /// Connects a pointer ptr with its lower and upper bound value, lowerBound and
 /// upperBound.
+///
+/// SoftBoundVarArgWitness:
+/// Contains the proxy object for varargs. It can be used to request metadata
+/// for varargs.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -36,4 +41,27 @@ auto SoftBoundWitness::getUpperBound() const -> Value * { return upperBound; }
 
 bool SoftBoundWitness::classof(const Witness *W) {
   return W->getKind() == WK_SoftBound;
+}
+
+//===----------------------------------------------------------------------===//
+//                 Implementation of SoftBoundVarArgWitness
+//===----------------------------------------------------------------------===//
+
+SoftBoundVarArgWitness::SoftBoundVarArgWitness(Value *varArgProxy)
+    : Witness(WK_SoftBoundVarArg), varArgProxy(varArgProxy) {
+  assert(varArgProxy);
+}
+
+auto SoftBoundVarArgWitness::getLowerBound() const -> Value * {
+  llvm_unreachable("Operation not supported by this witness kind");
+}
+
+auto SoftBoundVarArgWitness::getUpperBound() const -> Value * {
+  llvm_unreachable("Operation not supported by this witness kind");
+}
+
+auto SoftBoundVarArgWitness::getProxy() const -> Value * { return varArgProxy; }
+
+bool SoftBoundVarArgWitness::classof(const Witness *W) {
+  return W->getKind() == WK_SoftBoundVarArg;
 }

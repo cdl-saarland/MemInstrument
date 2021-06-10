@@ -4,7 +4,7 @@
 // CHECK: Base{{.*}} @y to i8*
 // CHECK-NEXT:  Bound{{.*}} getelementptr inbounds (i32*, i32** @y, i32 1
 
-// CHECK: Insert witness {{.*}}intermediate target at entry::[ret,3]
+// CHECK: Insert witness {{.*}}intermediate target at entry::[ret,{{.*}}]
 // CHECK-NEXT: Instrumentee{{.*}} load i32*, i32** @y
 // CHECK-NEXT: Insert metadata load:
 // CHECK-NEXT: Ptr: {{.*}} @y

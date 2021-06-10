@@ -47,7 +47,7 @@ void PointerBoundsPolicy::classifyTargets(ITargetVector &dest,
                                           Instruction *loc) {
 
   if (hasVarArgHandling(loc)) {
-    insertVarArgTarget(dest, loc);
+    insertVarArgInvariantTargets(dest, loc);
     return;
   }
 
@@ -128,7 +128,46 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
   }
 }
 
-void PointerBoundsPolicy::insertVarArgTarget(ITargetVector &, Instruction *) {}
+void PointerBoundsPolicy::insertVarArgInvariantTargets(ITargetVector &vec,
+                                                       Instruction *inst) {
+
+  if (auto cb = dyn_cast<CallBase>(inst)) {
+
+    // Nothing apart from vararg intrinsics should end up here
+    assert(isa<IntrinsicInst>(cb));
+
+    auto intrInst = cast<IntrinsicInst>(cb);
+    switch (intrInst->getIntrinsicID()) {
+    case Intrinsic::vastart:
+    case Intrinsic::vaend: {
+      std::map<unsigned, llvm::Value *> requiredArgs;
+      requiredArgs[0] = cb->getArgOperand(0);
+      vec.push_back(
+          ITargetBuilder::createCallInvariantTarget(cb, requiredArgs));
+      return;
+    }
+    case Intrinsic::vacopy: {
+      std::map<unsigned, llvm::Value *> requiredArgs;
+      requiredArgs[0] = cb->getArgOperand(0);
+      requiredArgs[1] = cb->getArgOperand(1);
+      vec.push_back(
+          ITargetBuilder::createCallInvariantTarget(cb, requiredArgs));
+      return;
+    }
+    default:
+      llvm_unreachable("Unexpected intrinsic instruction encountered.");
+    }
+  }
+
+  if (auto load = dyn_cast<LoadInst>(inst)) {
+    // Insert a target that makes sure that metadata is propagated up to this
+    // load, such that it has bounds for the next vararg available
+    if (hasVarArgLoadArg(load) && load->getType()->isPointerTy()) {
+      vec.push_back(ITargetBuilder::createValInvariantTarget(
+          load->getPointerOperand(), load));
+    }
+  }
+}
 
 void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
                                                          Instruction *inst) {

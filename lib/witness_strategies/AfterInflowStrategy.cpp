@@ -94,16 +94,19 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
+  Node->HasAllRequirements = true;
+
   auto &Target = Node->Target;
   // Call invariant targets do not have requirements
-  if (isa<CallInvariantIT>(Target)) {
-    Node->HasAllRequirements = true;
+  if (auto callIT = dyn_cast<CallInvariantIT>(Target)) {
+    for (auto elem : callIT->getRequiredArgs()) {
+      requireRecursively(Node, elem.second, callIT->getCall());
+    }
     return;
   }
 
   assert(Target->hasInstrumentee());
   Instruction *Instrumentee = dyn_cast<Instruction>(Target->getInstrumentee());
-  Node->HasAllRequirements = true;
 
   auto &WG = Node->Graph;
 
@@ -120,8 +123,8 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     }
     case Instruction::Load: {
       auto load = dyn_cast<LoadInst>(Instrumentee);
-      // If this load is not actually loading from the vaargs handed over to the
-      // function, require bounds for its source structure
+      // If this load is not actually loading from the varargs handed over to
+      // the function, require bounds for its source structure
       if (!hasVarArgLoadArg(load) && hasVarArgHandling(load)) {
         requireRecursively(Node, load->getPointerOperand(), load);
         return;
@@ -284,6 +287,33 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
     // We assume that this Node corresponds to a valid pointer, so we create a
     // new witness for it.
     IM.insertWitnesses(*(Target));
+    return;
+  }
+
+  // In case this call invariant needs bound witnesses, insert all of them
+  if (auto callIT = dyn_cast<CallInvariantIT>(Target)) {
+
+    WitnessMap witnesses;
+    for (auto requirement : Node->getRequiredNodes()) {
+
+      // Create the required witness
+      createWitness(IM, requirement);
+
+      // Map the instrumentee to the ones required by the call
+      auto requirementTarget = requirement->Target;
+      auto witness = requirementTarget->getSingleBoundWitness();
+      auto requirementInstrumentee = requirementTarget->getInstrumentee();
+
+      for (auto &elem : callIT->getRequiredArgs()) {
+        if (elem.second == requirementInstrumentee) {
+          // Add the witness at the correct location in the witness map
+          // Note that we need to iterate over all elements in case the same
+          // instrumentee is required for multiple indices
+          witnesses[elem.first] = witness;
+        }
+      }
+      Target->setBoundWitnesses(witnesses);
+    }
     return;
   }
 
