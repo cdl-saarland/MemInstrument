@@ -796,6 +796,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     // TODO This triggers if an aggregate is stored to memory
     // This is not too tricky to implement, but we had no use case for this so
     // far.
+    builder.SetInsertPoint(loc->getNextNode());
     assert(target.getBoundWitnesses().size() == 1);
     const auto bw = target.getSingleBoundWitness();
     if (instrumentee->getType() != handles.voidPtrTy) {
