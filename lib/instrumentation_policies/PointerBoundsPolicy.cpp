@@ -97,13 +97,18 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
     }
   }
 
-  dest.push_back(ITargetBuilder::createCallInvariantTarget(call));
-
-  // In case of an intrinsic, the pointer arguments do not need additional
-  // invariant checks (these won't make use of any additional information).
-  if (isa<IntrinsicInst>(call)) {
+  // In case this intrinsic in some was deals with pointer information we need
+  // to update, create an invariant target
+  if (auto intrInst = dyn_cast<IntrinsicInst>(call)) {
+    if (isRelevantIntrinsic(intrInst)) {
+      dest.push_back(ITargetBuilder::createCallInvariantTarget(call));
+    }
+    // The pointer arguments do not need additional invariant checks (intrinsics
+    // won't make use of any additional information).
     return;
   }
+
+  dest.push_back(ITargetBuilder::createCallInvariantTarget(call));
 
   // Take care of pointer arguments that are handed over
   for (const auto &arg : call->args()) {
@@ -160,6 +165,23 @@ void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
     return;
   }
   vec.push_back(ITargetBuilder::createValInvariantTarget(agg, inst));
+}
+
+bool PointerBoundsPolicy::isRelevantIntrinsic(
+    const IntrinsicInst *intrInst) const {
+
+  if (intrInst->getOpcode()) {
+    switch (intrInst->getIntrinsicID()) {
+    case Intrinsic::memcpy:
+    case Intrinsic::memmove:
+    case Intrinsic::memset:
+      return true;
+    default:
+      break;
+    }
+  }
+
+  return false;
 }
 
 bool PointerBoundsPolicy::isNested(const Type *Aggregate) const {

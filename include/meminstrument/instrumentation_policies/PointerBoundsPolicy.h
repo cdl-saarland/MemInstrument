@@ -39,6 +39,9 @@ private:
   /// aggregate type.
   void insertInvariantTargetAggregate(ITargetVector &, llvm::Instruction *);
 
+  /// Check if the given intrinsic is relevant for the instrumentation.
+  bool isRelevantIntrinsic(const llvm::IntrinsicInst *) const;
+
   /// Check if the given type is not a nested aggregate, e.g. a struct
   /// containing struct members.
   bool isNested(const llvm::Type *Aggregate) const;
