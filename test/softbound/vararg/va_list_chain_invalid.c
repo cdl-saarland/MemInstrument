@@ -1,5 +1,5 @@
 // RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -emit-llvm -S -o %t0.ll
-// RUN: %clang %linksb %t0.ll -o %t
+// RUN: %clang %t0.ll %linksb -o %t
 // RUN: %not --crash %t 2> /dev/null
 
 #include <stdarg.h>

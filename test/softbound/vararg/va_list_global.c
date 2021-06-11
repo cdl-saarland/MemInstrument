@@ -1,5 +1,5 @@
 // RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -debug-only=softbound,pointerboundspolicy -mllvm -mi-config=softbound -emit-llvm -S -o %t0.ll 2> %t.log
-// RUN: %clang %linksb %t0.ll -o %t
+// RUN: %clang %t0.ll %linksb -o %t
 // RUN: %t
 
 // REQUIRES: asserts
