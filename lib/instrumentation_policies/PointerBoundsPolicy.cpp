@@ -209,15 +209,13 @@ void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
 bool PointerBoundsPolicy::isRelevantIntrinsic(
     const IntrinsicInst *intrInst) const {
 
-  if (intrInst->getOpcode()) {
-    switch (intrInst->getIntrinsicID()) {
-    case Intrinsic::memcpy:
-    case Intrinsic::memmove:
-    case Intrinsic::memset:
-      return true;
-    default:
-      break;
-    }
+  switch (intrInst->getIntrinsicID()) {
+  case Intrinsic::memcpy:
+  case Intrinsic::memmove:
+  case Intrinsic::memset:
+    return true;
+  default:
+    break;
   }
 
   return false;

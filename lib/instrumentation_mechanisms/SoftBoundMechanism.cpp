@@ -1109,45 +1109,43 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
   IRBuilder<> builder(intrInst);
 
   // Copy pointer metadata upon memcpy and memmove
-  if (intrInst->getOpcode()) {
-    switch (intrInst->getIntrinsicID()) {
-    case Intrinsic::memcpy:
-    case Intrinsic::memmove: {
-      SmallVector<Value *, 3> args;
-      args.push_back(intrInst->getArgOperand(0));
-      args.push_back(intrInst->getArgOperand(1));
-      args.push_back(intrInst->getArgOperand(2));
-      auto cpyCall = builder.CreateCall(
-          FunctionCallee(handles.copyInMemoryMetadata), args);
-      setMetadata(cpyCall, InternalSoftBoundConfig::getMetadataInfoStr());
+  switch (intrInst->getIntrinsicID()) {
+  case Intrinsic::memcpy:
+  case Intrinsic::memmove: {
+    SmallVector<Value *, 3> args;
+    args.push_back(intrInst->getArgOperand(0));
+    args.push_back(intrInst->getArgOperand(1));
+    args.push_back(intrInst->getArgOperand(2));
+    auto cpyCall =
+        builder.CreateCall(FunctionCallee(handles.copyInMemoryMetadata), args);
+    setMetadata(cpyCall, InternalSoftBoundConfig::getMetadataInfoStr());
 
-      DEBUG_WITH_TYPE("softbound-genchecks", {
-        dbgs() << "Inserted metadata copy: " << *cpyCall << "\n";
-      });
-      return;
-    }
-    case Intrinsic::memset: {
-      // TODO FIXME what if an in-memory pointer is overwritten here?
-      return;
-    }
-    case Intrinsic::vastart: {
-      // Call the function to initialize the proxy object
-      initializeVaListProxy(builder, target);
-      return;
-    }
-    case Intrinsic::vacopy: {
-      // Call the function to copy the proxy object
-      copyVaListProxy(builder, target);
-      return;
-    }
-    case Intrinsic::vaend: {
-      // Call the function to free the proxy object
-      freeVaListProxy(builder, target);
-      return;
-    }
-    default:
-      break;
-    }
+    DEBUG_WITH_TYPE("softbound-genchecks", {
+      dbgs() << "Inserted metadata copy: " << *cpyCall << "\n";
+    });
+    return;
+  }
+  case Intrinsic::memset: {
+    // TODO FIXME what if an in-memory pointer is overwritten here?
+    return;
+  }
+  case Intrinsic::vastart: {
+    // Call the function to initialize the proxy object
+    initializeVaListProxy(builder, target);
+    return;
+  }
+  case Intrinsic::vacopy: {
+    // Call the function to copy the proxy object
+    copyVaListProxy(builder, target);
+    return;
+  }
+  case Intrinsic::vaend: {
+    // Call the function to free the proxy object
+    freeVaListProxy(builder, target);
+    return;
+  }
+  default:
+    break;
   }
 
   llvm_unreachable("Invariant for unsupported intrinsic requested.");

@@ -106,18 +106,24 @@ bool markVarargInsts(Function &F) {
     unsigned propLevel;
     std::tie(entry, propLevel) = worklist.pop_back_val();
 
-    // Don't mark calls just because varargs are handed over, but label vararg
-    // specific calls.
-    if (CallBase *cb = dyn_cast<CallBase>(entry)) {
-      if (auto fun = cb->getCalledFunction()) {
-        if (fun->hasName()) {
-          StringRef name = fun->getName();
-          if (name.equals("llvm.va_start") || name.equals("llvm.va_end") ||
-              name.equals("llvm.va_copy")) {
-            setVarArgHandling(cb);
-          }
-        }
+    // Label vararg specific calls.
+    if (auto *intrInst = dyn_cast<IntrinsicInst>(entry)) {
+      switch (intrInst->getIntrinsicID()) {
+      case Intrinsic::vastart:
+      case Intrinsic::vacopy:
+      case Intrinsic::vaend: {
+        // Mark the call as vararg related
+        setVarArgHandling(intrInst);
+        break;
       }
+      default:
+        break;
+      }
+      continue;
+    }
+
+    // Don't label calls just because varargs are handed over.
+    if (isa<CallBase>(entry)) {
       continue;
     }
 
