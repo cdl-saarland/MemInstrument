@@ -11,8 +11,8 @@
 // CHECK-NEXT: BaseAlloc
 // CHECK-NEXT: BoundAlloc
 // CHECK-NEXT: Created bounds:
-// CHECK-NEXT: Base: {{.*}} load {{.*}} %base.alloc
-// CHECK-NEXT: Bound: {{.*}} load {{.*}} %bound.alloc
+// CHECK-NEXT: Base: {{.*}} load {{.*}} %sb.base.alloc
+// CHECK-NEXT: Bound: {{.*}} load {{.*}} %sb.bound.alloc
 
 // CHECK: Insert witness {{.*}}intermediate target for call at entry
 // CHECK-NEXT: Instrumentee{{.*}} call {{.*}}@f

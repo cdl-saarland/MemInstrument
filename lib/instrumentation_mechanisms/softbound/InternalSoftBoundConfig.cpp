@@ -23,6 +23,9 @@
 #include "meminstrument/softbound/SBWrapper.h"
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/IR/GlobalObject.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Metadata.h"
 
 using namespace llvm;
 using namespace meminstrument;
@@ -79,11 +82,11 @@ auto InternalSoftBoundConfig::getShadowStackInfoStr() -> std::string {
 }
 
 auto InternalSoftBoundConfig::getShadowStackLoadStr() -> std::string {
-  return getShadowStackInfoStr() + "_load";
+  return getShadowStackInfoStr() + "_Load";
 }
 
 auto InternalSoftBoundConfig::getShadowStackStoreStr() -> std::string {
-  return getShadowStackInfoStr() + "_store";
+  return getShadowStackInfoStr() + "_Store";
 }
 
 auto InternalSoftBoundConfig::getMetadataInfoStr() -> std::string {
@@ -92,6 +95,28 @@ auto InternalSoftBoundConfig::getMetadataInfoStr() -> std::string {
 
 auto InternalSoftBoundConfig::getSetupInfoStr() -> std::string {
   return "Setup";
+}
+
+auto InternalSoftBoundConfig::getCheckInfoStr() -> std::string {
+  return "Check";
+}
+
+void InternalSoftBoundConfig::setSoftBoundMetadata(GlobalObject *glObj,
+                                                   const StringRef str) {
+  auto &context = glObj->getContext();
+  auto mdKind = InternalSoftBoundConfig::getMetadataKind();
+  MDNode *node = MDNode::get(context, MDString::get(context, str));
+  node = MDNode::concatenate(glObj->getMetadata(mdKind), node);
+  glObj->setMetadata(mdKind, node);
+}
+
+void InternalSoftBoundConfig::setSoftBoundMetadata(Instruction *inst,
+                                                   const StringRef str) {
+  auto &context = inst->getContext();
+  auto mdKind = InternalSoftBoundConfig::getMetadataKind();
+  MDNode *node = MDNode::get(context, MDString::get(context, str));
+  node = MDNode::concatenate(inst->getMetadata(mdKind), node);
+  inst->setMetadata(mdKind, node);
 }
 
 //===---------------------------- private ---------------------------------===//

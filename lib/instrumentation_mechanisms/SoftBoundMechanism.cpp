@@ -214,8 +214,16 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
   }
 
   if (AllocaInst *alloc = dyn_cast<AllocaInst>(instrumentee)) {
+    auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
+
     base = builder.CreateConstGEP1_32(alloc, 0);
+    if (auto inst = dyn_cast<Instruction>(base)) {
+      setMetadata(inst, mdInfo, "sb.base.gep");
+    }
     bound = builder.CreateConstGEP1_32(alloc, 1);
+    if (auto inst = dyn_cast<Instruction>(bound)) {
+      setMetadata(inst, mdInfo, "sb.bound.gep");
+    }
   }
 
   if (auto constant = dyn_cast<Constant>(instrumentee)) {
@@ -276,21 +284,22 @@ auto SoftBoundMechanism::getRelocatedClone(const Witness &w,
 auto SoftBoundMechanism::getWitnessPhi(PHINode *phi) const -> WitnessPtr {
 
   IRBuilder<> builder(phi);
+  auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Create a special witness when varargs are handled by this phi
   if (hasVarArgHandling(phi)) {
     auto *newPhi = builder.CreatePHI(handles.varArgProxyPtrTy,
                                      phi->getNumIncomingValues());
-    setVarArgMetadata(newPhi, "sb.vararg.proxy.phi");
+    setVarArgMetadata(newPhi, mdStr, "sb.vararg.proxy.phi");
     return std::make_shared<SoftBoundVarArgWitness>(newPhi);
   }
 
   auto *basePhi =
       builder.CreatePHI(handles.baseTy, phi->getNumIncomingValues());
-  basePhi->setName("sb.base.phi");
+  setMetadata(basePhi, mdStr, "sb.base.phi");
   auto *boundPhi =
       builder.CreatePHI(handles.boundTy, phi->getNumIncomingValues());
-  boundPhi->setName("sb.bound.phi");
+  setMetadata(boundPhi, mdStr, "sb.bound.phi");
 
   return std::make_shared<SoftBoundWitness>(basePhi, boundPhi, phi);
 }
@@ -323,7 +332,9 @@ auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
                                           WitnessPtr &falseWitness) const
     -> WitnessPtr {
   auto *cond = sel->getCondition();
+
   IRBuilder<> builder(sel);
+  auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Create a special witness when varargs are handled by this select
   if (auto trueProxy = dyn_cast<SoftBoundVarArgWitness>(trueWitness.get())) {
@@ -332,7 +343,7 @@ auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
     auto *newSel = builder.CreateSelect(cond, trueProxy->getProxy(),
                                         falseProxy->getProxy());
     if (auto newSelInst = dyn_cast<Instruction>(newSel)) {
-      setVarArgMetadata(newSelInst, "sb.vararg.proxy.sel");
+      setVarArgMetadata(newSelInst, mdStr, "sb.vararg.proxy.sel");
     }
     return std::make_shared<SoftBoundVarArgWitness>(newSel);
   }
@@ -340,10 +351,14 @@ auto SoftBoundMechanism::getWitnessSelect(SelectInst *sel,
   // For regular witnesses, propagate base and bound through their own selects
   auto *lowerSel = builder.CreateSelect(cond, trueWitness->getLowerBound(),
                                         falseWitness->getLowerBound());
-  lowerSel->setName("sb.base.sel");
+  if (auto inst = dyn_cast<Instruction>(lowerSel)) {
+    setMetadata(inst, mdStr, "sb.base.sel");
+  }
   auto *upperSel = builder.CreateSelect(cond, trueWitness->getUpperBound(),
                                         falseWitness->getUpperBound());
-  upperSel->setName("sb.bound.sel");
+  if (auto inst = dyn_cast<Instruction>(upperSel)) {
+    setMetadata(inst, mdStr, "sb.bound.sel");
+  }
 
   return std::make_shared<SoftBoundWitness>(lowerSel, upperSel, sel);
 }
@@ -515,11 +530,12 @@ void SoftBoundMechanism::insertMetadataAllocs(Module &module) {
 
     // Use the beginning of the function to insert the allocas
     IRBuilder<> builder(&(*fun.getEntryBlock().getFirstInsertionPt()));
+    auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
     auto allocBase = builder.CreateAlloca(handles.baseTy);
-    allocBase->setName("base.alloc");
+    setMetadata(allocBase, mdStr, "sb.base.alloc");
     auto allocBound = builder.CreateAlloca(handles.boundTy);
-    allocBound->setName("bound.alloc");
+    setMetadata(allocBound, mdStr, "sb.bound.alloc");
 
     // Store the generated allocs for reuse
     metadataAllocs[&fun] = std::make_pair(allocBase, allocBound);
@@ -572,9 +588,7 @@ void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
                                                 IRBuilder<> &builder) const {
 
   // Make sure to add metadata to every instruction created
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getSetupInfoStr()));
+  auto infoStr = InternalSoftBoundConfig::getSetupInfoStr();
 
   for (unsigned i = 0; i < call.getNumArgOperands(); i++) {
     // Find the byval attributes
@@ -590,25 +604,24 @@ void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
       builder.SetInsertPoint(
           &(*call.getCaller()->getEntryBlock().getFirstInsertionPt()));
       auto alloc = builder.CreateAlloca(callArgElemType);
-      alloc->setName("byval.alloc");
-      alloc->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+      setMetadata(alloc, infoStr, "sb.byval.alloc");
 
       // Copy the value into the alloca
       builder.SetInsertPoint(&call);
       auto size = DL->getTypeAllocSize(callArgElemType);
       auto cpy = builder.CreateMemCpy(alloc, alloc->getAlignment(), callArg,
                                       alloc->getAlignment(), size);
-      cpy->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+      // TODO set no instrument metadata at the new memcpy call?
+      // Copy of metadata for the memcpy is relevant, but do we need a bounds
+      // check?
+      InternalSoftBoundConfig::setSoftBoundMetadata(cpy, infoStr);
+      cpy->setName("sb.byval.cpy");
 
       // Replace the old argument with the newly copied one and make sure it is
       // no longer classified as byval.
       call.setArgOperand(i, alloc);
       call.removeParamAttr(i, Attribute::AttrKind::ByVal);
-      call.setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-
-      // TODO set no instrument metadata at the new memcpy call?
-      // Copy of metadata for the memcpy is relevant, but do we need a bounds
-      // check?
+      setMetadata(&call, infoStr);
     }
   }
 
@@ -627,10 +640,7 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
       std::make_pair<StringRef, int>("__softboundcets_globals_setup", 0));
   auto globalSetupFun = (*listOfFuns)[0];
 
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getSetupInfoStr()));
-  globalSetupFun->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(globalSetupFun, InternalSoftBoundConfig::getSetupInfoStr());
 
   auto entryBlock = BasicBlock::Create(*context, "entry", globalSetupFun);
 
@@ -830,6 +840,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
   auto instrumentee = target.getInstrumentee();
   IRBuilder<> builder(target.getLocation());
+  auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   if (auto load = dyn_cast<LoadInst>(instrumentee)) {
     assert(hasVarArgLoadArg(load));
@@ -841,10 +852,10 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
 
     // Load base and bound
     auto base = builder.CreateLoad(baseAlloc);
-    setVarArgMetadata(base, "sb.vararg.base");
+    setVarArgMetadata(base, mdStr, "sb.vararg.base");
 
     auto bound = builder.CreateLoad(boundAlloc);
-    setVarArgMetadata(bound, "sb.vararg.bound");
+    setVarArgMetadata(bound, mdStr, "sb.vararg.bound");
 
     target.setSingleBoundWitness(
         std::make_shared<SoftBoundWitness>(base, bound, load));
@@ -859,7 +870,7 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
     // Create an allocation for the proxy object alongside the va_list
     builder.SetInsertPoint(alloc->getNextNode());
     auto proxyAlloc = builder.CreateAlloca(handles.varArgProxyTy);
-    setVarArgMetadata(proxyAlloc, "sb.vararg.proxy.alloc");
+    setVarArgMetadata(proxyAlloc, mdStr, "sb.vararg.proxy.alloc");
     proxyPtr = proxyAlloc;
   }
 
@@ -879,12 +890,12 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
     // functions both store the proxy in their own local variable, and can be
     // used uniformly by the metadata propagation.
     auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
-    setVarArgMetadata(alloc, "sb.valist.proxy.alloc");
+    setVarArgMetadata(alloc, mdStr, "sb.valist.proxy.alloc");
 
     // The store to the allocation can be as late as the target wants it to be
     builder.SetInsertPoint(target.getLocation());
     auto store = builder.CreateStore(load, alloc);
-    setVarArgMetadata(store);
+    setVarArgMetadata(store, mdStr);
 
     proxyPtr = alloc;
   }
@@ -894,12 +905,12 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
     builder.SetInsertPoint(target.getLocation()->getNextNode());
 
     auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
-    setVarArgMetadata(alloc, "sb.valist.proxy.alloc");
+    setVarArgMetadata(alloc, mdStr, "sb.valist.proxy.alloc");
 
     auto toStore = ConstantPointerNull::get(handles.varArgProxyTy);
 
     auto store = builder.CreateStore(toStore, alloc);
-    setVarArgMetadata(store);
+    setVarArgMetadata(store, mdStr);
 
     proxyPtr = alloc;
   }
@@ -929,6 +940,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
   Instruction *loc = target.getLocation();
 
   IRBuilder<> builder(loc);
+  auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Stores of pointer values to memory require a metadata store.
   if (auto store = dyn_cast<StoreInst>(loc)) {
@@ -967,7 +979,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
       auto varArgWit =
           cast<SoftBoundVarArgWitness>(target.getSingleBoundWitness().get());
       auto loadedVal = builder.CreateLoad(varArgWit->getProxy());
-      setVarArgMetadata(loadedVal, "sb.load.proxy");
+      setVarArgMetadata(loadedVal, mdStr, "sb.vararg.proxy.load");
 
       insertVarArgShadowStackStore(builder, loadedVal, locIndex);
       return;
@@ -1009,7 +1021,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
     // Load the proxy
     auto load = builder.CreateLoad(proxyPtr);
-    setVarArgMetadata(load, "sb.vararg.load.proxy");
+    setVarArgMetadata(load, mdStr, "sb.vararg.proxy.load");
 
     AllocaInst *baseAlloc;
     AllocaInst *boundAlloc;
@@ -1019,7 +1031,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     SmallVector<Value *, 3> args = {load, baseAlloc, boundAlloc};
     auto loadCall = builder.CreateCall(
         FunctionCallee(handles.loadNextInfoVarArgProxy), args);
-    setVarArgMetadata(loadCall);
+    setVarArgMetadata(loadCall, mdStr);
     return;
   }
 
@@ -1061,16 +1073,13 @@ void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
   IRBuilder<> builder(locBefore);
 
   // Construct the metadata for the call
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackInfoStr()));
+  auto shadowStackInfo = InternalSoftBoundConfig::getShadowStackInfoStr();
 
   // Allocate the shadow stack
   SmallVector<Value *, 1> args = {sizeVal};
   auto allocCall =
       builder.CreateCall(FunctionCallee(handles.allocateShadowStack), args);
-  allocCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(allocCall, shadowStackInfo);
 
   // Deallocate the shadow stack space after the call
 
@@ -1085,7 +1094,7 @@ void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
   // Deallocate the shadow stack
   auto deallocCall =
       builder.CreateCall(FunctionCallee(handles.deallocateShadowStack));
-  deallocCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(deallocCall, shadowStackInfo);
 
   DEBUG_WITH_TYPE("softbound-genchecks",
                   dbgs() << "Allocate shadow stack: " << *allocCall
@@ -1099,10 +1108,6 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
 
   IRBuilder<> builder(intrInst);
 
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
-
   // Copy pointer metadata upon memcpy and memmove
   if (intrInst->getOpcode()) {
     switch (intrInst->getIntrinsicID()) {
@@ -1114,7 +1119,7 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
       args.push_back(intrInst->getArgOperand(2));
       auto cpyCall = builder.CreateCall(
           FunctionCallee(handles.copyInMemoryMetadata), args);
-      cpyCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+      setMetadata(cpyCall, InternalSoftBoundConfig::getMetadataInfoStr());
 
       DEBUG_WITH_TYPE("softbound-genchecks", {
         dbgs() << "Inserted metadata copy: " << *cpyCall << "\n";
@@ -1151,9 +1156,7 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
 void SoftBoundMechanism::initializeVaListProxy(
     IRBuilder<> &builder, const CallInvariantIT &callIT) const {
 
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
 
   auto size = determineShadowStackLocationFirstVarArg(
       callIT.getLocation()->getFunction());
@@ -1161,14 +1164,13 @@ void SoftBoundMechanism::initializeVaListProxy(
   SmallVector<Value *, 1> args = {sizeVal};
   auto allocProxy =
       builder.CreateCall(FunctionCallee(handles.allocateVarArgProxy), args);
-  allocProxy->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  setVarArgMetadata(allocProxy, "sb.vararg.proxy.start");
+  setVarArgMetadata(allocProxy, mdInfo, "sb.vararg.proxy.start");
 
   // Store to alloc prepared for this.
   auto varArgW =
       cast<SoftBoundVarArgWitness>(callIT.getBoundWitness(0).get())->getProxy();
   auto store = builder.CreateStore(allocProxy, varArgW);
-  setVarArgMetadata(store);
+  setVarArgMetadata(store, mdInfo);
   LLVM_DEBUG(dbgs() << "Module after insert of initializing alloc:\n"
                     << *store->getModule() << "\n";);
 }
@@ -1176,9 +1178,7 @@ void SoftBoundMechanism::initializeVaListProxy(
 void SoftBoundMechanism::copyVaListProxy(IRBuilder<> &builder,
                                          const CallInvariantIT &callIT) const {
 
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Load the source proxy pointer
   SoftBoundVarArgWitness *srcWit =
@@ -1186,56 +1186,65 @@ void SoftBoundMechanism::copyVaListProxy(IRBuilder<> &builder,
   LLVM_DEBUG(dbgs() << "Witness value for cpy src: " << *srcWit->getProxy()
                     << "\n";);
   auto proxyPtr = builder.CreateLoad(srcWit->getProxy());
-  setVarArgMetadata(proxyPtr, "sb.vararg.proxy.load");
+  setVarArgMetadata(proxyPtr, mdInfo, "sb.vararg.proxy.load");
 
   // Create a copy of the proxy object
   SmallVector<Value *, 1> args = {proxyPtr};
   auto copyCall =
       builder.CreateCall(FunctionCallee(handles.copyVarArgProxy), args);
-  copyCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  setVarArgMetadata(copyCall, "sb.vararg.proxy.copy");
+  setVarArgMetadata(copyCall, mdInfo, "sb.vararg.proxy.copy");
 
   SoftBoundVarArgWitness *trgWit =
       cast<SoftBoundVarArgWitness>(&(*callIT.getBoundWitness(0)));
 
   // Store the copied proxy
   auto store = builder.CreateStore(copyCall, trgWit->getProxy());
+  setVarArgMetadata(store, mdInfo);
   LLVM_DEBUG(dbgs() << "Witness value for cpy trg: " << *trgWit->getProxy()
                     << "\n";);
-  setVarArgMetadata(store);
 }
 
 void SoftBoundMechanism::freeVaListProxy(IRBuilder<> &builder,
                                          const CallInvariantIT &callIT) const {
 
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Load the proxy pointer
   SoftBoundVarArgWitness *proxyWit =
       cast<SoftBoundVarArgWitness>(&(*callIT.getBoundWitness(0)));
   auto proxyPtr = builder.CreateLoad(proxyWit->getProxy());
-  setVarArgMetadata(proxyPtr, "sb.vararg.proxy.load");
+  setVarArgMetadata(proxyPtr, mdInfo, "sb.vararg.proxy.load");
 
   // Free it
   SmallVector<Value *, 1> args = {proxyPtr};
   auto freeCall =
       builder.CreateCall(FunctionCallee(handles.freeVarArgProxy), args);
-  freeCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  setVarArgMetadata(freeCall);
+  setVarArgMetadata(freeCall, mdInfo);
 }
 
 auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
                                      Value *bound) const
     -> std::pair<Value *, Value *> {
 
+  // Derive the metadata information for the bitcast from the incoming base
+  // (the bound should have the same information).
+  MDNode *mdNode = nullptr;
+  if (auto inst = dyn_cast<Instruction>(base)) {
+    mdNode = inst->getMetadata(InternalSoftBoundConfig::getMetadataKind());
+  }
+
   if (base->getType() != handles.baseTy) {
     base = insertCast(handles.baseTy, base, builder);
+    if (auto inst = dyn_cast<Instruction>(base)) {
+      setMetadata(inst, mdNode);
+    }
   }
 
   if (bound->getType() != handles.boundTy) {
     bound = insertCast(handles.boundTy, bound, builder);
+    if (auto inst = dyn_cast<Instruction>(bound)) {
+      setMetadata(inst, mdNode);
+    }
   }
 
   return std::make_pair(base, bound);
@@ -1256,8 +1265,16 @@ auto SoftBoundMechanism::getBoundsConst(Constant *cons) const
   }
 
   IRBuilder<> builder(*context);
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
+
   auto *base = builder.CreateConstGEP1_32(cons, 0);
+  if (auto baseInst = dyn_cast<Instruction>(base)) {
+    setMetadata(baseInst, mdInfo, "sb.base.gep");
+  }
   auto *bound = builder.CreateConstGEP1_32(cons, 1);
+  if (auto boundInst = dyn_cast<Instruction>(base)) {
+    setMetadata(boundInst, mdInfo, "sb.bound.gep");
+  }
 
   std::tie(base, bound) = addBitCasts(builder, base, bound);
 
@@ -1426,6 +1443,7 @@ auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
   std::tie(allocBase, allocBound) =
       metadataAllocs.at(builder.GetInsertPoint()->getFunction());
 
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
   LLVM_DEBUG(dbgs() << "Insert metadata load:\n"
                     << "\tPtr: " << *ptr << "\n\tBaseAlloc: " << *allocBase
                     << "\n\tBoundAlloc: " << *allocBound << "\n";);
@@ -1434,14 +1452,12 @@ auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
 
   auto call =
       builder.CreateCall(FunctionCallee(handles.loadInMemoryPtrInfo), args);
+  setMetadata(call, mdInfo);
 
   auto base = builder.CreateLoad(allocBase);
+  setMetadata(base, mdInfo, "sb.base.load");
   auto bound = builder.CreateLoad(allocBound);
-
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
-  call->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(bound, mdInfo, "sb.bound.load");
 
   return std::make_pair(base, bound);
 }
@@ -1466,11 +1482,7 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
   SmallVector<Value *, 3> args = {ptr, base, bound};
   auto call =
       builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
-
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context, InternalSoftBoundConfig::getMetadataInfoStr()));
-  call->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(call, InternalSoftBoundConfig::getMetadataInfoStr());
 }
 
 auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
@@ -1479,18 +1491,14 @@ auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
 
   auto locIndexVal = ConstantInt::get(handles.intTy, locIndex, true);
 
+  auto mdStr = InternalSoftBoundConfig::getShadowStackLoadStr();
   SmallVector<Value *, 1> args = {locIndexVal};
   auto callLoadBase =
       builder.CreateCall(FunctionCallee(handles.loadBaseStack), args);
+  setMetadata(callLoadBase, mdStr, "sb.base.load");
   auto callLoadBound =
       builder.CreateCall(FunctionCallee(handles.loadBoundStack), args);
-
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackLoadStr()));
-  callLoadBase->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  callLoadBound->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(callLoadBound, mdStr, "sb.bound.load");
 
   return std::make_pair(callLoadBase, callLoadBound);
 }
@@ -1500,21 +1508,18 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
                                                 Value *upperBound,
                                                 int locIndex) const {
 
+  auto mdStr = InternalSoftBoundConfig::getShadowStackStoreStr();
+
   auto locIndexVal = ConstantInt::get(handles.intTy, locIndex, true);
 
   SmallVector<Value *, 2> argsBase = {lowerBound, locIndexVal};
   SmallVector<Value *, 2> argsBound = {upperBound, locIndexVal};
   auto callStoreBase =
       builder.CreateCall(FunctionCallee(handles.storeBaseStack), argsBase);
+  setMetadata(callStoreBase, mdStr);
   auto callStoreBound =
       builder.CreateCall(FunctionCallee(handles.storeBoundStack), argsBound);
-
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackStoreStr()));
-  callStoreBase->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  callStoreBound->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
+  setMetadata(callStoreBound, mdStr);
 
   LLVM_DEBUG(dbgs() << "\tBase store: " << *callStoreBase
                     << "\n\tBound store: " << *callStoreBound << "\n";);
@@ -1523,38 +1528,31 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
 auto SoftBoundMechanism::insertVarArgShadowStackLoad(IRBuilder<> &builder,
                                                      int index) const
     -> Instruction * {
+
+  auto mdStr = InternalSoftBoundConfig::getShadowStackLoadStr();
+
   // Insert calls to the C run-time that look up the proxy pointer
   auto indexVal = ConstantInt::get(handles.intTy, index, true);
   SmallVector<Value *, 1> args = {indexVal};
   auto proxyPtr =
       builder.CreateCall(FunctionCallee(handles.loadVarArgProxyStack), args);
+  setVarArgMetadata(proxyPtr, mdStr, "sb.vararg.proxy.load");
 
-  // TODO SoftBound MDNode
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackLoadStr()));
-  proxyPtr->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  setVarArgMetadata(proxyPtr, "sb.load.proxy");
   return proxyPtr;
 }
 
 void SoftBoundMechanism::insertVarArgShadowStackStore(IRBuilder<> &builder,
                                                       Value *proxyPtr,
                                                       int index) const {
+
+  auto mdStr = InternalSoftBoundConfig::getShadowStackStoreStr();
+
   // Insert calls to the C run-time that look up the proxy pointer
   auto indexVal = ConstantInt::get(handles.intTy, index, true);
   SmallVector<Value *, 2> args = {proxyPtr, indexVal};
   auto storeCall =
       builder.CreateCall(FunctionCallee(handles.storeVarArgProxyStack), args);
-
-  // TODO SoftBound MDNode
-  MDNode *node = MDNode::get(
-      *context,
-      MDString::get(*context,
-                    InternalSoftBoundConfig::getShadowStackStoreStr()));
-  storeCall->setMetadata(InternalSoftBoundConfig::getMetadataKind(), node);
-  setVarArgMetadata(storeCall);
+  setVarArgMetadata(storeCall, mdStr);
 }
 
 auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg) const
@@ -1783,6 +1781,7 @@ void SoftBoundMechanism::insertSpatialDereferenceCheck(
                          << "\n\tUB: " << *bw->getUpperBound() << "\n\tinstr: "
                          << *instrumentee << "\n\tsize: " << *size << "\n";);
   auto call = builder.CreateCall(FunctionCallee(handles.spatialCheck), args);
+  setMetadata(call, InternalSoftBoundConfig::getCheckInfoStr());
 
   DEBUG_WITH_TYPE("softbound-genchecks",
                   dbgs() << "Generated check: " << *call << "\n";);
@@ -1805,6 +1804,7 @@ void SoftBoundMechanism::insertSpatialCallCheck(
 
   auto call =
       builder.CreateCall(FunctionCallee(handles.spatialCallCheck), args);
+  setMetadata(call, InternalSoftBoundConfig::getCheckInfoStr());
 
   DEBUG_WITH_TYPE("softbound-genchecks",
                   dbgs() << "Generated check: " << *call << "\n";);
@@ -1933,13 +1933,41 @@ void SoftBoundMechanism::checkModule(Module &module) {
   }
 }
 
-void SoftBoundMechanism::setVarArgMetadata(Instruction *inst,
-                                           StringRef name) const {
+void SoftBoundMechanism::setMetadata(Instruction *inst, MDNode *mdNode,
+                                     const StringRef name) const {
+  if (mdNode) {
+    inst->setMetadata(InternalSoftBoundConfig::getMetadataKind(), mdNode);
+  }
   setNoInstrument(inst);
-  setVarArgHandling(inst);
   if (!name.empty()) {
     inst->setName(name);
   }
+}
+
+void SoftBoundMechanism::setMetadata(GlobalObject *glObj,
+                                     const StringRef mdtext,
+                                     const StringRef name) const {
+  InternalSoftBoundConfig::setSoftBoundMetadata(glObj, mdtext);
+  setNoInstrument(glObj);
+  if (!name.empty()) {
+    glObj->setName(name);
+  }
+}
+
+void SoftBoundMechanism::setMetadata(Instruction *inst, const StringRef mdtext,
+                                     const StringRef name) const {
+  InternalSoftBoundConfig::setSoftBoundMetadata(inst, mdtext);
+  setNoInstrument(inst);
+  if (!name.empty()) {
+    inst->setName(name);
+  }
+}
+
+void SoftBoundMechanism::setVarArgMetadata(Instruction *inst,
+                                           const StringRef mdtext,
+                                           const StringRef name) const {
+  setMetadata(inst, mdtext, name);
+  setVarArgHandling(inst);
 }
 
 auto SoftBoundMechanism::getLastMDLocation(Instruction *start,

@@ -18,7 +18,9 @@
 
 namespace llvm {
 class StringRef;
-}
+class Instruction;
+class GlobalObject;
+} // namespace llvm
 
 namespace meminstrument {
 
@@ -64,6 +66,14 @@ public:
   static auto getShadowStackStoreStr() -> std::string;
   static auto getMetadataInfoStr() -> std::string;
   static auto getSetupInfoStr() -> std::string;
+  static auto getCheckInfoStr() -> std::string;
+
+  /// Add the given metadata string to an instruction/global object. The kind is
+  /// defined by getMetadataKind().
+  static void setSoftBoundMetadata(llvm::GlobalObject *,
+                                   const llvm::StringRef metadata);
+  static void setSoftBoundMetadata(llvm::Instruction *,
+                                   const llvm::StringRef metadata);
 
 private:
   static const SafetyLevel level;

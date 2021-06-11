@@ -282,9 +282,21 @@ private:
   /// handling)
   void checkModule(llvm::Module &);
 
+  /// Set metadata that indicates the global object or instruction was
+  /// introduced by us. Allows setting metadata and naming instructions in one
+  /// go.
+  void setMetadata(llvm::Instruction *, llvm::MDNode *,
+                   const llvm::StringRef name = "") const;
+  void setMetadata(llvm::GlobalObject *, const llvm::StringRef mdtext,
+                   const llvm::StringRef name = "") const;
+  void setMetadata(llvm::Instruction *, const llvm::StringRef mdtext,
+                   const llvm::StringRef name = "") const;
+
   /// Set metadata that indicates the instruction was introduced to deal with
-  /// varargs
-  void setVarArgMetadata(llvm::Instruction *, llvm::StringRef name = "") const;
+  /// varargs. Additionally allows setting metadata and naming instructions in
+  /// one go.
+  void setVarArgMetadata(llvm::Instruction *, const llvm::StringRef mdtext,
+                         const llvm::StringRef name = "") const;
 
   /// Get the first instruction before/after start, that does not have metadata
   /// containing nodeString.

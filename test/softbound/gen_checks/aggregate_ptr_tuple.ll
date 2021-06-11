@@ -3,22 +3,22 @@
 ; CHECK: define {{.*}} { i32*, i32* } @f()
 ; CHECK: {{.*}}allocate{{.*}} 1
 ; CHECK-NEXT: %call = call noalias i8* @softboundcets_malloc({{.*}} 10)
-; CHECK-NEXT: %0 = call i8* @__softboundcets_load_base_shadow_stack({{.*}} 0)
-; CHECK-NEXT: %1 = call i8* @__softboundcets_load_bound_shadow_stack({{.*}} 0)
+; CHECK-NEXT: %sb.base.load = call i8* @__softboundcets_load_base_shadow_stack({{.*}} 0)
+; CHECK-NEXT: %sb.bound.load = call i8* @__softboundcets_load_bound_shadow_stack({{.*}} 0)
 ; CHECK-NEXT: {{.*}}deallocate
-; CHECK-NEXT: %2 = bitcast i8* %call to i32*
+; CHECK-NEXT: %0 = bitcast i8* %call to i32*
 ; CHECK-NEXT: {{.*}}allocate{{.*}} 1
 ; CHECK-NEXT: %call1 = call noalias i8* @softboundcets_malloc({{.*}} 1)
-; CHECK-NEXT: %3 = call i8* @__softboundcets_load_base_shadow_stack({{.*}} 0)
-; CHECK-NEXT: %4 = call i8* @__softboundcets_load_bound_shadow_stack({{.*}} 0)
+; CHECK-NEXT: %sb.base.load1 = call i8* @__softboundcets_load_base_shadow_stack({{.*}} 0)
+; CHECK-NEXT: %sb.bound.load2 = call i8* @__softboundcets_load_bound_shadow_stack({{.*}} 0)
 ; CHECK-NEXT: {{.*}}deallocate
-; CHECK-NEXT: %5 = bitcast i8* %call1 to i32*
-; CHECK-NEXT: %.fca.0.insert = insertvalue { i32*, i32* } undef, i32* %2, 0
-; CHECK-NEXT: %.fca.1.insert = insertvalue { i32*, i32* } %.fca.0.insert, i32* %5, 1
-; CHECK-NEXT: call void @__softboundcets_store_base_shadow_stack(i8* %0, {{.*}} 0)
-; CHECK-NEXT: call void @__softboundcets_store_bound_shadow_stack(i8* %1, {{.*}} 0)
-; CHECK-NEXT: call void @__softboundcets_store_base_shadow_stack(i8* %3, {{.*}} 1)
-; CHECK-NEXT: call void @__softboundcets_store_bound_shadow_stack(i8* %4, {{.*}} 1)
+; CHECK-NEXT: %1 = bitcast i8* %call1 to i32*
+; CHECK-NEXT: %.fca.0.insert = insertvalue { i32*, i32* } undef, i32* %0, 0
+; CHECK-NEXT: %.fca.1.insert = insertvalue { i32*, i32* } %.fca.0.insert, i32* %1, 1
+; CHECK-NEXT: call void @__softboundcets_store_base_shadow_stack(i8* %sb.base.load, {{.*}} 0)
+; CHECK-NEXT: call void @__softboundcets_store_bound_shadow_stack(i8* %sb.bound.load, {{.*}} 0)
+; CHECK-NEXT: call void @__softboundcets_store_base_shadow_stack(i8* %sb.base.load1, {{.*}} 1)
+; CHECK-NEXT: call void @__softboundcets_store_bound_shadow_stack(i8* %sb.bound.load2, {{.*}} 1)
 ; CHECK-NEXT: ret { i32*, i32* } %.fca.1.insert
 
 ; REQUIRES: asserts
