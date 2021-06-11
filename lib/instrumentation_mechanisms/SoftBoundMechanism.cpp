@@ -644,10 +644,10 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
 
   auto entryBlock = BasicBlock::Create(*context, "entry", globalSetupFun);
 
-  IRBuilder<> Builder(entryBlock);
+  IRBuilder<> builder(entryBlock);
 
   // Call the run-time init functions
-  Builder.CreateCall(FunctionCallee(initFun));
+  builder.CreateCall(FunctionCallee(initFun));
 
   // Take care of globally initialized global variables
   for (GlobalVariable &global : module.globals()) {
@@ -682,7 +682,7 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
     Value *base = nullptr;
     Value *bound = nullptr;
     LLVM_DEBUG(dbgs() << "Handle initializer " << *glInit << "\n";);
-    std::tie(base, bound) = handleInitializer(glInit, Builder, global, Indices);
+    std::tie(base, bound) = handleInitializer(glInit, builder, global, Indices);
 
     // An error already occurred, stop the initialization.
     if (globalConfig.hasErrors()) {
@@ -694,15 +694,15 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
       LLVM_DEBUG({
         dbgs() << "\tBase: " << *base << "\n\tBound: " << *bound << "\n";
       });
-      insertMetadataStore(Builder, &global, base, bound);
+      insertMetadataStore(builder, &global, base, bound);
     }
   }
 
-  Builder.CreateRetVoid();
+  builder.CreateRetVoid();
 }
 
 auto SoftBoundMechanism::handleInitializer(Constant *glInit,
-                                           IRBuilder<> &Builder,
+                                           IRBuilder<> &builder,
                                            Value &topLevel,
                                            std::vector<Value *> indices) const
     -> std::pair<Value *, Value *> {
@@ -764,7 +764,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
         auto *ptrOp = constExpr->getOperand(0);
 
         std::tie(base, bound) =
-            handleInitializer(ptrOp, Builder, topLevel, indices);
+            handleInitializer(ptrOp, builder, topLevel, indices);
         return std::make_pair(base, bound);
       }
       default:
@@ -812,7 +812,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 
       // Collect the base and bound of the underlying element...
       std::tie(subBase, subBound) =
-          handleInitializer(elem, Builder, topLevel, tmpIndices);
+          handleInitializer(elem, builder, topLevel, tmpIndices);
 
       // ...and store them in case of this data structures contains a pointer
       if (elem->getType()->isPointerTy()) {
@@ -826,8 +826,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
           dbgs() << "\n";
         });
 
-        Value *gepToElem = Builder.CreateInBoundsGEP(&topLevel, tmpIndices);
-        insertMetadataStore(Builder, gepToElem, subBase, subBound);
+        Value *gepToElem = builder.CreateInBoundsGEP(&topLevel, tmpIndices);
+        insertMetadataStore(builder, gepToElem, subBase, subBound);
       }
     }
 
