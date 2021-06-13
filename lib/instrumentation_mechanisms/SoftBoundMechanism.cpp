@@ -615,7 +615,9 @@ void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
       // Copy of metadata for the memcpy is relevant, but do we need a bounds
       // check?
       InternalSoftBoundConfig::setSoftBoundMetadata(cpy, infoStr);
-      cpy->setName("sb.byval.cpy");
+      if (!cpy->getType()->isVoidTy()) {
+        cpy->setName("sb.byval.cpy");
+      }
 
       // Replace the old argument with the newly copied one and make sure it is
       // no longer classified as byval.
