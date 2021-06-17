@@ -4,6 +4,8 @@
 // RUN: %not %t2 2> %t3.log
 // RUN: fgrep "Memory safety violation!" %t3.log
 
+#include <stdlib.h>
+
 int main(void)
 {
   char *a = malloc(4*sizeof(char));
