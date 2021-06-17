@@ -1974,9 +1974,6 @@ auto SoftBoundMechanism::getLastMDLocation(Instruction *start,
                                            StringRef nodeString,
                                            bool forward) const
     -> Instruction * {
-  // Construct the look up node
-  auto shadowStackStoreNode =
-      MDNode::get(*context, MDString::get(*context, nodeString));
 
   auto loc = start;
   while (loc) {
@@ -1993,9 +1990,24 @@ auto SoftBoundMechanism::getLastMDLocation(Instruction *start,
     auto md = nextLoc->getMetadata(InternalSoftBoundConfig::getMetadataKind());
 
     // If this is not a shadow stack store, we found our insert location
-    if (!md || md != shadowStackStoreNode) {
+    if (!md) {
       break;
     }
+
+    auto nodeStringFound = false;
+    for (unsigned i = 0; i < md->getNumOperands(); i++) {
+      if (const auto *opStr = dyn_cast<MDString>(md->getOperand(i))) {
+        if (opStr->getString().equals(nodeString)) {
+          nodeStringFound = true;
+          break;
+        }
+      }
+    }
+
+    if (!nodeStringFound) {
+      break;
+    }
+
     loc = nextLoc;
   }
   return loc;
