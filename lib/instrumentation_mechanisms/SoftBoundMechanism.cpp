@@ -587,9 +587,6 @@ void SoftBoundMechanism::transformByValFunctions(Module &module) const {
 void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
                                                 IRBuilder<> &builder) const {
 
-  // Make sure to add metadata to every instruction created
-  auto infoStr = InternalSoftBoundConfig::getSetupInfoStr();
-
   for (unsigned i = 0; i < call.getNumArgOperands(); i++) {
     // Find the byval attributes
     if (call.isByValArgument(i)) {
@@ -604,7 +601,7 @@ void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
       builder.SetInsertPoint(
           &(*call.getCaller()->getEntryBlock().getFirstInsertionPt()));
       auto alloc = builder.CreateAlloca(callArgElemType);
-      setMetadata(alloc, infoStr, "sb.byval.alloc");
+      alloc->setName("byval.alloc");
 
       // Copy the value into the alloca
       builder.SetInsertPoint(&call);
@@ -614,16 +611,14 @@ void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
       // TODO set no instrument metadata at the new memcpy call?
       // Copy of metadata for the memcpy is relevant, but do we need a bounds
       // check?
-      InternalSoftBoundConfig::setSoftBoundMetadata(cpy, infoStr);
       if (!cpy->getType()->isVoidTy()) {
-        cpy->setName("sb.byval.cpy");
+        cpy->setName("byval.cpy");
       }
 
       // Replace the old argument with the newly copied one and make sure it is
       // no longer classified as byval.
       call.setArgOperand(i, alloc);
       call.removeParamAttr(i, Attribute::AttrKind::ByVal);
-      setMetadata(&call, infoStr);
     }
   }
 
