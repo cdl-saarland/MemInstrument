@@ -7,8 +7,7 @@
 ; CHECK-NEXT: call invariant{{.*}}entry::call
 ; CHECK-NEXT: dereference check with constant size 4B for result at entry::[store,{{.*}}]
 ; CHECK-NEXT: dereference check with constant size 4B for result2 at entry
-; CHECK-NEXT: call invariant{{.*}}entry::call3
-; CHECK-NEXT: argument 0 invariant {{.*}}at entry::call3
+; CHECK-NEXT: call invariant{{.*}}with 1 arg(s) at entry::call3
 
 ; REQUIRES: asserts
 

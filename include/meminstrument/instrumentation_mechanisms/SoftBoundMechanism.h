@@ -122,7 +122,7 @@ private:
   void handleCallInvariant(const CallInvariantIT &) const;
 
   /// Take care of shadow stack allocation and deallocation for the given call.
-  void handleShadowStackAllocation(llvm::CallBase *) const;
+  void handleShadowStackAllocation(llvm::CallBase *, llvm::IRBuilder<> &) const;
 
   /// Insert metadata calls for invariants of intrinsic function if necessary.
   void handleIntrinsicInvariant(const CallInvariantIT &) const;

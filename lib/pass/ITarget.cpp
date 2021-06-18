@@ -477,6 +477,9 @@ void CallInvariantIT::dump(raw_ostream &os) const {
   if (calledFun && calledFun->hasName()) {
     os << " for " << calledFun->getName();
   }
+  if (!requiredArgs.empty()) {
+    os << " with " << requiredArgs.size() << " arg(s)";
+  }
 }
 
 bool CallInvariantIT::operator==(const ITarget &other) const {

@@ -6,11 +6,8 @@
 
 // CHECK: value invariant for a at entry::[store,{{.*}}]
 // CHECK-NEXT: dereference check with constant size 8B for b at entry::[store,{{.*}}]
-// CHECK-NEXT: call invariant{{.*}}entry::call
-// CHECK-NEXT: argument 0 invariant for a at entry::call
-// CHECK-NEXT: argument 2 invariant for b at entry::call
-// CHECK-NEXT: call invariant{{.*}}entry::call1
-// CHECK-NEXT: argument 0 invariant {{.*}}at entry::call1
+// CHECK-NEXT: call invariant for f with 2 arg(s) at entry::call
+// CHECK-NEXT: call invariant for softboundcets_printf with 1 arg(s) at entry::call1
 
 // REQUIRES: asserts
 

@@ -108,8 +108,7 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
     return;
   }
 
-  dest.push_back(ITargetBuilder::createCallInvariantTarget(call));
-
+  std::map<unsigned, Value *> requiredArgs;
   // Take care of pointer arguments that are handed over
   for (const auto &arg : call->args()) {
 
@@ -123,9 +122,9 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
       continue;
     }
 
-    dest.push_back(ITargetBuilder::createArgInvariantTarget(
-        arg, call, arg.getOperandNo()));
+    requiredArgs[arg.getOperandNo()] = arg;
   }
+  dest.push_back(ITargetBuilder::createCallInvariantTarget(call, requiredArgs));
 }
 
 void PointerBoundsPolicy::insertVarArgInvariantTargets(ITargetVector &vec,

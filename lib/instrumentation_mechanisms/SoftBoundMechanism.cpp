@@ -856,11 +856,12 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     return;
   }
 
+  assert(!isa<ArgInvariantIT>(target));
+
   Value *instrumentee = target.getInstrumentee();
   Instruction *loc = target.getLocation();
 
   IRBuilder<> builder(loc);
-  auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   // Stores of pointer values to memory require a metadata store.
   if (auto store = dyn_cast<StoreInst>(loc)) {
@@ -888,32 +889,6 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     return;
   }
 
-  // Upon a call, the base and bound for all pointer arguments need to be stored
-  // to the shadow stack.
-  if (auto argIT = dyn_cast<ArgInvariantIT>(&target)) {
-
-    auto locIndex =
-        computeShadowStackLocation(argIT->getCall(), argIT->getArgNum());
-
-    if (isVarArgMetadataType(instrumentee->getType())) {
-      auto varArgWit =
-          cast<SoftBoundVarArgWitness>(target.getSingleBoundWitness().get());
-      auto loadedVal = builder.CreateLoad(varArgWit->getProxy());
-      setVarArgMetadata(loadedVal, mdStr, "sb.vararg.proxy.load");
-
-      insertVarArgShadowStackStore(builder, loadedVal, locIndex);
-      return;
-    }
-
-    const auto bw = target.getSingleBoundWitness();
-    insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
-                           locIndex);
-    DEBUG_WITH_TYPE(
-        "softbound-genchecks",
-        dbgs() << "Passed pointer information stored to shadow stack.\n";);
-    return;
-  }
-
   // If a pointer is returned, its bounds need to be stored to the shadow stack.
   if (auto retInst = dyn_cast<ReturnInst>(loc)) {
     auto locs = computeIndices(retInst);
@@ -938,6 +913,8 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
     // Look up which proxy to use
     auto proxyPtr = varArgW->getProxy();
+
+    auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
     // Load the proxy
     auto load = builder.CreateLoad(proxyPtr);
@@ -970,11 +947,44 @@ void SoftBoundMechanism::handleCallInvariant(
     return;
   }
 
+  // The allocation call should be right before the call
+  IRBuilder<> builder(call);
+
   // Take care of shadow stack allocation and deallocation
-  handleShadowStackAllocation(call);
+  handleShadowStackAllocation(call, builder);
+
+  builder.SetInsertPoint(call);
+  for (auto elem : target.getRequiredArgs()) {
+    auto argNum = elem.first;
+    auto *arg = elem.second;
+
+    // Store the bounds to the shadow stack before the call
+    auto locIndex = computeShadowStackLocation(call, argNum);
+
+    // Look up the bound witness for this argument
+    const auto bw = target.getBoundWitness(argNum);
+    if (isVarArgMetadataType(arg->getType())) {
+      auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
+
+      auto varArgWit = cast<SoftBoundVarArgWitness>(bw.get());
+      auto loadedVal = builder.CreateLoad(varArgWit->getProxy());
+      setVarArgMetadata(loadedVal, mdStr, "sb.vararg.proxy.load");
+
+      insertVarArgShadowStackStore(builder, loadedVal, locIndex);
+      continue;
+    }
+
+    insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
+                           locIndex);
+    DEBUG_WITH_TYPE("softbound-genchecks",
+                    dbgs() << "Passed pointer information for arg " << argNum
+                           << " stored to shadow stack slot " << locIndex
+                           << ".\n";);
+  }
 }
 
-void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
+void SoftBoundMechanism::handleShadowStackAllocation(
+    CallBase *call, IRBuilder<> &builder) const {
 
   // Compute how many arguments the shadow stack needs be capable to store
   auto size = computeSizeShadowStack(call);
@@ -984,18 +994,11 @@ void SoftBoundMechanism::handleShadowStackAllocation(CallBase *call) const {
     return;
   }
 
-  auto sizeVal = ConstantInt::get(handles.intTy, size, true);
-
-  // Determine the location for the allocation, it might be necessary to skip
-  // already inserted shadow stack stores.
-  auto locBefore = getLastMDLocation(
-      call, InternalSoftBoundConfig::getShadowStackStoreStr(), false);
-  IRBuilder<> builder(locBefore);
-
   // Construct the metadata for the call
   auto shadowStackInfo = InternalSoftBoundConfig::getShadowStackInfoStr();
 
   // Allocate the shadow stack
+  auto sizeVal = ConstantInt::get(handles.intTy, size, true);
   SmallVector<Value *, 1> args = {sizeVal};
   auto allocCall =
       builder.CreateCall(FunctionCallee(handles.allocateShadowStack), args);
