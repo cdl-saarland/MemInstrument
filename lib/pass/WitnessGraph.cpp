@@ -197,7 +197,14 @@ void WitnessGraph::printWitnessClasses(raw_ostream &Stream) const {
 
   for (auto &Pair : PrintMap) {
     for (auto *Target : Pair.getSecond()) {
-      Stream << "(" << Target->getInstrumentee()->getName() << ", ";
+
+      Stream << "("
+             << (Target->hasInstrumentee()
+                     ? (Target->getInstrumentee()->hasName()
+                            ? Target->getInstrumentee()->getName()
+                            : "None")
+                     : "None")
+             << ", ";
       Target->printLocation(Stream);
       Stream << ")"
              << "; ";
