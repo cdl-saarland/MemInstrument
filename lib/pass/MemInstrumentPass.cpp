@@ -404,7 +404,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     generateChecks(*CFG, Targets, F);
   }
 
-  LLVM_DEBUG(M.dump(););
+  DEBUG_ALSO_WITH_TYPE("meminstrument-finalmodule", M.dump(););
 
   return true;
 }
