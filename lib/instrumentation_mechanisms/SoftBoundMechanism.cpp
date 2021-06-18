@@ -1035,6 +1035,9 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
   switch (intrInst->getIntrinsicID()) {
   case Intrinsic::memcpy:
   case Intrinsic::memmove: {
+    // Set the call to copy metadata after the intrinsic to handle the intrinsic
+    // the same way the memcpy run-time wrapper does.
+    builder.SetInsertPoint(intrInst->getNextNode());
     SmallVector<Value *, 3> args;
     args.push_back(intrInst->getArgOperand(0));
     args.push_back(intrInst->getArgOperand(1));
