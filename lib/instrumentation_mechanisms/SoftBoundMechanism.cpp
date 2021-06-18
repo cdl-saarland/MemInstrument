@@ -37,9 +37,6 @@ STATISTIC(MetadataLoadInserted, "Number of metadata loads inserted");
 // up.
 STATISTIC(MetadataStoresInserted, "Number of metadata stores inserted");
 
-// Number of byval arguments converted.
-STATISTIC(ByValArgsConverted, "Number of byval arguments converted at calls");
-
 // Number of nullptr bounds stored for pointer. This can happen for actual
 // nullptr in the code, or pointer which we restrict to access (e.g. when they
 // are casted from an integer).
@@ -147,9 +144,6 @@ void SoftBoundMechanism::initialize(Module &module) {
 
   // Rename the main function such that it can be linked against the run-time
   renameMain(module);
-
-  // Remove `byval` attributes by allocating them at call sites
-  transformByValFunctions(module);
 
   // Insert allocas to store loaded metadata in
   insertMetadataAllocs(module);
@@ -552,77 +546,6 @@ void SoftBoundMechanism::renameMain(Module &module) const {
   }
 
   mainFun->setName("softboundcets_pseudo_main");
-}
-
-void SoftBoundMechanism::transformByValFunctions(Module &module) const {
-
-  IRBuilder<> builder(*context);
-  for (Function &fun : module) {
-
-    // Remove byval attributes from functions
-    for (Argument &arg : fun.args()) {
-      if (arg.hasByValAttr()) {
-        // Remove the attribute
-        arg.removeAttr(Attribute::AttrKind::ByVal);
-      }
-    }
-
-    if (fun.isDeclaration()) {
-      continue;
-    }
-
-    // Remove byval arguments from calls
-    for (auto &block : fun) {
-      for (auto &inst : block) {
-        if (auto *cb = dyn_cast<CallBase>(&inst)) {
-          if (cb->hasByValArgument()) {
-            transformCallByValArgs(*cb, builder);
-          }
-        }
-      }
-    }
-  }
-}
-
-void SoftBoundMechanism::transformCallByValArgs(CallBase &call,
-                                                IRBuilder<> &builder) const {
-
-  for (unsigned i = 0; i < call.getNumArgOperands(); i++) {
-    // Find the byval attributes
-    if (call.isByValArgument(i)) {
-
-      ++ByValArgsConverted;
-
-      auto *callArg = call.getArgOperand(i);
-      assert(callArg->getType()->isPointerTy());
-      auto callArgElemType = callArg->getType()->getPointerElementType();
-
-      // Allocate memory for the value about to be copied
-      builder.SetInsertPoint(
-          &(*call.getCaller()->getEntryBlock().getFirstInsertionPt()));
-      auto alloc = builder.CreateAlloca(callArgElemType);
-      alloc->setName("byval.alloc");
-
-      // Copy the value into the alloca
-      builder.SetInsertPoint(&call);
-      auto size = DL->getTypeAllocSize(callArgElemType);
-      auto cpy = builder.CreateMemCpy(alloc, alloc->getAlignment(), callArg,
-                                      alloc->getAlignment(), size);
-      // TODO set no instrument metadata at the new memcpy call?
-      // Copy of metadata for the memcpy is relevant, but do we need a bounds
-      // check?
-      if (!cpy->getType()->isVoidTy()) {
-        cpy->setName("byval.cpy");
-      }
-
-      // Replace the old argument with the newly copied one and make sure it is
-      // no longer classified as byval.
-      call.setArgOperand(i, alloc);
-      call.removeParamAttr(i, Attribute::AttrKind::ByVal);
-    }
-  }
-
-  return;
 }
 
 void SoftBoundMechanism::setUpGlobals(Module &module) const {

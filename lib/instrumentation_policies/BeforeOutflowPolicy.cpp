@@ -56,8 +56,6 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
       break;
     }
     bool FunIsNoVarArg = Fun && !Fun->isVarArg();
-    // FIXME If we know the function, we can insert actual dereference checks
-    // for byval arguments. Otherwise, we have to hope for the best.
     Function::arg_iterator ArgIt;
     if (FunIsNoVarArg) {
       ArgIt = Fun->arg_begin();
@@ -77,16 +75,8 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
         continue;
       }
 
-      if (FunIsNoVarArg && ArgIt->hasByValAttr()) {
-        if (!validateSize(Operand)) {
-          return;
-        }
-        Dest.push_back(
-            ITargetBuilder::createSpatialCheckTarget(Operand, Location));
-      } else {
-        Dest.push_back(ITargetBuilder::createArgInvariantTarget(
-            Operand, I, Operand.getOperandNo()));
-      }
+      Dest.push_back(ITargetBuilder::createArgInvariantTarget(
+          Operand, I, Operand.getOperandNo()));
 
       if (FunIsNoVarArg) {
         ++ArgIt;

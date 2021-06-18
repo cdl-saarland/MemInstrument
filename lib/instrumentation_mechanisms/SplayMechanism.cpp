@@ -28,7 +28,6 @@ STATISTIC(SplayNumNonSizedGlobals,
           "The # of globals non-sized globals ignored");
 STATISTIC(SplayNumFunctions, "The # of functions registered");
 STATISTIC(SplayNumAllocas, "The # of allocas registered");
-STATISTIC(SplayNumByValArgs, "The # of byval arguments registered");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -450,45 +449,9 @@ void SplayMechanism::initialize(Module &M) {
   }
 
   for (auto &F : M) {
-    if (F.empty() || hasNoInstrument(&F))
+    if (F.isDeclaration() || hasNoInstrument(&F))
       continue;
-    IRBuilder<> Builder(&F.front().front());
-    for (auto &Arg : F.args()) {
-      if (Arg.hasByValAttr()) {
-        // byval parameters are implicitly copied
-        LLVM_DEBUG(dbgs() << "Creating splay init code for byval Argument`"
-                          << Arg << "'\n");
-        auto *PtrArg = insertCast(PtrArgType, &Arg, Builder);
 
-        if (auto *I = dyn_cast<Instruction>(PtrArg)) {
-          setByvalHandling(I);
-        }
-
-        auto *PtrType = cast<PointerType>(Arg.getType());
-        auto *PointeeType = PtrType->getElementType();
-        uint64_t sz = M.getDataLayout().getTypeAllocSize(PointeeType);
-        auto *Size = ConstantInt::get(SizeType, sz);
-
-        if (globalConfig.hasInstrumentVerbose()) {
-          std::string insn = "";
-          raw_string_ostream ss(insn);
-          ss << "byval";
-          auto *Arr = insertStringLiteral(M, ss.str());
-          auto *Str = insertCast(PtrArgType, Arr, Builder);
-          if (auto *I = dyn_cast<Instruction>(Str)) {
-            setByvalHandling(I);
-          }
-          auto *Call = insertCall(Builder, AllocFunction,
-                                  std::vector<Value *>{PtrArg, Size, Str});
-          setByvalHandling(Call);
-        } else {
-          auto *Call = insertCall(Builder, AllocFunction,
-                                  std::vector<Value *>{PtrArg, Size});
-          setByvalHandling(Call);
-        }
-        ++SplayNumByValArgs;
-      }
-    }
     for (auto &BB : F) {
       for (auto &I : BB) {
         if (auto *AI = dyn_cast<AllocaInst>(&I)) {

@@ -218,17 +218,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
   // Get the location right at the beginning of the function. We want to place
   // witnesses for arguments, global values and constants here.
   auto *Fun = Target->getLocation()->getFunction();
-  auto &EntryBB = Fun->getEntryBlock();
-
-  Instruction *EntryLoc = nullptr;
-  // Skip instructions that we might have inserted for byval arguments
-  for (auto &I : EntryBB) {
-    if (!hasByvalHandling(&I)) {
-      EntryLoc = &I;
-      break;
-    }
-  }
-  assert(EntryLoc != nullptr);
+  auto *EntryLoc = &(*Fun->getEntryBlock().getFirstInsertionPt());
 
   auto *toInstrument = Target->getInstrumentee();
 

@@ -43,10 +43,6 @@ void setVarArgHandling(llvm::Value *V);
 /// vararg.
 void setVarArgLoadArg(llvm::Value *V);
 
-/// Add metadata an instruction to indicate that it was introduced by the
-/// instrumentation to handle byval arguments.
-void setByvalHandling(llvm::Instruction *I);
-
 /// Check a Value for metadata to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps.
@@ -64,10 +60,6 @@ bool hasVarArgHandling(const llvm::Instruction *I);
 /// Check an Instruction for metadata that indicates that this instruction loads
 /// an actual vararg.
 bool hasVarArgLoadArg(const llvm::Instruction *I);
-
-/// Check for metadata on an instruction to indicate that it was introduced by
-/// the instrumentation to handle byval arguments.
-bool hasByvalHandling(const llvm::Instruction *I);
 
 /// Check whether V has type pointer to something with a size or pointer to a
 /// function.

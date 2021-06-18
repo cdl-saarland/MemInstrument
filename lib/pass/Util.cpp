@@ -18,7 +18,6 @@ using namespace meminstrument;
 
 #define MEMINSTRUMENT_MD "meminstrument"
 #define NOINSTRUMENT_MD "no_instrument"
-#define BYVAL_HANDLING_MD "byval_handling"
 #define VARARG_MD "vararg_handling"
 #define VARARG_LOAD_MD "vararg_load_arg"
 
@@ -63,8 +62,6 @@ void setVarArgHandling(Value *V) { addMIMetadata(V, VARARG_MD); }
 
 void setVarArgLoadArg(Value *V) { addMIMetadata(V, VARARG_LOAD_MD); }
 
-void setByvalHandling(Instruction *I) { addMIMetadata(I, BYVAL_HANDLING_MD); }
-
 bool hasNoInstrument(const GlobalObject *O) {
   return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
@@ -79,10 +76,6 @@ bool hasVarArgHandling(const Instruction *I) {
 
 bool hasVarArgLoadArg(const Instruction *I) {
   return hasMDStrImpl(VARARG_LOAD_MD, I->getMetadata(MEMINSTRUMENT_MD));
-}
-
-bool hasByvalHandling(const Instruction *I) {
-  return hasMDStrImpl(BYVAL_HANDLING_MD, I->getMetadata(MEMINSTRUMENT_MD));
 }
 
 bool hasPointerAccessSize(const Value *V) {

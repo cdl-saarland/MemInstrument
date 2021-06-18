@@ -49,6 +49,9 @@ STATISTIC(NumVarArgs, "The # of function using varargs or a va_list");
 STATISTIC(NumVarArgMetadataLoadStore,
           "The # of loads and stores tagged as varargs metadata management");
 
+// Number of byval arguments converted.
+STATISTIC(ByValArgsConverted, "Number of byval arguments converted at calls");
+
 MemInstrumentPass::MemInstrumentPass() : ModulePass(ID) {}
 
 void MemInstrumentPass::releaseMemory(void) { CFG.reset(nullptr); }
@@ -174,6 +177,82 @@ bool markVarargInsts(Function &F) {
   return true;
 }
 
+/// Transform the given call byval arguments (if any) to hand over a pointer
+/// to the call site allocated stuff.
+void transformCallByValArgs(CallBase &call, IRBuilder<> &builder) {
+
+  for (unsigned i = 0; i < call.getNumArgOperands(); i++) {
+    // Find the byval attributes
+    if (call.isByValArgument(i)) {
+
+      ++ByValArgsConverted;
+
+      auto *callArg = call.getArgOperand(i);
+      assert(callArg->getType()->isPointerTy());
+      auto callArgElemType = callArg->getType()->getPointerElementType();
+
+      // Allocate memory for the value about to be copied
+      builder.SetInsertPoint(
+          &(*call.getCaller()->getEntryBlock().getFirstInsertionPt()));
+      auto alloc = builder.CreateAlloca(callArgElemType);
+      alloc->setName("byval.alloc");
+
+      // Copy the value into the alloca
+      builder.SetInsertPoint(&call);
+      auto size =
+          call.getModule()->getDataLayout().getTypeAllocSize(callArgElemType);
+      auto cpy = builder.CreateMemCpy(alloc, alloc->getAlignment(), callArg,
+                                      alloc->getAlignment(), size);
+      // TODO We cannot mark this memcpy "noinstrument" as it might be relevant
+      // to propagate metadata for some instrumentations. However, a check on
+      // dest is redundant, as we generate the dest ourselves with a valid size
+      // (hopefully).
+      if (!cpy->getType()->isVoidTy()) {
+        cpy->setName("byval.cpy");
+      }
+
+      // Replace the old argument with the newly copied one and make sure it is
+      // no longer classified as byval.
+      call.setArgOperand(i, alloc);
+      call.removeParamAttr(i, Attribute::AttrKind::ByVal);
+    }
+  }
+
+  return;
+}
+
+/// Transform all functions that have byval arguments to functions without
+/// byval arguments (allocate memory for them at every call site).
+void transformByValFunctions(Module &module) {
+
+  IRBuilder<> builder(module.getContext());
+  for (Function &fun : module) {
+
+    // Remove byval attributes from functions
+    for (Argument &arg : fun.args()) {
+      if (arg.hasByValAttr()) {
+        // Remove the attribute
+        arg.removeAttr(Attribute::AttrKind::ByVal);
+      }
+    }
+
+    if (fun.isDeclaration()) {
+      continue;
+    }
+
+    // Remove byval arguments from calls
+    for (auto &block : fun) {
+      for (auto &inst : block) {
+        if (auto *cb = dyn_cast<CallBase>(&inst)) {
+          if (cb->hasByValArgument()) {
+            transformCallByValArgs(*cb, builder);
+          }
+        }
+      }
+    }
+  }
+}
+
 } // namespace
 
 bool MemInstrumentPass::runOnModule(Module &M) {
@@ -208,6 +287,9 @@ bool MemInstrumentPass::runOnModule(Module &M) {
       NumVarArgs++;
     }
   }
+
+  // Remove `byval` attributes by allocating them at call sites
+  transformByValFunctions(M);
 
   LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `"
                     << M.getName().str() << "`\n";);
