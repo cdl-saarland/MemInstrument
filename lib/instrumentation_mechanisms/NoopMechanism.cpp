@@ -40,7 +40,14 @@ void NoopMechanism::insertWitnesses(ITarget &Target) const {
     return;
   }
 
-  // TODO see splay for additional changes
+  if (isa<CallBase>(instrumentee) || isa<LandingPadInst>(instrumentee)) {
+    // Find all locations of pointer values in the aggregate type
+    auto indices = computePointerIndices(instrumentee->getType());
+    for (auto index : indices) {
+      Target.setBoundWitness(std::make_shared<NoopWitness>(), index);
+    }
+    return;
+  }
 
   // The only aggregates that do not need a source are those that are constant
   assert(isa<Constant>(instrumentee));

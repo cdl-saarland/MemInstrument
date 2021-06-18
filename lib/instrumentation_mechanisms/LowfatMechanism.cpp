@@ -62,7 +62,22 @@ void LowfatMechanism::insertWitnesses(ITarget &Target) const {
     return;
   }
 
-  // TODO see splay for additional changes
+  // The witnesses for pointers returned from a call/landingpad are the values
+  // in the aggregate themselves.
+  if (isa<CallBase>(instrumentee) || isa<LandingPadInst>(instrumentee)) {
+    IRBuilder<> builder(Target.getLocation());
+    // Find all locations of pointer values in the aggregate type
+    auto indices = computePointerIndices(instrumentee->getType());
+    for (auto index : indices) {
+      // Extract the pointer to have the witness at hand.
+      auto ptr = builder.CreateExtractValue(instrumentee, index);
+      auto *castVal = insertCast(WitnessType, ptr, builder);
+      Target.setBoundWitness(
+          std::make_shared<LowfatWitness>(castVal, Target.getLocation()),
+          index);
+    }
+    return;
+  }
 
   // The only aggregates that do not need a source are those that are constant
   assert(isa<Constant>(instrumentee));

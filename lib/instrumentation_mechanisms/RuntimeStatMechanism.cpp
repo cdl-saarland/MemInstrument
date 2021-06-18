@@ -59,11 +59,17 @@ void RuntimeStatMechanism::insertWitnesses(ITarget &Target) const {
 
   if (!instrumentee->getType()->isAggregateType()) {
     Target.setSingleBoundWitness(std::make_shared<RuntimeStatWitness>());
-
     return;
   }
 
-  // TODO see splay for additional changes
+  if (isa<CallBase>(instrumentee) || isa<LandingPadInst>(instrumentee)) {
+    // Find all locations of pointer values in the aggregate type
+    auto indices = computePointerIndices(instrumentee->getType());
+    for (auto index : indices) {
+      Target.setBoundWitness(std::make_shared<RuntimeStatWitness>(), index);
+    }
+    return;
+  }
 
   // The only aggregates that do not need a source are those that are constant
   assert(isa<Constant>(instrumentee));
