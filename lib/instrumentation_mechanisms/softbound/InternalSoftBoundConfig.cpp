@@ -19,8 +19,8 @@
 
 #include "meminstrument/instrumentation_mechanisms/softbound/InternalSoftBoundConfig.h"
 
-#include "meminstrument/softbound/SBRTInfo.h"
-#include "meminstrument/softbound/SBWrapper.h"
+#include "meminstrument-rt/SBRTInfo.h"
+#include "meminstrument-rt/SBWrapper.h"
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/GlobalObject.h"
