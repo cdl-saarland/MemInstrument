@@ -53,7 +53,8 @@ void PointerBoundsPolicy::classifyTargets(ITargetVector &dest,
 
   switch (loc->getOpcode()) {
   case Instruction::Call:
-    addCallTargets(dest, cast<CallInst>(loc));
+  case Instruction::Invoke:
+    addCallTargets(dest, cast<CallBase>(loc));
     break;
   case Instruction::Ret:
     insertInvariantTargetAggregate(dest, loc);
@@ -76,7 +77,7 @@ void PointerBoundsPolicy::classifyTargets(ITargetVector &dest,
 }
 
 void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
-                                         CallInst *call) const {
+                                         CallBase *call) const {
 
   if (auto *II = dyn_cast<IntrinsicInst>(call)) {
     insertCheckTargetsForIntrinsic(dest, II);
