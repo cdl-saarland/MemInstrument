@@ -67,12 +67,12 @@ public:
   llvm::PointerType *varArgProxyTy = nullptr;
   llvm::PointerType *varArgProxyPtrTy = nullptr;
 
-  llvm::Function *allocateVarArgProxy;
-  llvm::Function *loadNextInfoVarArgProxy;
-  llvm::Function *copyVarArgProxy;
-  llvm::Function *freeVarArgProxy;
-  llvm::Function *loadVarArgProxyStack;
-  llvm::Function *storeVarArgProxyStack;
+  llvm::Function *allocateVarArgProxy = nullptr;
+  llvm::Function *loadNextInfoVarArgProxy = nullptr;
+  llvm::Function *copyVarArgProxy = nullptr;
+  llvm::Function *freeVarArgProxy = nullptr;
+  llvm::Function *loadVarArgProxyStack = nullptr;
+  llvm::Function *storeVarArgProxyStack = nullptr;
 
   // Fail functions and statistics
   llvm::Function *externalCheckCounter = nullptr;

@@ -759,7 +759,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 
 void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
   auto instrumentee = target.getInstrumentee();
-  IRBuilder<> builder(target.getLocation());
+  auto location = target.getLocation();
+  IRBuilder<> builder(location);
   auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   if (auto load = dyn_cast<LoadInst>(instrumentee)) {
@@ -813,7 +814,7 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
     setVarArgMetadata(alloc, mdStr, "sb.valist.proxy.alloc");
 
     // The store to the allocation can be as late as the target wants it to be
-    builder.SetInsertPoint(target.getLocation());
+    builder.SetInsertPoint(location);
     auto store = builder.CreateStore(load, alloc);
     setVarArgMetadata(store, mdStr);
 
