@@ -822,11 +822,13 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
 
   if (isa<ConstantPointerNull>(instrumentee)) {
     // In case the va_list is null, propagate null metadata
-    builder.SetInsertPoint(target.getLocation()->getNextNode());
+    builder.SetInsertPoint(
+        &(*location->getFunction()->getEntryBlock().getFirstInsertionPt()));
 
     auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
     setVarArgMetadata(alloc, mdStr, "sb.valist.proxy.alloc");
 
+    builder.SetInsertPoint(location->getNextNode());
     auto toStore = ConstantPointerNull::get(handles.varArgProxyTy);
 
     auto store = builder.CreateStore(toStore, alloc);
