@@ -47,6 +47,7 @@ private:
   llvm::PointerType *basePtrTy = nullptr;
   llvm::PointerType *boundPtrTy = nullptr;
   llvm::PointerType *varArgProxyTy = nullptr;
+  llvm::PointerType *varArgProxyPtrTy = nullptr;
 
   void insertSpatialRunTimeProtoypes(RunTimeHandles &) const;
 

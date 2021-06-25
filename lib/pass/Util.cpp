@@ -161,6 +161,17 @@ SmallVector<Value *, 2> getVarArgHandles(Function &F) {
     }
   }
 
+  // Search for loads that load va_lists/calls that return them everywhere
+  for (auto &bb : F) {
+    for (auto &inst : bb) {
+      if (isa<LoadInst>(&inst) || isa<CallInst>(&inst)) {
+        if (isVarArgMetadataType(inst.getType())) {
+          handles.push_back(&inst);
+        }
+      }
+    }
+  }
+
   return handles;
 }
 

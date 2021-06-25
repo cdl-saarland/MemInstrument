@@ -65,6 +65,7 @@ private:
   /// Allocas to store loaded metadata in
   std::map<llvm::Function *, std::pair<llvm::AllocaInst *, llvm::AllocaInst *>>
       metadataAllocs;
+  std::map<llvm::Function *, llvm::AllocaInst *> proxyAllocs;
 
   /// The llvm context
   llvm::LLVMContext *context;
@@ -197,6 +198,16 @@ private:
   /// The IR builder should provide the correct store location already.
   void insertMetadataStore(llvm::IRBuilder<> &, llvm::Value *ptr,
                            llvm::Value *base, llvm::Value *bound) const;
+
+  /// Insert a load of the base and bound metadata for ptr.
+  /// The IR builder should provide the correct load location already.
+  auto insertVarArgMetadataLoad(llvm::IRBuilder<> &, llvm::Value *ptr) const
+      -> llvm::Value *;
+
+  /// Insert a store of the given proxy for the given ptr.
+  /// The IR builder should provide the correct store location already.
+  void insertVarArgMetadataStore(llvm::IRBuilder<> &, llvm::Value *ptr,
+                                 llvm::Value *proxy) const;
 
   /// Load base and bound information from the shadow stack for the given
   /// index.

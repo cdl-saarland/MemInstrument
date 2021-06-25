@@ -73,6 +73,8 @@ public:
   llvm::Function *freeVarArgProxy = nullptr;
   llvm::Function *loadVarArgProxyStack = nullptr;
   llvm::Function *storeVarArgProxyStack = nullptr;
+  llvm::Function *loadInMemoryProxyPtrInfo = nullptr;
+  llvm::Function *storeInMemoryProxyPtrInfo = nullptr;
 
   // Fail functions and statistics
   llvm::Function *externalCheckCounter = nullptr;

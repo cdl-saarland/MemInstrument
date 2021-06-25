@@ -133,8 +133,11 @@ void PointerBoundsPolicy::insertVarArgInvariantTargets(ITargetVector &vec,
 
   if (auto cb = dyn_cast<CallBase>(inst)) {
 
-    // Nothing apart from vararg intrinsics should end up here
-    assert(isa<IntrinsicInst>(cb));
+    // The call simply returns a va_list, make sure to add the regular targets
+    if (!isa<IntrinsicInst>(cb)) {
+      addCallTargets(vec, cb);
+      return;
+    }
 
     auto intrInst = cast<IntrinsicInst>(cb);
     switch (intrInst->getIntrinsicID()) {
@@ -166,6 +169,22 @@ void PointerBoundsPolicy::insertVarArgInvariantTargets(ITargetVector &vec,
       vec.push_back(ITargetBuilder::createValInvariantTarget(
           load->getPointerOperand(), load));
     }
+  }
+
+  if (auto store = dyn_cast<StoreInst>(inst)) {
+    // Insert a target that makes sure that metadata for the stored va_list is
+    // propagated
+    if (isVarArgMetadataType(store->getValueOperand()->getType())) {
+      vec.push_back(ITargetBuilder::createValInvariantTarget(
+          store->getValueOperand(), store));
+    }
+  }
+
+  if (ReturnInst *ret = dyn_cast<ReturnInst>(inst)) {
+    // Insert a target that makes sure that returned va_list pointer is stored
+    // to the shadow stack
+    assert(isVarArgMetadataType(ret->getReturnValue()->getType()));
+    insertInvariantTargetReturn(vec, ret);
   }
 }
 

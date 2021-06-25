@@ -530,9 +530,12 @@ void SoftBoundMechanism::insertMetadataAllocs(Module &module) {
     setMetadata(allocBase, mdStr, "sb.base.alloc");
     auto allocBound = builder.CreateAlloca(handles.boundTy);
     setMetadata(allocBound, mdStr, "sb.bound.alloc");
+    auto allocProxy = builder.CreateAlloca(handles.varArgProxyTy);
+    setVarArgMetadata(allocProxy, mdStr, "sb.valist.proxy.alloc");
 
     // Store the generated allocs for reuse
     metadataAllocs[&fun] = std::make_pair(allocBase, allocBound);
+    proxyAllocs[&fun] = allocProxy;
   }
 }
 
@@ -764,8 +767,16 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
   auto mdStr = InternalSoftBoundConfig::getMetadataInfoStr();
 
   if (auto load = dyn_cast<LoadInst>(instrumentee)) {
-    assert(hasVarArgLoadArg(load));
+    if (!hasVarArgLoadArg(load)) {
+      // Load the metadata from memory
+      auto proxy = insertVarArgMetadataLoad(builder, load->getPointerOperand());
 
+      target.setSingleBoundWitness(
+          std::make_shared<SoftBoundVarArgWitness>(proxy));
+      return;
+    }
+
+    // We encountered a load in a vararg function which accesses the varargs
     // Load from the allocas that hold base and bound
     AllocaInst *baseAlloc;
     AllocaInst *boundAlloc;
@@ -795,23 +806,42 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
     proxyPtr = proxyAlloc;
   }
 
-  if (Argument *arg = dyn_cast<Argument>(instrumentee)) {
-    // Load the proxy object for this argument in the entry block, otherwise we
-    // might conflict with calls later on in the function that build up new
-    // layers on the shadow stack
-    builder.SetInsertPoint(
-        &(*arg->getParent()->getEntryBlock().getFirstInsertionPt()));
+  if (isa<Argument>(instrumentee) || isa<CallInst>(instrumentee)) {
 
-    // Load the proxy object from the shadow stack
-    auto index = computeShadowStackLocation(arg);
-    auto load = insertVarArgShadowStackLoad(builder, index);
+    Instruction *insertPt = nullptr;
+    Instruction *allocInsertPt = nullptr;
+    unsigned index = 0;
+    if (auto call = dyn_cast<CallInst>(instrumentee)) {
+      // The shadow stack load should be right after the call
+      insertPt = call->getNextNode();
+      // Allocas should always be in the entry block
+      allocInsertPt =
+          &(*call->getFunction()->getEntryBlock().getFirstInsertionPt());
+    }
 
+    if (auto arg = dyn_cast<Argument>(instrumentee)) {
+      // Load the proxy object for this argument in the entry block, otherwise
+      // we might conflict with calls later on in the function that build up new
+      // layers on the shadow stack
+      insertPt = &(*arg->getParent()->getEntryBlock().getFirstInsertionPt());
+      // Allocas should always be in the entry block
+      allocInsertPt = insertPt;
+      index = computeShadowStackLocation(arg);
+    }
+
+    builder.SetInsertPoint(allocInsertPt);
     // Store the proxy to a local variable.
     // This ensures both va_list arguments to a function and regular vararg
     // functions both store the proxy in their own local variable, and can be
     // used uniformly by the metadata propagation.
     auto alloc = builder.CreateAlloca(handles.varArgProxyTy);
     setVarArgMetadata(alloc, mdStr, "sb.valist.proxy.alloc");
+
+    // Set the location for the shadow stack load
+    builder.SetInsertPoint(insertPt);
+
+    // Load the proxy object from the shadow stack
+    auto load = insertVarArgShadowStackLoad(builder, index);
 
     // The store to the allocation can be as late as the target wants it to be
     builder.SetInsertPoint(location);
@@ -879,6 +909,18 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
       instrumentee = insertCast(handles.voidPtrTy, instrumentee, builder);
     }
 
+    // A vararg handle is stored to memory
+    if (isVarArgMetadataType(store->getValueOperand()->getType())) {
+      auto varArgBw = dyn_cast<SoftBoundVarArgWitness>(bw.get());
+      insertVarArgMetadataStore(builder, store->getPointerOperand(),
+                                varArgBw->getProxy());
+      DEBUG_WITH_TYPE(
+          "softbound-genchecks",
+          dbgs() << "Metadata for proxy pointer store to memory saved.\n";);
+      return;
+    }
+
+    // A regular pointer is stored to memory
     insertMetadataStore(builder, store->getPointerOperand(),
                         bw->getLowerBound(), bw->getUpperBound());
 
@@ -899,8 +941,16 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
     auto bWitnesses = target.getBoundWitnesses();
     for (auto locIndex : locs) {
       auto bw = bWitnesses.at(locIndex);
-      insertShadowStackStore(builder, bw->getLowerBound(), bw->getUpperBound(),
-                             shadowStackIndex);
+      if (auto varArgW = dyn_cast<SoftBoundVarArgWitness>(bw.get())) {
+        auto loadedVal = builder.CreateLoad(varArgW->getProxy());
+        setVarArgMetadata(loadedVal,
+                          InternalSoftBoundConfig::getMetadataInfoStr(),
+                          "sb.vararg.proxy.load");
+        insertVarArgShadowStackStore(builder, loadedVal, shadowStackIndex);
+      } else {
+        insertShadowStackStore(builder, bw->getLowerBound(),
+                               bw->getUpperBound(), shadowStackIndex);
+      }
       shadowStackIndex++;
     }
     DEBUG_WITH_TYPE(
@@ -1410,6 +1460,60 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
   auto call =
       builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
   setMetadata(call, InternalSoftBoundConfig::getMetadataInfoStr());
+}
+
+auto SoftBoundMechanism::insertVarArgMetadataLoad(IRBuilder<> &builder,
+                                                  Value *ptr) const -> Value * {
+
+  ++MetadataLoadInserted;
+
+  assert(ptr);
+
+  if (handles.voidPtrTy != ptr->getType()) {
+    ptr = insertCast(handles.voidPtrTy, ptr, builder);
+  }
+
+  // Get the allocations for the metadata load call to store the proxy in
+  auto allocProxy = proxyAllocs.at(builder.GetInsertPoint()->getFunction());
+
+  auto mdInfo = InternalSoftBoundConfig::getMetadataInfoStr();
+  LLVM_DEBUG(dbgs() << "Insert metadata load:\n"
+                    << "\tPtr: " << *ptr << "\n\tProxyAlloc: " << *allocProxy
+                    << "\n";);
+
+  SmallVector<Value *, 2> args = {ptr, allocProxy};
+
+  auto call = builder.CreateCall(
+      FunctionCallee(handles.loadInMemoryProxyPtrInfo), args);
+  setVarArgMetadata(call, mdInfo);
+
+  return allocProxy;
+}
+
+void SoftBoundMechanism::insertVarArgMetadataStore(IRBuilder<> &builder,
+                                                   Value *ptr,
+                                                   Value *proxy) const {
+
+  ++MetadataStoresInserted;
+
+  assert(ptr && proxy);
+
+  // Make sure the types are correct
+  if (handles.voidPtrTy != ptr->getType()) {
+    ptr = insertCast(handles.voidPtrTy, ptr, builder);
+  }
+
+  auto loadedProxy = builder.CreateLoad(proxy);
+  setVarArgMetadata(loadedProxy, InternalSoftBoundConfig::getMetadataInfoStr(),
+                    "sb.vararg.proxy.load");
+  LLVM_DEBUG(dbgs() << "Insert metadata store:\n"
+                    << "\tPtr: " << *ptr << "\n\tProxy: " << *loadedProxy
+                    << "\n";);
+
+  SmallVector<Value *, 2> args = {ptr, loadedProxy};
+  auto call = builder.CreateCall(
+      FunctionCallee(handles.storeInMemoryProxyPtrInfo), args);
+  setVarArgMetadata(call, InternalSoftBoundConfig::getMetadataInfoStr());
 }
 
 auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,

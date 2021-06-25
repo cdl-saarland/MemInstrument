@@ -125,7 +125,8 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       auto load = dyn_cast<LoadInst>(Instrumentee);
       // If this load is not actually loading from the varargs handed over to
       // the function, require bounds for its source structure
-      if (!hasVarArgLoadArg(load) && hasVarArgHandling(load)) {
+      if (!hasVarArgLoadArg(load) && hasVarArgHandling(load) &&
+          !isVarArgMetadataType(load->getType())) {
         requireRecursively(Node, load->getPointerOperand(), load);
         return;
       }

@@ -49,6 +49,7 @@ PrototypeInserter::PrototypeInserter(Module &module)
   basePtrTy = PointerType::getUnqual(baseTy);
   boundPtrTy = PointerType::getUnqual(boundTy);
   varArgProxyTy = PointerType::getUnqual(PointerType::getUnqual(sizeTTy));
+  varArgProxyPtrTy = PointerType::getUnqual(varArgProxyTy);
 }
 
 auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
@@ -63,7 +64,7 @@ auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
   handles.sizeTTy = sizeTTy;
 
   handles.varArgProxyTy = varArgProxyTy;
-  handles.varArgProxyPtrTy = PointerType::getUnqual(varArgProxyTy);
+  handles.varArgProxyPtrTy = varArgProxyPtrTy;
 
   if (InternalSoftBoundConfig::ensureOnlySpatial()) {
     insertSpatialOnlyRunTimeProtoypes(handles);
@@ -171,6 +172,13 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
 
   handles.storeVarArgProxyStack = createAndInsertPrototype(
       "__softboundcets_store_proxy_shadow_stack", voidTy, varArgProxyTy, intTy);
+
+  handles.loadInMemoryProxyPtrInfo =
+      createAndInsertPrototype("__softboundcets_proxy_metadata_load", voidTy,
+                               voidPtrTy, varArgProxyPtrTy);
+
+  handles.storeInMemoryProxyPtrInfo = createAndInsertPrototype(
+      "__softboundcets_proxy_metadata_store", voidTy, voidPtrTy, varArgProxyTy);
 }
 
 void PrototypeInserter::insertFailAndStatsFunctions(
