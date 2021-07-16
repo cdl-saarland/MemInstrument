@@ -67,6 +67,9 @@ default.cfg
 # Python
 .*.pyc
 
+# VSCode
+.vscode/
+
 # QtCreator
 *.config
 *.creator
