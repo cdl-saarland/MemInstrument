@@ -20,13 +20,14 @@
 #include "PICO/PICO.h"
 #endif
 
+using namespace meminstrument;
+using namespace llvm;
+\
 namespace llvm {
 ModulePass *createEliminateAvailableExternallyPass();
 ModulePass *createStripDeadPrototypesPass();
+ModulePass *createMemInstrumentPass() { return new MemInstrumentPass(); }
 } // namespace llvm
-
-using namespace meminstrument;
-using namespace llvm;
 
 namespace {
 cl::opt<bool>
@@ -72,7 +73,7 @@ static void registerMeminstrumentPass(const PassManagerBuilder &,
   // the standard library wrappers of the run-time library)
   PM.add(createEliminateAvailableExternallyPass());
   PM.add(createStripDeadPrototypesPass());
-  PM.add(new MemInstrumentPass());
+  PM.add(createMemInstrumentPass());
 }
 
 // #if MEMINSTRUMENT_USE_PICO

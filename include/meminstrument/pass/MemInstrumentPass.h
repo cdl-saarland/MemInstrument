@@ -12,6 +12,10 @@
 
 #include "meminstrument/Config.h"
 
+namespace llvm {
+ModulePass *createMemInstrumentPass();
+} // namespace llvm
+
 namespace meminstrument {
 
 class MemInstrumentPass : public llvm::ModulePass {
