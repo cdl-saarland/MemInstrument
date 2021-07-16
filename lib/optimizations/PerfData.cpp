@@ -4,18 +4,16 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/pass/PerfData.h"
+#include "meminstrument/optimizations/PerfData.h"
 
 #include "meminstrument/Definitions.h"
-
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/raw_ostream.h"
-
 #include "meminstrument/pass/Util.h"
 
-STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
-
+#include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/raw_ostream.h"
+
+STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
 
 namespace {
 

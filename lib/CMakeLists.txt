@@ -3,15 +3,15 @@ add_library(
   meminstrumentobjlib OBJECT
   pass/MemInstrumentPass.cpp
   pass/ITargetGathering.cpp
-  pass/ITargetFilters.cpp
   pass/WitnessGeneration.cpp
   pass/CheckGeneration.cpp
   pass/ITarget.cpp
   pass/Util.cpp
-  pass/PerfData.cpp
   pass/WitnessGraph.cpp
-  pass/DummyExternalChecksPass.cpp
-  pass/ExternalChecksInterface.cpp
+  optimizations/DummyExternalChecksPass.cpp
+  optimizations/ExternalChecksInterface.cpp
+  optimizations/ITargetFilters.cpp
+  optimizations/PerfData.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp

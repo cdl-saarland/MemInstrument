@@ -4,12 +4,12 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/pass/ITargetFilters.h"
+#include "meminstrument/optimizations/ITargetFilters.h"
 
 #include "meminstrument/Config.h"
 #include "meminstrument/Definitions.h"
 
-#include "meminstrument/pass/PerfData.h"
+#include "meminstrument/optimizations/PerfData.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
@@ -54,6 +54,8 @@ bool subsumes(const ITarget &one, const ITarget &other) {
     }
   }
 
+  // TODO this only holds for instrumentations that use one-byte "check"
+  // invariants
   if (other.isInvariant()) {
     return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
            isa<VarSizeCheckIT>(&one);
@@ -143,6 +145,10 @@ void meminstrument::filterITargets(GlobalConfig &CFG, Pass *P,
   filterByDominance(P, Vec, F);
 }
 
+// TODO better only filter spatial check targets (invariant check targets maybe
+// for splay/lowfat)
+// _Never_ filter SoftBound invariants, that will break the instrumentation
+// completely.
 void meminstrument::filterITargetsRandomly(
     GlobalConfig &, std::map<Function *, ITargetVector> TargetMap) {
   if (!(RandomFilteringRatioOpt >= 0 && RandomFilteringRatioOpt <= 1)) {

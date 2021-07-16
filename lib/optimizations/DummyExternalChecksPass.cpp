@@ -4,7 +4,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/pass/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/DummyExternalChecksPass.h"
 
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"

@@ -7,7 +7,7 @@
 #ifndef MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
 #define MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
 
-#include "meminstrument/pass/ExternalChecksInterface.h"
+#include "meminstrument/optimizations/ExternalChecksInterface.h"
 #include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Module.h"

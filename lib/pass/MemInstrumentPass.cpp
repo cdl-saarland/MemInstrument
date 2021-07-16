@@ -9,11 +9,11 @@
 
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/optimizations/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/ExternalChecksInterface.h"
+#include "meminstrument/optimizations/ITargetFilters.h"
 #include "meminstrument/pass/CheckGeneration.h"
-#include "meminstrument/pass/DummyExternalChecksPass.h"
-#include "meminstrument/pass/ExternalChecksInterface.h"
 #include "meminstrument/pass/ITarget.h"
-#include "meminstrument/pass/ITargetFilters.h"
 #include "meminstrument/pass/ITargetGathering.h"
 #include "meminstrument/pass/WitnessGeneration.h"
 

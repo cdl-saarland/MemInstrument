@@ -4,7 +4,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/pass/ExternalChecksInterface.h"
+#include "meminstrument/optimizations/ExternalChecksInterface.h"
 
 using namespace llvm;
 

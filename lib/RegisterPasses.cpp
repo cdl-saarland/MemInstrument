@@ -4,10 +4,11 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "lifetimekiller/LifeTimeKillerPass.h"
 #include "meminstrument/Definitions.h"
-#include "meminstrument/pass/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
+
+#include "lifetimekiller/LifeTimeKillerPass.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
@@ -22,7 +23,7 @@
 
 using namespace meminstrument;
 using namespace llvm;
-\
+
 namespace llvm {
 ModulePass *createEliminateAvailableExternallyPass();
 ModulePass *createStripDeadPrototypesPass();
