@@ -1,12 +1,11 @@
-//===--- meminstrument/InternalSoftBoundConfig.h - SoftBound ----*- C++ -*-===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- meminstrument/InternalSoftBoundConfig.h - SoftBound Conf -*- C++ -*-===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// Configuration of SoftBound derived from the C run-time library.
 ///
 //===----------------------------------------------------------------------===//

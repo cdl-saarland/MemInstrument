@@ -1,5 +1,8 @@
-//===---------------------------------------------------------------------===///
-/// \file TODO doku
+//===- InstrumentationPolicy.cpp - Policy Interface -----------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
@@ -41,6 +44,9 @@ bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(
     ITargetVector &Dest, IntrinsicInst *II) const {
   switch (II->getIntrinsicID()) {
   case Intrinsic::memcpy:
+    // TODO we could add a CallInvariant target here to ensure that src and dest
+    // don't overlap. Note however that splat/lowfat cannot yet handle
+    // CallInvariants.
   case Intrinsic::memmove: {
     auto *MT = cast<MemTransferInst>(II);
     auto *Len = MT->getLength();

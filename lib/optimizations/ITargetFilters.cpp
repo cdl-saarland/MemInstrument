@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file TODO doku
-///
+//===- ITargetFilerts.cpp - Various ITarget filters -----------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/optimizations/ITargetFilters.h"

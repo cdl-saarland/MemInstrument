@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file TODO doku
-///
+//===- RuntimeStatMechanism.cpp - Runtime Statistics ----------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"

@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file TODO doku
-///
+//===- NoneStrategy.cpp - None Strategy -----------------------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/witness_strategies/NoneStrategy.h"

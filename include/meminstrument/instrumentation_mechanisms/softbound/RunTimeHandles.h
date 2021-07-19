@@ -1,12 +1,11 @@
 //===- meminstrument/RunTimeHandles.h - Handles for C functions -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// This class abstracts from the names of the C run-time functions and contains
 /// handles to all available internal metadata/check/etc. functions, such that
 /// calls to them can easily be inserted.

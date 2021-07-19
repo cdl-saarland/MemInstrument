@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file TODO doku
-///
+//===- PerfData.cpp - Read Performance Data -------------------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/optimizations/PerfData.h"

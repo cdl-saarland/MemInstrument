@@ -1,13 +1,13 @@
-//=== meminstrument/pass/WitnessGeneration.h - MemSafety Instr. -*- C++ -*-===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- meminstrument/WitnessGeneration.h - Generate Witnesses ---*- C++ -*-===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// Make sure that bound witnesses are available at the locations where they are
+/// needed.
 ///
 //===----------------------------------------------------------------------===//
 

@@ -1,6 +1,11 @@
+//===- meminstrument/RuntimeStatMechanism.h - Statistics --------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file TODO
 ///
 //===----------------------------------------------------------------------===//
 

@@ -1,6 +1,12 @@
+//===- meminstrument/NonePolicy.h - Don't generate any target ---*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// Policy that does not generate any instrumentation target.
 ///
 //===----------------------------------------------------------------------===//
 

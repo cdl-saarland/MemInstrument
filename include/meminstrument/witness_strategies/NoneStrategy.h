@@ -1,6 +1,14 @@
+//===- meminstrument/NoneStrategy.h - None Strategy -------------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// This strategy does not not actually track pointers back to an origin and
+/// builds a witness graph, but simply requires witnesses for all targets from
+/// the mechanism.
 ///
 //===----------------------------------------------------------------------===//
 

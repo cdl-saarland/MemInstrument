@@ -1,17 +1,15 @@
-//===--- PointerBoundsPolicy.cpp - Policy for pointer-based approaches ----===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- PointerBoundsPolicy.cpp - Policy for pointer-based approaches ------===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
-/// This policy collects targets for loads and stores, where
-/// stores generate two targets whenever a pointer is stored to memory. In
-/// addition, targets for function arguments of pointer type and returned
-/// pointers are created. Special calls targets are collected for function
-/// calls.
+/// \file
+/// This policy collects targets for loads and stores, where stores generate two
+/// targets whenever a pointer is stored to memory. In addition, targets for
+/// function arguments of pointer type and returned pointers are created.
+/// Special calls targets are collected for function calls.
 ///
 //===----------------------------------------------------------------------===//
 

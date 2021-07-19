@@ -1,12 +1,11 @@
 //===- RunTimePrototypes.cpp - SoftBound Internal Funs Prototype Inserter -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// Injects all prototypes for internal check functions etc. into the module.
 /// It additionally provides types to be used when generating calls to any of
 /// the functions, such that changes in the signatures can be hidden to some

@@ -1,12 +1,11 @@
 //===- meminstrument/RunTimeProtoypes.h - SoftBound Prototypes --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// The prototype inserter injects run-time library prototypes into LLVM
 /// modules. Calls to check functions, metadata propagation functions,
 /// initialization functions etc. will be inserted during compilation, the

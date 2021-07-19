@@ -1,12 +1,11 @@
-//===--- InternalSoftBoundConfig.cpp - C run-time compliant configuration -===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- InternalSoftBoundConfig.cpp - C run-time compliant configuration ---===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// The C run-time can be configured to ensure spatial safety, temporal safety
 /// or both. Align to the configuration that the run-time uses (otherwise the
 /// compiled program will not work). Provide some convenience functions to be

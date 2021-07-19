@@ -1,12 +1,11 @@
 //===- SoftBoundWitness.cpp - Lower+Upper Bound Witnesses for SoftBound ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// SoftBoundWitness:
 /// Connects a pointer ptr with its lower and upper bound value, lowerBound and
 /// upperBound.

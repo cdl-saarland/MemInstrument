@@ -1,6 +1,17 @@
+//===- meminstrument/AfterInflowStrategy.h - After Inflow -------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// Track pointers down to where they are first loaded or created in the
+/// program.
+/// "Inflow" locations include pointers loaded from memory, pointer arguments,
+/// inttoptr casts, calls that return pointers, alloca instructions etc. Makes
+/// sure that this information is properly propagated up to the point of the
+/// check, e.g., through phis, selects, insert or extract value instructions.
 ///
 //===----------------------------------------------------------------------===//
 

@@ -1,16 +1,11 @@
+//===- meminstrument/Config.h - Instrumentation configuration ---*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===---------------------------------------------------------------------===///
 ///
-/// \file TODO doku
-///
-//===----------------------------------------------------------------------===//
-
-#ifndef MEMINSTRUMENT_CONFIG_H
-#define MEMINSTRUMENT_CONFIG_H
-
-#include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
-#include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
-#include "meminstrument/witness_strategies/WitnessStrategy.h"
-
+/// \file
 /// This file implements the configuration mechanism of the meminstrument
 /// instrumentation passes.
 ///
@@ -24,6 +19,15 @@
 /// command line flag.
 /// The default values from the basic configuration can be overridden via
 /// separate command line flags.
+///
+//===----------------------------------------------------------------------===//
+
+#ifndef MEMINSTRUMENT_CONFIG_H
+#define MEMINSTRUMENT_CONFIG_H
+
+#include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
+#include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
+#include "meminstrument/witness_strategies/WitnessStrategy.h"
 
 namespace meminstrument {
 

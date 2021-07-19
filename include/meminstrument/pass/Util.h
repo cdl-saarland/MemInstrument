@@ -1,7 +1,13 @@
+//===- meminstrument/Util.h - Helper functions ------------------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===---------------------------------------------------------------------===///
 ///
-/// \file This file provides some helper functions and gives the right settings
-///     for LLVM's debug printing.
+/// \file
+/// This file provides some helper functions and gives the right settings for
+/// LLVM's debug printing.
 ///
 //===----------------------------------------------------------------------===//
 

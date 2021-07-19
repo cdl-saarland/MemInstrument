@@ -1,6 +1,15 @@
+//===- meminstrument/WitnessStrategy.h - Strategy Interface -----*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// The witness strategy is an interface to define how the witness graph is
+/// built.
+/// The strategy determines at which locations code is placed to derive or
+/// propagate witness information (e.g. pointer bounds).
 ///
 //===----------------------------------------------------------------------===//
 

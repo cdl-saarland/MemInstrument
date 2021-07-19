@@ -1,6 +1,12 @@
+//===- meminstrument/ITargetGathering.h - Gather ITargets -------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// Collect ITargets according to the policy defined in the config.
 ///
 //===----------------------------------------------------------------------===//
 

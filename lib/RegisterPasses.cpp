@@ -1,3 +1,8 @@
+//===- RegisterPasses.cpp - Register Meminstrument Pipeline ---------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 /// \file
 /// Registration of meminstrument pass in the tool chain.

@@ -1,12 +1,11 @@
 //===- meminstrument/PointerBoundsPolicy.h -- Ptr-based Policy --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// A policy for a pointer-based (i.e. not object-based) memory safety
 /// instrumentation.
 ///

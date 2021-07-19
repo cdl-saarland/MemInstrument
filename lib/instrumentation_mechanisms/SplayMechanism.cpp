@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file See corresponding header for more descriptions.
-///
+//===- SplayMechanism.cpp - Mechanism for the J&K Splay Tree Approach -----===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"

@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file TODO doku
-///
+//===- AccessOnlyPolicy.cpp - Policy to Check only Accesses ---------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"

@@ -1,7 +1,8 @@
-//===---------------------------------------------------------------------===///
-///
-/// \file See corresponding header for more descriptions.
-///
+//===- WitnessStrategy.cpp - Strategy Interface ---------------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/witness_strategies/WitnessStrategy.h"

@@ -1,12 +1,11 @@
-//===-------- SoftBoundMechanism.cpp - Implementation of SoftBound --------===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- SoftBoundMechanism.cpp - Implementation of SoftBound ---------------===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// Implementation of Instrumentation Mechanism interface for SoftBound.
 ///
 //===----------------------------------------------------------------------===//

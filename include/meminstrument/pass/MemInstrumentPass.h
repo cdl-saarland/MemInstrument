@@ -1,6 +1,12 @@
+//===- meminstrument/MemInstrumentPass.h - Main Pass ------------*- C++ -*-===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO doku
+/// \file
+/// Main pass that instruments the program.
 ///
 //===----------------------------------------------------------------------===//
 

@@ -1,12 +1,14 @@
-//===- meminstrument/Definitions.h.in -- MemSafety Instrumentation Utils --===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- meminstrument/Definitions.h.in - MemSafety Instrumentation Utils ---===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===---------------------------------------------------------------------===///
-/// \file TODO doku
+///
+/// \file
+/// Template for a CMake-generated header file. The @-enclosed expressions are
+/// replaced according to the CMake build configuration.
+///
 //===----------------------------------------------------------------------===//
 
 #ifndef MEMINSTRUMENT_DEFINITIONS_H

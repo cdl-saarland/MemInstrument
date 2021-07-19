@@ -1,12 +1,11 @@
-//===----- meminstrument/SoftBoundMechanism.h - SoftBound -------*- C++ -*-===//
-//
-//                     The LLVM Compiler Infrastructure
+//===- meminstrument/SoftBoundMechanism.h - SoftBound -----------*- C++ -*-===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 ///
+/// \file
 /// SoftBound memory safety instrumentation originally developed by Santosh
 /// Nagarakatte, Jianzhou Zhao, Milo M. K. Martin and Steve Zdancewic.
 ///

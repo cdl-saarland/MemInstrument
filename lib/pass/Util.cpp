@@ -1,8 +1,9 @@
+//===- Util.cpp - Helper functions ----------------------------------------===//
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
 //===---------------------------------------------------------------------===///
-///
-/// \file  See corresponding header for more descriptions.
-///
-//===----------------------------------------------------------------------===//
 
 #include "meminstrument/pass/Util.h"
 
