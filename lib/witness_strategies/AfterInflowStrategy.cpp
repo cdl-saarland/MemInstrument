@@ -139,7 +139,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
       // We cannot insert witnesses after invokes as these are terminators.
       // Therefore, use the first non-phi instruction of the 'normal' successor.
       auto *II = dyn_cast<InvokeInst>(Instrumentee);
-      auto *Loc = II->getNormalDest()->getFirstNonPHI();
+      auto *Loc = &(*II->getNormalDest()->getFirstInsertionPt());
       requireSource(Node, II, Loc);
       return;
     }

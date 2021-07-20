@@ -58,7 +58,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
 
   // if an instruction is annotated as "checkearly", check function argument
   // operands at the beginning of the function instead of here.
-  auto *EntryLoc = F.getEntryBlock().getFirstNonPHI();
+  auto *EntryLoc = &(*F.getEntryBlock().getFirstInsertionPt());
 
   for (auto &IT : Vec) {
     if (!IT->isValid() || !isa<ConstSizeCheckIT>(IT)) {
