@@ -20,6 +20,10 @@
 using namespace meminstrument;
 using namespace llvm;
 
+//===--------------------------- ModulePass -------------------------------===//
+
+char DummyExternalChecksPass::ID = 0;
+
 DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
 
 bool DummyExternalChecksPass::runOnModule(Module &) {
@@ -33,12 +37,16 @@ void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
 
-char DummyExternalChecksPass::ID = 0;
-
-bool DummyExternalChecksPass::prepareModule(MemInstrumentPass &, Module &) {
-  // No need to do something here.
+bool DummyExternalChecksPass::doFinalization(Module &) {
+  WorkList.clear();
   return false;
 }
+
+void DummyExternalChecksPass::print(raw_ostream &OS, const Module *M) const {
+  OS << "Running Dummy External Checks Pass on\n" << *M << "\n";
+}
+
+//===-------------------- ExternalChecksInterface -------------------------===//
 
 /// Implementation that only changes existing ITargets
 /// (required for use with external_only config)

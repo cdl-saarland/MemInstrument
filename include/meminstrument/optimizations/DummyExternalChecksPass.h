@@ -23,34 +23,30 @@ namespace meminstrument {
 class DummyExternalChecksPass : public llvm::ModulePass,
                                 public ExternalChecksInterface {
 public:
-  /// \brief Identification
+  // ModulePass methods
+
+  /// Identification
   static char ID;
 
-  /// \brief Default constructor to initialize the module pass interface
+  /// Default constructor to initialize the module pass interface
   DummyExternalChecksPass();
 
-  virtual bool doInitialization(llvm::Module &) override { return false; }
+  virtual bool runOnModule(llvm::Module &) override;
 
-  virtual bool doFinalization(llvm::Module &) override {
-    WorkList.clear();
-    return false;
-  }
+  virtual void getAnalysisUsage(llvm::AnalysisUsage &) const override;
 
-  virtual bool runOnModule(llvm::Module &M) override;
-  // virtual void releaseMemory() override;
-  virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
-  // virtual void print(llvm::raw_ostream &O, const llvm::Module *) const
-  // override;
+  virtual bool doFinalization(llvm::Module &) override;
 
-  virtual bool prepareModule(MemInstrumentPass &P, llvm::Module &M) override;
+  virtual void print(llvm::raw_ostream &, const llvm::Module *) const override;
 
-  virtual void updateITargetsForFunction(MemInstrumentPass &P,
-                                         ITargetVector &Vec,
-                                         llvm::Function &F) override;
+  // ExternalChecksInterface methods
 
-  virtual void materializeExternalChecksForFunction(MemInstrumentPass &P,
-                                                    ITargetVector &Vec,
-                                                    llvm::Function &F) override;
+  virtual void updateITargetsForFunction(MemInstrumentPass &, ITargetVector &,
+                                         llvm::Function &) override;
+
+  virtual void materializeExternalChecksForFunction(MemInstrumentPass &,
+                                                    ITargetVector &,
+                                                    llvm::Function &) override;
 
 private:
   std::map<llvm::Function *, ITargetVector> WorkList;

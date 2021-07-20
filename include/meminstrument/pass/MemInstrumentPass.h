@@ -26,18 +26,16 @@ namespace meminstrument {
 
 class MemInstrumentPass : public llvm::ModulePass {
 public:
-  /// \brief Identification
+  /// Identification
   static char ID;
 
-  /// \brief Default constructor to initialize the module pass interface
+  /// Default constructor to initialize the module pass interface
   MemInstrumentPass();
 
-  virtual bool doInitialization(llvm::Module &) override { return false; }
-
-  virtual bool runOnModule(llvm::Module &M) override;
+  virtual bool runOnModule(llvm::Module &) override;
   virtual void releaseMemory(void) override;
-  virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
-  virtual void print(llvm::raw_ostream &O, const llvm::Module *) const override;
+  virtual void getAnalysisUsage(llvm::AnalysisUsage &) const override;
+  virtual void print(llvm::raw_ostream &, const llvm::Module *) const override;
 
   GlobalConfig &getConfig(void);
 

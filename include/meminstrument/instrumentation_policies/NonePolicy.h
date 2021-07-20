@@ -19,7 +19,6 @@
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
-#include "llvm/IR/Value.h"
 
 namespace meminstrument {
 
