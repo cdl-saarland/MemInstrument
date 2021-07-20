@@ -15,7 +15,7 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 #include "meminstrument/optimizations/DummyExternalChecksPass.h"
-#include "meminstrument/optimizations/ExternalChecksInterface.h"
+#include "meminstrument/optimizations/OptimizationInterface.h"
 #include "meminstrument/optimizations/ITargetFilters.h"
 #include "meminstrument/pass/CheckGeneration.h"
 #include "meminstrument/pass/ITarget.h"
@@ -299,7 +299,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
   LLVM_DEBUG(dbgs() << "MemInstrumentPass: processing module `"
                     << M.getName().str() << "`\n";);
 
-  ExternalChecksInterface *ECP = nullptr;
+  OptimizationInterface *ECP = nullptr;
 #if MEMINSTRUMENT_USE_PICO
   if (!(NoPMDA || NoPICO)) {
     ECP = &getAnalysis<pico::PICO>();

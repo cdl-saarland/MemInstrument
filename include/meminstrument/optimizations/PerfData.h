@@ -10,8 +10,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_PASS_PERFDATA_H
-#define MEMINSTRUMENT_PASS_PERFDATA_H
+#ifndef MEMINSTRUMENT_OPTIMIZATION_PERFDATA_H
+#define MEMINSTRUMENT_OPTIMIZATION_PERFDATA_H
 
 #include <string>
 

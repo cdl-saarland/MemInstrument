@@ -46,7 +46,7 @@ void DummyExternalChecksPass::print(raw_ostream &OS, const Module *M) const {
   OS << "Running Dummy External Checks Pass on\n" << *M << "\n";
 }
 
-//===-------------------- ExternalChecksInterface -------------------------===//
+//===--------------------- OptimizationInterface --------------------------===//
 
 /// Implementation that only changes existing ITargets
 /// (required for use with external_only config)

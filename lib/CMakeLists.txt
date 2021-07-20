@@ -9,7 +9,7 @@ add_library(
   pass/Util.cpp
   pass/WitnessGraph.cpp
   optimizations/DummyExternalChecksPass.cpp
-  optimizations/ExternalChecksInterface.cpp
+  optimizations/OptimizationInterface.cpp
   optimizations/ITargetFilters.cpp
   optimizations/PerfData.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp

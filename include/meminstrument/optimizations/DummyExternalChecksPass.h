@@ -9,10 +9,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
-#define MEMINSTRUMENT_PASS_DUMMYEXTERNALCHECKSPASS_H
+#ifndef MEMINSTRUMENT_OPTIMIZATION_DUMMYEXTERNALCHECKSPASS_H
+#define MEMINSTRUMENT_OPTIMIZATION_DUMMYEXTERNALCHECKSPASS_H
 
-#include "meminstrument/optimizations/ExternalChecksInterface.h"
+#include "meminstrument/optimizations/OptimizationInterface.h"
 #include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Module.h"
@@ -21,7 +21,7 @@
 namespace meminstrument {
 
 class DummyExternalChecksPass : public llvm::ModulePass,
-                                public ExternalChecksInterface {
+                                public OptimizationInterface {
 public:
   // ModulePass methods
 
@@ -39,7 +39,7 @@ public:
 
   virtual void print(llvm::raw_ostream &, const llvm::Module *) const override;
 
-  // ExternalChecksInterface methods
+  // OptimizationInterface methods
 
   virtual void updateITargetsForFunction(MemInstrumentPass &, ITargetVector &,
                                          llvm::Function &) override;

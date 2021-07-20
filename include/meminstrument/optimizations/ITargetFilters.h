@@ -9,8 +9,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_PASS_ITARGETFILTERS_H
-#define MEMINSTRUMENT_PASS_ITARGETFILTERS_H
+#ifndef MEMINSTRUMENT_OPTIMIZATION_ITARGETFILTERS_H
+#define MEMINSTRUMENT_OPTIMIZATION_ITARGETFILTERS_H
 
 #include "meminstrument/Config.h"
 #include "meminstrument/pass/ITarget.h"
