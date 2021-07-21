@@ -9,7 +9,6 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/Definitions.h"
 #include "meminstrument/optimizations/DummyExternalChecksPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
@@ -18,13 +17,9 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/Utils.h"
-
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
-#if MEMINSTRUMENT_USE_PICO
-#include "PICO/PICO.h"
-#endif
+#include "llvm/Transforms/Utils.h"
 
 using namespace meminstrument;
 using namespace llvm;
@@ -82,13 +77,7 @@ static void registerMeminstrumentPass(const PassManagerBuilder &,
   PM.add(createMemInstrumentPass());
 }
 
-// #if MEMINSTRUMENT_USE_PICO
 static RegisterStandardPasses
     RegisterMeminstrumentPass(PassManagerBuilder::EP_ModuleOptimizerEarly,
                               registerMeminstrumentPass);
-// #else
-// static RegisterStandardPasses
-//     RegisterMeminstrumentPass(PassManagerBuilder::EP_OptimizerLast,
-//                               registerMeminstrumentPass);
-// #endif
 } // namespace meminstrument

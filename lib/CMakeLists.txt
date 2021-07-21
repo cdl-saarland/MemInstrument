@@ -12,6 +12,7 @@ add_library(
   optimizations/OptimizationInterface.cpp
   optimizations/ITargetFilters.cpp
   optimizations/PerfData.cpp
+  optimizations/OptimizationRunner.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp
@@ -45,7 +46,7 @@ function(setup_meminstrument_library name)
   # (see project/myproject level CMakelists to enforce that these libraries are
   # found)
   target_link_libraries(${name} PUBLIC lifetimekiller)
-  if(MEMINSTRUMENT_USE_PICO)
+  if(PICO_AVAILABLE)
     target_link_libraries(${name} PUBLIC PMDA PICO)
 
     target_include_directories(

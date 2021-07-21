@@ -29,7 +29,6 @@ DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
 bool DummyExternalChecksPass::runOnModule(Module &) {
 
   LLVM_DEBUG(dbgs() << "Running External Checks Pass\n";);
-
   return false;
 }
 

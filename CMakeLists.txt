@@ -5,12 +5,6 @@ if(NOT DEFINED LLVM_MAIN_SRC_DIR)
 endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 
 # ------------------------------------------------------------------------------
-# Meminstrument options
-# ------------------------------------------------------------------------------
-
-option(MEMINSTRUMENT_USE_PICO "Use PICO to eliminate checks" 0)
-
-# ------------------------------------------------------------------------------
 # Handle dependencies
 # ------------------------------------------------------------------------------
 
@@ -30,20 +24,16 @@ endif()
 
 include_directories(BEFORE ${LIFETIMEKILLER_BASE}/include)
 
-if(MEMINSTRUMENT_USE_PICO)
-  message(STATUS "Looking for PMDA + PICO...")
+message(STATUS "Looking for PMDA + PICO...")
 
-  find_path(
-    PICO_BASE "include/PICO/PICO.h"
-    PATHS "${LLVM_MAIN_SRC_DIR}/projects"
-    PATH_SUFFIXES "/PICO")
+find_path(
+  PICO_BASE "include/PICO/PICO.h"
+  PATHS "${LLVM_MAIN_SRC_DIR}/projects"
+  PATH_SUFFIXES "/PICO")
 
-  if(PICO_BASE)
-    message(STATUS "Found PICO in ${PICO_BASE}")
-  else()
-    message(FATAL_ERROR "PICO not found ${PICO_BASE}")
-  endif()
-
+set(PICO_AVAILABLE 0)
+if(PICO_BASE)
+  message(STATUS "Found PICO in ${PICO_BASE}")
   find_path(
     PMDA_BASE "include/PMDA/PMDA.h"
     PATHS "${LLVM_MAIN_SRC_DIR}/projects"
@@ -51,15 +41,17 @@ if(MEMINSTRUMENT_USE_PICO)
 
   if(PMDA_BASE)
     message(STATUS "Found PMDA in ${PMDA_BASE}")
+    include_directories(
+      BEFORE ${PMDA_BASE}/include ${PICO_BASE}/include
+      ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
+    set(PICO_AVAILABLE 1)
   else()
-    message(FATAL_ERROR "PMDA not found ${PMDA_BASE}")
+    message(STATUS "PMDA not found ${PMDA_BASE}")
   endif()
 
-  include_directories(
-    BEFORE ${PMDA_BASE}/include ${PICO_BASE}/include
-    ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
-
-endif(MEMINSTRUMENT_USE_PICO)
+else()
+  message(STATUS "PICO not found ${PICO_BASE}")
+endif()
 
 # See if we have an installation of sqlite3, this is necessary for reading
 # performance data.
