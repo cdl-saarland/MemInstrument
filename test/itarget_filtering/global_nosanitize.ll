@@ -1,5 +1,5 @@
 ; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=gatheritargets -debug-only meminstrument-itargetprovider %s -S > /dev/null 2> %t1.log
-; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=filteritargets -debug-only meminstrument-itargetfilter %s -S > /dev/null 2> %t2.log
+; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-mode=filteritargets -mi-opt-annotation -debug-only=meminstrument-opt %s -S > /dev/null 2> %t2.log
 ; RUN: fgrep "if.then::foo" %t1.log
 ; RUN: %not fgrep "if.then::foo" %t2.log
 ; REQUIRES: asserts

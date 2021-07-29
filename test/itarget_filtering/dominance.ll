@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-use-filters -mi-mode=genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
+; RUN: %opt %loadlibs -meminstrument -mi-config=splay -mi-opt-dominance -mi-mode=genwitnesses -debug-only=meminstrument-genwitnesses %s > /dev/null 2> %t.log
 ; RUN: %not fgrep "(ptr, bb::five)" < %t.log
 ; REQUIRES: asserts
 

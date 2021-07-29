@@ -31,7 +31,9 @@ namespace meminstrument {
 /// Future optimizations could use `metarem` or the like if they optimize the
 /// metadata propagation.
 enum InstrumentationOptimizations {
+  annotation_checkrem,
   dominance_checkrem,
+  hotness_checkrem,
   dummy_checkopt,
   pico_checkopt
 };
@@ -45,7 +47,7 @@ public:
   void runPreparation(llvm::Module &) const;
 
   /// Use the update of ITargets that the optimizations define
-  void updateITargets(ITargetVector &, llvm::Function &) const;
+  void updateITargets(std::map<llvm::Function *, ITargetVector> &) const;
 
   /// Let the optimizations place checks
   void placeChecks(ITargetVector &, llvm::Function &) const;
@@ -67,6 +69,8 @@ private:
   /// Create a vector of the optimizations that are selected
   static auto computeSelectedOpts(MemInstrumentPass &)
       -> llvm::SmallVector<OptimizationInterface *, 2>;
+
+  void validate(const std::map<llvm::Function *, ITargetVector> &) const;
 };
 
 } // namespace meminstrument

@@ -9,7 +9,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "meminstrument/optimizations/AnnotationBasedRemovalPass.h"
+#include "meminstrument/optimizations/DominanceBasedCheckRemovalPass.h"
 #include "meminstrument/optimizations/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/HotnessBasedCheckRemovalPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
 #include "lifetimekiller/LifeTimeKillerPass.h"
@@ -48,6 +51,27 @@ static RegisterPass<MemInstrumentPass>
     RegisterMemInstrumentPass("meminstrument", "MemInstrument",
                               false,  // CFGOnly
                               false); // isAnalysis
+
+// Registration for the provided optimization passes
+
+static RegisterPass<AnnotationBasedRemovalPass>
+    RegisterAnnotationBasedRemovalPass(
+        "mi-annotation-based-check-removal",
+        "Annotation Based Check Removal Pass",
+        false, // CFGOnly
+        true); // isAnalysis
+
+static RegisterPass<DominanceBasedCheckRemovalPass>
+    RegisterDominanceBasedCheckRemovalPass("mi-dominance-based-check-removal",
+                                           "Dominance Based Check Removal Pass",
+                                           false, // CFGOnly
+                                           true); // isAnalysis
+
+static RegisterPass<HotnessBasedCheckRemovalPass>
+    RegisterHotnessBasedCheckRemovalPass("mi-hotness-based-check-removal",
+                                         "Hotness Based Check Removal Pass",
+                                         false, // CFGOnly
+                                         true); // isAnalysis
 
 static RegisterPass<DummyExternalChecksPass>
     RegisterDummyExternalChecksPass("mi-dummy-external-checks",

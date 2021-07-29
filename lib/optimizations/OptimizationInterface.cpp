@@ -11,13 +11,25 @@ using namespace llvm;
 
 namespace meminstrument {
 
-OptimizationInterface::~OptimizationInterface() {}
-
 bool OptimizationInterface::prepareModule(MemInstrumentPass &, Module &) {
   return false;
 }
 
+void OptimizationInterface::updateITargetsForModule(
+    MemInstrumentPass &mip,
+    std::map<Function *, ITargetVector> &targetsPerFun) {
+  for (auto &entry : targetsPerFun) {
+    updateITargetsForFunction(mip, entry.second, *entry.first);
+  }
+}
+
+void OptimizationInterface::updateITargetsForFunction(MemInstrumentPass &,
+                                                      ITargetVector &,
+                                                      Function &) {}
+
 void OptimizationInterface::materializeExternalChecksForFunction(
-    MemInstrumentPass &, ITargetVector &, llvm::Function &) {}
+    MemInstrumentPass &, ITargetVector &, Function &) {}
+
+OptimizationInterface::~OptimizationInterface() {}
 
 } // namespace meminstrument

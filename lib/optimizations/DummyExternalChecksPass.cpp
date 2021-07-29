@@ -47,8 +47,6 @@ void DummyExternalChecksPass::print(raw_ostream &OS, const Module *M) const {
 
 //===--------------------- OptimizationInterface --------------------------===//
 
-/// Implementation that only changes existing ITargets
-/// (required for use with external_only config)
 void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
                                                         ITargetVector &Vec,
                                                         Function &F) {

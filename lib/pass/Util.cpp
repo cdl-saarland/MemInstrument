@@ -21,6 +21,7 @@ using namespace meminstrument;
 #define NOINSTRUMENT_MD "no_instrument"
 #define VARARG_MD "vararg_handling"
 #define VARARG_LOAD_MD "vararg_load_arg"
+#define ACCESS_ID "mi_access_id"
 
 namespace {
 bool hasMDStrImpl(const char *ref, const MDNode *N) {
@@ -63,6 +64,12 @@ void setVarArgHandling(Value *V) { addMIMetadata(V, VARARG_MD); }
 
 void setVarArgLoadArg(Value *V) { addMIMetadata(V, VARARG_LOAD_MD); }
 
+void setAccessID(Instruction *inst, uint64_t id) {
+  auto &ctx = inst->getContext();
+  MDNode *mdNode = MDNode::get(ctx, MDString::get(ctx, std::to_string(id)));
+  inst->setMetadata(ACCESS_ID, mdNode);
+}
+
 bool hasNoInstrument(const GlobalObject *O) {
   return hasMDStrImpl(NOINSTRUMENT_MD, O->getMetadata(MEMINSTRUMENT_MD));
 }
@@ -77,6 +84,19 @@ bool hasVarArgHandling(const Instruction *I) {
 
 bool hasVarArgLoadArg(const Instruction *I) {
   return hasMDStrImpl(VARARG_LOAD_MD, I->getMetadata(MEMINSTRUMENT_MD));
+}
+
+bool hasAccessID(Instruction *inst) { return inst->getMetadata(ACCESS_ID); }
+
+uint64_t getAccessID(Instruction *inst) {
+  assert(hasAccessID(inst));
+  auto mdNode = inst->getMetadata(ACCESS_ID);
+
+  assert(mdNode->getNumOperands() == 1);
+  assert(isa<MDString>(mdNode->getOperand(0)));
+
+  auto *strOp = cast<MDString>(mdNode->getOperand(0));
+  return std::stoi(strOp->getString());
 }
 
 bool hasPointerAccessSize(const Value *V) {

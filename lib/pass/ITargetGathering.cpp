@@ -35,10 +35,10 @@ void meminstrument::gatherITargets(GlobalConfig &CFG,
 
   NumITargetsGathered += Destination.size();
 
-  DEBUG_ALSO_WITH_TYPE(
-      "meminstrument-itargetprovider",
-      dbgs() << "identified instrumentation targets:"
-             << "\n";
-      for (auto &Target
-           : Destination) { dbgs() << "  " << *Target << "\n"; });
+  DEBUG_ALSO_WITH_TYPE("meminstrument-itargetprovider", {
+    dbgs() << "identified instrumentation targets:\n";
+    for (auto &Target : Destination) {
+      dbgs() << "  " << *Target << "\n";
+    }
+  });
 }

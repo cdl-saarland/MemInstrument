@@ -90,6 +90,19 @@ public:
 
   /// \brief Adjust the required ITargets for the optimization
   ///
+  /// Mark targets invalid to communicate the information that
+  /// no code should be generated for them. It is also valid to add new
+  /// ITargets.
+  ///
+  /// Use this function if the optimization works interprocedurally and cannot
+  /// optimize without knowledge on all ITargets. Otherwise, simply implement
+  /// `updateITargetsForFunction`.
+  virtual void
+  updateITargetsForModule(MemInstrumentPass &,
+                          std::map<llvm::Function *, ITargetVector> &);
+
+  /// \brief Adjust the required ITargets for the optimization
+  ///
   /// Mark targets invalid in this function to communicate the information that
   /// no code should be generated for them.
   ///
@@ -97,7 +110,7 @@ public:
   /// BoundsITs that tell the instrumentation to place explicit bounds in the
   /// program for use by the optimization.
   virtual void updateITargetsForFunction(MemInstrumentPass &, ITargetVector &,
-                                         llvm::Function &) = 0;
+                                         llvm::Function &);
 
   /// \brief Create external checks
   ///
@@ -112,7 +125,7 @@ public:
                                                     ITargetVector &,
                                                     llvm::Function &);
 
-  virtual ~OptimizationInterface();
+  virtual ~OptimizationInterface() = 0;
 };
 } // namespace meminstrument
 

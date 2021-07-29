@@ -48,6 +48,9 @@ void setVarArgHandling(llvm::Value *);
 /// vararg.
 void setVarArgLoadArg(llvm::Value *);
 
+/// Add metadata with the given \p id as value.
+void setAccessID(llvm::Instruction *, uint64_t id);
+
 /// Check a Value for metadata to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation
 /// steps.
@@ -65,6 +68,12 @@ bool hasVarArgHandling(const llvm::Instruction *);
 /// Check an Instruction for metadata that indicates that this instruction loads
 /// an actual vararg.
 bool hasVarArgLoadArg(const llvm::Instruction *);
+
+/// Check if the given instruction has an ID.
+bool hasAccessID(llvm::Instruction *);
+
+/// Extract the access ID from the given instruction.
+uint64_t getAccessID(llvm::Instruction *);
 
 /// Check whether V has type pointer to something with a size or pointer to a
 /// function.

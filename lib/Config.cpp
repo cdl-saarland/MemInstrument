@@ -40,7 +40,7 @@ cl::OptionCategory
 enum class ConfigKind {
   splay,
   rt_stat,
-  external_only,
+  optimization_checks_only,
   noop,
   lowfat,
   softbound,
@@ -52,7 +52,7 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(ConfigKind::splay, "splay",
                    "splay-tree-based instrumentation"),
-        clEnumValN(ConfigKind::external_only, "external_only",
+        clEnumValN(ConfigKind::optimization_checks_only, "optimization_checks_only",
                    "instrumentation that inserts only external checks"),
         clEnumValN(ConfigKind::rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only"),
@@ -190,7 +190,7 @@ const char *getModeName(MIMode M) {
     return "FilterITargets";
   case MIMode::GENERATE_WITNESSES:
     return "GenerateWitnesses";
-  case MIMode::GENERATE_EXTERNAL_CHECKS:
+  case MIMode::GENERATE_OPTIMIZATION_CHECKS:
     return "GenerateExternalChecks";
   case MIMode::GENERATE_CHECKS:
     return "GenerateChecks";
@@ -212,21 +212,11 @@ cl::opt<MIMode> MIModeOpt(
                           "only until ITarget filtering is done"),
                clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
                           "only until witness generation is done"),
-               clEnumValN(MIMode::GENERATE_EXTERNAL_CHECKS, "genextchecks",
+               clEnumValN(MIMode::GENERATE_OPTIMIZATION_CHECKS, "genextchecks",
                           "only until external check generation is done"),
                clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",
                           "the full pipeline")),
     cl::cat(MemInstrumentCat), cl::init(MIMode::DEFAULT));
-
-cl::opt<cl::boolOrDefault>
-    UseFiltersOpt("mi-use-filters",
-                  cl::desc("Enable memsafety instrumentation target filters"),
-                  cl::cat(MemInstrumentCat));
-
-cl::opt<cl::boolOrDefault>
-    UseExternalChecksOpt("mi-use-extchecks",
-                         cl::desc("Enable generation of external checks"),
-                         cl::cat(MemInstrumentCat));
 
 cl::opt<cl::boolOrDefault>
     PrintWitnessGraphOpt("mi-print-witnessgraph",
@@ -331,8 +321,6 @@ public:
   virtual IMKind getInstrumentationMechanism(void) const = 0;
   virtual WSKind getWitnessStrategy(void) const = 0;
   virtual MIMode getMIMode(void) const = 0;
-  virtual bool hasUseFilters(void) const = 0;
-  virtual bool hasUseExternalChecks(void) const = 0;
   virtual bool hasPrintWitnessGraph(void) const = 0;
   virtual bool hasSimplifyWitnessGraph(void) const = 0;
   virtual bool hasInstrumentVerbose(void) const = 0;
@@ -359,8 +347,6 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_CHECKS;
   }
-  virtual bool hasUseFilters(void) const override { return true; }
-  virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
@@ -368,16 +354,14 @@ public:
 };
 
 /// A configuration to perform only instrumentation for external checks.
-class ExternalOnlyConfig : public SplayConfig {
+class OptimizationChecksOnlyConfig : public SplayConfig {
 public:
-  virtual ~ExternalOnlyConfig(void) {}
+  virtual ~OptimizationChecksOnlyConfig(void) {}
 
   virtual MIMode getMIMode(void) const override {
-    return MIMode::GENERATE_EXTERNAL_CHECKS;
+    return MIMode::GENERATE_OPTIMIZATION_CHECKS;
   }
-  virtual bool hasUseFilters(void) const override { return false; }
-  virtual bool hasUseExternalChecks(void) const override { return true; }
-  virtual const char *getName(void) const override { return "ExternalOnly"; }
+  virtual const char *getName(void) const override { return "OptimizationChecksOnly"; }
 };
 
 /// A configuration to perform instrumentation for collecting run-time
@@ -398,8 +382,6 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_CHECKS;
   }
-  virtual bool hasUseFilters(void) const override { return false; }
-  virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return true; }
@@ -424,8 +406,6 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_CHECKS;
   }
-  virtual bool hasUseFilters(void) const override { return false; }
-  virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
@@ -449,8 +429,6 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_CHECKS;
   }
-  virtual bool hasUseFilters(void) const override { return true; }
-  virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
@@ -474,9 +452,6 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_CHECKS;
   }
-
-  virtual bool hasUseFilters(void) const override { return false; }
-  virtual bool hasUseExternalChecks(void) const override { return false; }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
@@ -491,8 +466,8 @@ Config *Config::create(ConfigKind k) {
     return new RTStatConfig();
   case ConfigKind::noop:
     return new NoopConfig();
-  case ConfigKind::external_only:
-    return new ExternalOnlyConfig();
+  case ConfigKind::optimization_checks_only:
+    return new OptimizationChecksOnlyConfig();
   case ConfigKind::lowfat:
     return new LowfatConfig();
   case ConfigKind::softbound:
@@ -527,9 +502,6 @@ GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
     mode = Cfg->getMIMode();
   }
 
-  useFilters = getValOrDefault(UseFiltersOpt, Cfg->hasUseFilters());
-  useExternalChecks =
-      getValOrDefault(UseExternalChecksOpt, Cfg->hasUseExternalChecks());
   printWitnessGraph =
       getValOrDefault(PrintWitnessGraphOpt, Cfg->hasPrintWitnessGraph());
   simplifyWitnessGraph =
@@ -584,8 +556,6 @@ void GlobalConfig::dump(raw_ostream &Stream) const {
   Stream << "  InstrumentationMechanism: "
          << instrumentationMechanism->getName() << '\n';
   Stream << "                      Mode: " << getModeName(mode) << '\n';
-  Stream << "                UseFilters: " << useFilters << '\n';
-  Stream << "         UseExternalChecks: " << useExternalChecks << '\n';
   Stream << "         PrintWitnessGraph: " << printWitnessGraph << '\n';
   Stream << "      SimplifyWitnessGraph: " << simplifyWitnessGraph << '\n';
   Stream << "         InstrumentVerbose: " << instrumentVerbose << '\n';

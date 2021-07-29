@@ -8,11 +8,13 @@ add_library(
   pass/ITarget.cpp
   pass/Util.cpp
   pass/WitnessGraph.cpp
+  optimizations/AnnotationBasedRemovalPass.cpp
+  optimizations/DominanceBasedCheckRemovalPass.cpp
   optimizations/DummyExternalChecksPass.cpp
+  optimizations/HotnessBasedCheckRemovalPass.cpp
   optimizations/OptimizationInterface.cpp
-  optimizations/ITargetFilters.cpp
-  optimizations/PerfData.cpp
   optimizations/OptimizationRunner.cpp
+  optimizations/PerfData.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp
   instrumentation_mechanisms/DummyMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp

@@ -39,7 +39,7 @@ enum class MIMode {
   GATHER_ITARGETS,
   FILTER_ITARGETS,
   GENERATE_WITNESSES,
-  GENERATE_EXTERNAL_CHECKS,
+  GENERATE_OPTIMIZATION_CHECKS,
   GENERATE_CHECKS,
   DEFAULT,
 };
@@ -65,10 +65,6 @@ public:
   }
 
   MIMode getMIMode(void) { return mode; }
-
-  bool hasUseFilters(void) { return useFilters; }
-
-  bool hasUseExternalChecks(void) { return useExternalChecks; }
 
   bool hasPrintWitnessGraph(void) { return printWitnessGraph; }
 
@@ -113,8 +109,6 @@ private:
 
   MIMode mode = MIMode::DEFAULT;
 
-  bool useFilters = false;
-  bool useExternalChecks = false;
   bool printWitnessGraph = false;
   bool simplifyWitnessGraph = false;
   bool instrumentVerbose = false;

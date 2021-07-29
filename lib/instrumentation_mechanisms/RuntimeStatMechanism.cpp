@@ -192,17 +192,15 @@ uint64_t RuntimeStatMechanism::populateStringMap(Module &M) {
         if (Kind != nullptr) {
           std::string Name;
 
-          if (auto *N = I.getMetadata("mi_access_id")) {
+          if (hasAccessID(&I)) {
             // if we added labels to accesses, we should use them
-            assert(N->getNumOperands() == 1);
+            auto ID = getAccessID(&I);
 
-            assert(isa<MDString>(N->getOperand(0)));
-            auto *Str = cast<MDString>(N->getOperand(0));
             Name += M.getName();
             Name += ",";
             Name += F.getName();
             Name += ",";
-            Name += Str->getString();
+            Name += std::to_string(ID);
           } else {
             if (DILocation *Loc = I.getDebugLoc()) {
               unsigned Line = Loc->getLine();
