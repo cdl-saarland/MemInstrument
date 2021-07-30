@@ -15,6 +15,12 @@
 using namespace llvm;
 using namespace meminstrument;
 
+cl::opt<bool> InvariantIsCheck(
+    "mi-opt-dominance-invariant-is-check",
+    cl::desc("Assume that invariants are (one byte) checks (holds for splay "
+             "and lowfat, but not for softbound)"),
+    cl::init(false));
+
 STATISTIC(NumITargetsSubsumed, "The # of instrumentation targets discarded "
                                "because of dominating subsumption");
 
@@ -100,11 +106,14 @@ bool DominanceBasedCheckRemovalPass::subsumes(const ITarget &one,
     }
   }
 
-  // TODO this only holds for instrumentations that use one-byte "check"
-  // invariants
-  if (other.isInvariant()) {
-    return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
-           isa<VarSizeCheckIT>(&one);
+  if (InvariantIsCheck) {
+    // TODO this only holds for instrumentations that use one-byte "check"
+    // invariants. Find a proper solution to report an error if this CL flag is
+    // given and an instrumentation that does not support this is used.
+    if (other.isInvariant()) {
+      return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
+             isa<VarSizeCheckIT>(&one);
+    }
   }
 
   return false;

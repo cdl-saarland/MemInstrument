@@ -15,18 +15,6 @@
 using namespace llvm;
 using namespace meminstrument;
 
-cl::opt<double>
-    RandomFilteringRatioOpt("mi-random-filter-ratio",
-                            cl::desc("ratio of accesses that should not be "
-                                     "instrumented, should be between 0 and 1"),
-                            cl::init(0.5) // default
-    );
-
-cl::opt<int> RandomFilteringSeedOpt("mi-random-filter-seed",
-                                    cl::desc("random seed for filtering"),
-                                    cl::init(424242) // default
-);
-
 enum FilterOrdering {
   FO_random,
   FO_hottest,
@@ -34,12 +22,31 @@ enum FilterOrdering {
 };
 
 cl::opt<FilterOrdering> FilterOrderingOpt(
-    "mi-filter-ordering", cl::desc("strategy for filtering arbitrary checks"),
+    "mi-opt-hotness-filter-ordering",
+    cl::desc("strategy for filtering arbitrary checks"),
     cl::values(clEnumValN(FO_random, "random", "filter checks randomly"),
                clEnumValN(FO_hottest, "hottest", "filter hottest checks"),
                clEnumValN(FO_coolest, "coolest", "filter coolest checks")),
     cl::init(FO_random) // default
 );
+
+cl::opt<double>
+    RandomFilteringRatioOpt("mi-opt-hotness-filter-ratio",
+                            cl::desc("ratio of accesses that should not be "
+                                     "instrumented, should be between 0 and 1"),
+                            cl::init(0.5) // default
+    );
+
+cl::opt<int> RandomFilteringSeedOpt("mi-opt-hotness-random-filter-seed",
+                                    cl::desc("random seed for filtering"),
+                                    cl::init(424242) // default
+);
+
+cl::opt<bool> InvariantsAreChecks(
+    "mi-opt-hotness-invariant-is-check",
+    cl::desc("Assume that invariants are (one byte) checks (holds for splay "
+             "and lowfat, but not for softbound)"),
+    cl::init(false));
 
 STATISTIC(HotnessCheckRemoved, "The # checks filtered by hotness");
 
@@ -110,7 +117,14 @@ void HotnessBasedCheckRemovalPass::updateITargetsForModule(
       // is no hotness index available.
       auto loc = target->getLocation();
       if (isa<LoadInst>(loc) || isa<StoreInst>(loc)) {
-        // TODO for SoftBound this should only include check targets.
+        if (!InvariantsAreChecks) {
+          // TODO disallow skipping this check for Softbound (same issues with
+          // the dom opt)
+          if (!target->isCheck()) {
+            continue;
+          }
+        }
+
         cpy.push_back(target);
       }
     }

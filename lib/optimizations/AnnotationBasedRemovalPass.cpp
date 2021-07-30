@@ -16,7 +16,7 @@ using namespace llvm;
 using namespace meminstrument;
 
 cl::opt<std::string> RemovalAnnotationString(
-    "mi-annotation-string",
+    "mi-opt-annotation-marker-string",
     cl::desc(
         "annotation that marks instructions for which no check is required"),
     cl::init("nosanitize"));
@@ -56,7 +56,7 @@ void AnnotationBasedRemovalPass::updateITargetsForFunction(
     }
 
     auto *loc = target->getLocation();
-    if (loc->getMetadata(RemovalAnnotationString) && (target->isCheck())) {
+    if (loc->getMetadata(RemovalAnnotationString) && target->isCheck()) {
       ++AnnotationCheckRemoved;
       target->invalidate();
     }

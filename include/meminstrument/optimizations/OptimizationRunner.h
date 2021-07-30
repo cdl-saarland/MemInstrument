@@ -8,7 +8,7 @@
 /// \file
 /// Handling of optimizations for the memory safety instrumentations.
 ///
-/// Defines comand line flags for availables optimizations and contains the
+/// Defines command line flags for available optimizations and contains the
 /// logic on how to apply these optimizations.
 ///
 /// New optimizations can be registered here.
