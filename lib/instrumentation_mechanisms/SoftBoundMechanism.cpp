@@ -80,13 +80,13 @@ static cl::opt<BadPtrSrc> IntToPtrHandling(
     cl::desc("Ways to deal with integer to pointer casts:"),
     cl::cat(SBCategory), cl::init(Disallow),
     cl::values(
-        clEnumValN(Disallow, "sb-inttoptr-disallow",
+        clEnumValN(Disallow, "mi-sb-inttoptr-disallow",
                    "Don't even compile the program."),
-        clEnumValN(NullBounds, "sb-inttoptr-null-bounds",
+        clEnumValN(NullBounds, "mi-sb-inttoptr-null-bounds",
                    "Assign nullptr bounds to pointers derived from integers. "
                    "Upon access of the pointer at run time a memory safety "
                    "violation will be reported."),
-        clEnumValN(WideBounds, "sb-inttoptr-wide-bounds",
+        clEnumValN(WideBounds, "mi-sb-inttoptr-wide-bounds",
                    "Assign wide bounds to pointers derived from integers. It "
                    "will be possible to access arbitrary memory through a "
                    "pointer derived from an integer.")));
@@ -96,14 +96,14 @@ static cl::opt<BadPtrSrc> ZeroSizedArrayHandling(
              "to have size zero within the currently compiled module:"),
     cl::cat(SBCategory), cl::init(Disallow),
     cl::values(
-        clEnumValN(Disallow, "sb-size-zero-disallow",
+        clEnumValN(Disallow, "mi-sb-size-zero-disallow",
                    "Don't even compile the program."),
         clEnumValN(
-            NullBounds, "sb-size-zero-model-as-such",
+            NullBounds, "mi-sb-size-zero-model-as-such",
             "Use zero as the size of the array. Upon access of the pointer at "
             "run time a memory safety violation will be reported."),
         clEnumValN(
-            WideBounds, "sb-size-zero-wide-upper",
+            WideBounds, "mi-sb-size-zero-wide-upper",
             "Assign a wide upper bound to arrays of size zero. Underflows can "
             "still be detected, overflows will go unnoticed.")));
 
