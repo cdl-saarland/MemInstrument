@@ -455,7 +455,7 @@ CallInvariantIT::CallInvariantIT(CallBase *call)
     : InvariantIT(ITargetKind::ITK_CallInvariant, nullptr, call) {}
 
 CallInvariantIT::CallInvariantIT(
-    CallBase *call, const std::map<unsigned, llvm::Value *> &requiredArgs)
+    CallBase *call, const std::map<unsigned, Value *> &requiredArgs)
     : InvariantIT(ITargetKind::ITK_CallInvariant, nullptr, call),
       requiredArgs(requiredArgs) {}
 
@@ -468,7 +468,7 @@ CallBase *CallInvariantIT::getCall() const {
   return cast<CallBase>(location);
 }
 
-std::map<unsigned, llvm::Value *> CallInvariantIT::getRequiredArgs() const {
+std::map<unsigned, Value *> CallInvariantIT::getRequiredArgs() const {
   return requiredArgs;
 }
 

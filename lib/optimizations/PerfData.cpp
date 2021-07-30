@@ -16,12 +16,15 @@
 
 STATISTIC(FailingHotnessLookUps, "The # of failing hotness lookups");
 
+using namespace meminstrument;
+using namespace llvm;
+
 namespace {
 
-llvm::cl::opt<std::string>
+cl::opt<std::string>
     DBPathOpt("mi-profile-db-path",
-              llvm::cl::desc("path to a meminstrument profile database"),
-              llvm::cl::init("") // default
+              cl::desc("path to a meminstrument profile database"),
+              cl::init("") // default
     );
 
 } // namespace
@@ -30,9 +33,6 @@ llvm::cl::opt<std::string>
 
 #include <sqlite3.h>
 #include <sstream>
-
-using namespace meminstrument;
-using namespace llvm;
 
 namespace {
 
@@ -131,9 +131,6 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 }
 
 #else
-
-using namespace meminstrument;
-using namespace llvm;
 
 uint64_t getHotnessIndex(const std::string &, const std::string &, uint64_t) {
   ++FailingHotnessLookUps;

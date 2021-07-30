@@ -141,14 +141,14 @@ void PointerBoundsPolicy::insertVarArgInvariantTargets(ITargetVector &vec,
     switch (intrInst->getIntrinsicID()) {
     case Intrinsic::vastart:
     case Intrinsic::vaend: {
-      std::map<unsigned, llvm::Value *> requiredArgs;
+      std::map<unsigned, Value *> requiredArgs;
       requiredArgs[0] = cb->getArgOperand(0);
       vec.push_back(
           ITargetBuilder::createCallInvariantTarget(cb, requiredArgs));
       return;
     }
     case Intrinsic::vacopy: {
-      std::map<unsigned, llvm::Value *> requiredArgs;
+      std::map<unsigned, Value *> requiredArgs;
       requiredArgs[0] = cb->getArgOperand(0);
       requiredArgs[1] = cb->getArgOperand(1);
       vec.push_back(
