@@ -84,9 +84,11 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
   auto *calledFun = call->getCalledFunction();
   if (!calledFun) {
     // If we cannot identify the called function create a target to check the
-    // validity of the pointer value called
-    dest.push_back(
-        ITargetBuilder::createCallCheckTarget(call->getCalledOperand(), call));
+    // validity of the pointer value called (if it is not inline asm)
+    if (!isa<InlineAsm>(call->getCalledOperand())) {
+      dest.push_back(ITargetBuilder::createCallCheckTarget(
+          call->getCalledOperand(), call));
+    }
   }
 
   if (calledFun) {
