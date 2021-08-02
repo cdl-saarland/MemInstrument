@@ -30,6 +30,11 @@ using namespace meminstrument;
 
 STATISTIC(NumComplexAggregateTypes, "Number of complex aggregates encountered");
 
+static cl::opt<bool> NoCallChecks(
+    "mi-pbp-no-call-checks",
+    cl::desc("Don't check function pointers for validity upon calls"),
+    cl::init(false));
+
 //===----------------------------------------------------------------------===//
 //                   Implementation of PointerBoundsPolicy
 //===----------------------------------------------------------------------===//
@@ -86,8 +91,10 @@ void PointerBoundsPolicy::addCallTargets(ITargetVector &dest,
     // If we cannot identify the called function create a target to check the
     // validity of the pointer value called (if it is not inline asm)
     if (!isa<InlineAsm>(call->getCalledOperand())) {
-      dest.push_back(ITargetBuilder::createCallCheckTarget(
-          call->getCalledOperand(), call));
+      if (!NoCallChecks) {
+        dest.push_back(ITargetBuilder::createCallCheckTarget(
+            call->getCalledOperand(), call));
+      }
     }
   }
 
