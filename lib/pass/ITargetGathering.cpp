@@ -16,29 +16,61 @@
 
 STATISTIC(NumITargetsGathered,
           "The # of instrumentation targets initially gathered");
+STATISTIC(NumInvariantTargets,
+          "The # of invariant instrumentation targets initially gathered");
+STATISTIC(AccessCheckTargets,
+          "The # of access check instrumentation targets initially gathered");
+STATISTIC(CallCheckTargets,
+          "The # of call check instrumentation targets initially gathered");
+STATISTIC(BoundsTargets,
+          "The # of bounds instrumentation targets initially gathered");
+STATISTIC(IntermediateTargets,
+          "The # of intermediate instrumentation targets initially gathered");
 
 using namespace meminstrument;
 using namespace llvm;
 
-void meminstrument::gatherITargets(GlobalConfig &CFG,
-                                   ITargetVector &Destination, Function &F) {
-  auto &IP = CFG.getInstrumentationPolicy();
+void meminstrument::gatherITargets(GlobalConfig &globalConfig,
+                                   ITargetVector &destination, Function &fun) {
+  auto &IP = globalConfig.getInstrumentationPolicy();
 
-  for (auto &BB : F) {
-    for (auto &I : BB) {
-      if (hasNoInstrument(&I)) {
+  for (auto &bb : fun) {
+    for (auto &inst : bb) {
+      if (hasNoInstrument(&inst)) {
         continue;
       }
-      IP.classifyTargets(Destination, &I);
+      IP.classifyTargets(destination, &inst);
     }
   }
 
-  NumITargetsGathered += Destination.size();
+  collectStatistics(destination);
 
   DEBUG_ALSO_WITH_TYPE("meminstrument-itargetprovider", {
     dbgs() << "identified instrumentation targets:\n";
-    for (auto &Target : Destination) {
-      dbgs() << "  " << *Target << "\n";
+    for (const auto &target : destination) {
+      dbgs() << "  " << *target << "\n";
     }
   });
+}
+
+void meminstrument::collectStatistics(ITargetVector &targets) {
+  NumITargetsGathered += targets.size();
+
+  for (const auto &target : targets) {
+    if (isa<InvariantIT>(target)) {
+      ++NumInvariantTargets;
+    }
+    if (isa<ConstSizeCheckIT>(target) || isa<VarSizeCheckIT>(target)) {
+      ++AccessCheckTargets;
+    }
+    if (isa<CallCheckIT>(target)) {
+      ++CallCheckTargets;
+    }
+    if (isa<BoundsIT>(target)) {
+      ++BoundsTargets;
+    }
+    if (isa<IntermediateIT>(target)) {
+      ++IntermediateTargets;
+    }
+  }
 }

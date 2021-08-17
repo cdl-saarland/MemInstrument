@@ -22,9 +22,9 @@ using namespace meminstrument;
 using namespace llvm;
 
 namespace {
-STATISTIC(NumUnsizedTypes, "modules discarded because of unsized types");
+STATISTIC(NumUnsizedTypes, "[IP error] Number of module with unsized types");
 STATISTIC(InsertAggregateIntoAggregate,
-          "modules discarded because of sub-aggregate inserts");
+          "[IP error] Number of modules with sub-aggregate inserts");
 } // namespace
 
 InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg)

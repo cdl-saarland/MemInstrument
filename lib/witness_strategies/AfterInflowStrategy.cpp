@@ -30,14 +30,14 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
 
-STATISTIC(NumUnsupportedConstExprs, "unsupported constant expressions");
+STATISTIC(NumUnsupportedConstExprs, "[AIS error] Unsupported constant expressions");
 
-STATISTIC(NumUnsupportedConstVals, "unsupported constant values other than"
+STATISTIC(NumUnsupportedConstVals, "[AIS error] Unsupported constant values other than"
                                    " constant expressions");
 
-STATISTIC(NumUnsupportedInsns, "unsupported instructions");
+STATISTIC(NumUnsupportedInsns, "[AIS error] Unsupported instructions");
 
-STATISTIC(NumUnsupportedValOps, "unsupported value operands");
+STATISTIC(NumUnsupportedValOps, "[AIS error] Unsupported value operands");
 
 cl::opt<bool> ShareBoundsOpt(
     "mi-share-bounds",

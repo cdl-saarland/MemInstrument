@@ -20,8 +20,13 @@
 
 namespace meminstrument {
 
-void gatherITargets(GlobalConfig &CFG, ITargetVector &Destination,
-                    llvm::Function &F);
-}
+/// Gather targets according to the config for the given function and insert
+/// them into the target vector.
+void gatherITargets(GlobalConfig &, ITargetVector &, llvm::Function &);
+
+/// Collect statistics on the gathered targets
+void collectStatistics(ITargetVector &);
+
+} // namespace meminstrument
 
 #endif

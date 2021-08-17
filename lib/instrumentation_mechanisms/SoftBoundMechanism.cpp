@@ -61,12 +61,11 @@ STATISTIC(
 // Detailed statistics on which setup error occurred:
 
 STATISTIC(InAllocaArg,
-          "[setup error] Number of inalloca arguments encountered");
-
+          "[SB setup error] Number of inalloca arguments encountered");
 STATISTIC(
     ExceptionHandlingInst,
-    "[setup error] Number of exception handling instructions encountered");
-STATISTIC(IntToPtrCast, "[setup error] Number of int to pointer casts");
+    "[SB setup error] Number of exception handling instructions encountered");
+STATISTIC(IntToPtrCast, "[SB setup error] Number of int to pointer casts");
 
 using namespace llvm;
 using namespace meminstrument;
