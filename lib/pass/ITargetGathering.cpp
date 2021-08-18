@@ -54,9 +54,15 @@ void meminstrument::gatherITargets(GlobalConfig &globalConfig,
 }
 
 void meminstrument::collectStatistics(ITargetVector &targets) {
-  NumITargetsGathered += targets.size();
+  NumITargetsGathered += ITargetBuilder::getNumValidITargets(targets);
 
   for (const auto &target : targets) {
+
+    // Skip already invalidated targets
+    if (!target->isValid()) {
+      continue;
+    }
+
     if (isa<InvariantIT>(target)) {
       ++NumInvariantTargets;
     }
