@@ -57,6 +57,8 @@ void DominanceBasedCheckRemovalPass::updateITargetsForFunction(
   for (auto &target : targets) {
     for (auto &otherTarget : targets) {
 
+      // Don't optimize a target based on the assumption that it itsself is
+      // checked
       if (target == otherTarget) {
         continue;
       }
@@ -92,6 +94,8 @@ bool DominanceBasedCheckRemovalPass::subsumes(const ITarget &one,
   if (one.getInstrumentee() != other.getInstrumentee())
     return false;
 
+  // If one access has a statically larger access width than the other, it
+  // subsumes it
   if (auto constSizeTarget = dyn_cast<ConstSizeCheckIT>(&one)) {
     if (auto constSizeTargetOther = dyn_cast<ConstSizeCheckIT>(&other)) {
       return constSizeTarget->getAccessSize() >=
@@ -99,6 +103,7 @@ bool DominanceBasedCheckRemovalPass::subsumes(const ITarget &one,
     }
   }
 
+  // If the accesses have the same (dynamic) width, they subsume each other
   if (auto constSizeTarget = dyn_cast<VarSizeCheckIT>(&one)) {
     if (auto constSizeTargetOther = dyn_cast<VarSizeCheckIT>(&other)) {
       return constSizeTarget->getAccessSizeVal() ==
@@ -109,7 +114,7 @@ bool DominanceBasedCheckRemovalPass::subsumes(const ITarget &one,
   if (InvariantIsCheck) {
     // TODO this only holds for instrumentations that use one-byte "check"
     // invariants. Find a proper solution to report an error if this CL flag is
-    // given and an instrumentation that does not support this is used.
+    // given and an instrumentation that does not support that this is used.
     if (other.isInvariant()) {
       return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
              isa<VarSizeCheckIT>(&one);
