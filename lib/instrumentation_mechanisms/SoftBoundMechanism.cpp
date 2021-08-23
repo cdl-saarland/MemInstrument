@@ -52,6 +52,10 @@ STATISTIC(FunctionBoundsRequested, "Number of function bounds requested");
 STATISTIC(ZeroSizedArrayBoundsRequested,
           "Number of bounds requested for arrays declarations of size zero");
 
+/// Number of int to pointer casts encountered.
+STATISTIC(PtrToIntCast,
+          "[SB possible error source] Number of pointer to int casts");
+
 // The setup phase detected code in the module which will prevent the
 // instrumentation from making the program safe.
 STATISTIC(
@@ -1882,6 +1886,14 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
   }
 
   switch (opC) {
+  case Instruction::PtrToInt:
+    // Pointer to int casts are not strictly unsupported, but might lead to
+    // missing bound information. This can happen if an int is stored to memory,
+    // and a pointer from the same memory location is read again later on. Don't
+    // abort on these casts, but keep track of them such that the problem is
+    // clear.
+    ++PtrToIntCast;
+    return false;
   case Instruction::CatchPad:
   case Instruction::CleanupPad:
   case Instruction::LandingPad:
