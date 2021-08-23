@@ -20,6 +20,7 @@
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 #include "meminstrument/witness_strategies/NoneStrategy.h"
 
+#include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CommandLine.h"
 
 #include <cstdlib>
@@ -32,6 +33,8 @@ using namespace llvm;
 using namespace meminstrument;
 
 namespace {
+
+STATISTIC(ErrorsStat, "Number of errors that occurred during instrumentation");
 
 cl::OptionCategory
     MemInstrumentCat("MemInstrument Options",
@@ -361,7 +364,9 @@ public:
   virtual MIMode getMIMode(void) const override {
     return MIMode::GENERATE_OPTIMIZATION_CHECKS;
   }
-  virtual const char *getName(void) const override { return "OptimizationChecksOnly"; }
+  virtual const char *getName(void) const override {
+    return "OptimizationChecksOnly";
+  }
 };
 
 /// A configuration to perform instrumentation for collecting run-time
@@ -562,6 +567,9 @@ void GlobalConfig::dump(raw_ostream &Stream) const {
   Stream << "}}}\n\n";
 }
 
-void GlobalConfig::noteError(void) { ++numErrors; }
+void GlobalConfig::noteError(void) {
+  ++ErrorsStat;
+  ++numErrors;
+}
 
 bool GlobalConfig::hasErrors(void) const { return numErrors != 0; }
