@@ -52,7 +52,10 @@ STATISTIC(FunctionBoundsRequested, "Number of function bounds requested");
 STATISTIC(ZeroSizedArrayBoundsRequested,
           "Number of bounds requested for arrays declarations of size zero");
 
-/// Number of int to pointer casts encountered.
+/// Number of pointer to int casts encountered.
+STATISTIC(IntToPtrCast, "Number of int to pointer casts");
+
+/// Number of pointer to int casts encountered.
 STATISTIC(PtrToIntCast,
           "[SB possible error source] Number of pointer to int casts");
 
@@ -69,7 +72,7 @@ STATISTIC(InAllocaArg,
 STATISTIC(
     ExceptionHandlingInst,
     "[SB setup error] Number of exception handling instructions encountered");
-STATISTIC(IntToPtrCast, "[SB setup error] Number of int to pointer casts");
+STATISTIC(IntToPtrCastError, "[SB setup error] Number of int to pointer casts");
 
 using namespace llvm;
 using namespace meminstrument;
@@ -1900,8 +1903,9 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
     ++ExceptionHandlingInst;
     return true;
   case Instruction::IntToPtr: {
+    ++IntToPtrCast;
     if (IntToPtrHandling == BadPtrSrc::Disallow) {
-      ++IntToPtrCast;
+      ++IntToPtrCastError;
       return true;
     }
     break;
