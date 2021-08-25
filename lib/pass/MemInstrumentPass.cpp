@@ -111,6 +111,12 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     if (Mode == MIMode::GENERATE_WITNESSES || CFG->hasErrors())
       continue;
 
+    generateInvariants(*CFG, Targets, F);
+
+    if (Mode == MIMode::GENERATE_INVARIANTS || CFG->hasErrors()) {
+      continue;
+    }
+
     optRunner.placeChecks(Targets, F);
 
     if (Mode == MIMode::GENERATE_OPTIMIZATION_CHECKS || CFG->hasErrors())

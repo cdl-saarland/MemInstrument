@@ -39,6 +39,7 @@ enum class MIMode {
   GATHER_ITARGETS,
   FILTER_ITARGETS,
   GENERATE_WITNESSES,
+  GENERATE_INVARIANTS,
   GENERATE_OPTIMIZATION_CHECKS,
   GENERATE_CHECKS,
   DEFAULT,
@@ -82,9 +83,9 @@ public:
 
   bool hasUseNoop(void);
 
-  static std::unique_ptr<GlobalConfig> create(const llvm::Module &M);
+  static std::unique_ptr<GlobalConfig> create(const llvm::Module &);
 
-  void dump(llvm::raw_ostream &Stream) const;
+  void dump(llvm::raw_ostream &) const;
 
   ~GlobalConfig(void) {
     delete instrumentationMechanism;
@@ -101,7 +102,7 @@ public:
   GlobalConfig &operator=(const GlobalConfig &) = delete;
 
 private:
-  GlobalConfig(Config *Cfg, const llvm::Module &M);
+  GlobalConfig(Config *, const llvm::Module &);
 
   InstrumentationMechanism *instrumentationMechanism = nullptr;
   InstrumentationPolicy *instrumentationPolicy = nullptr;

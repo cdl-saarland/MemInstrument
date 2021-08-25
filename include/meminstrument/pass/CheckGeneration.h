@@ -21,7 +21,9 @@
 
 namespace meminstrument {
 
-void generateChecks(GlobalConfig &CFG, ITargetVector &Vec, llvm::Function &F);
-}
+void generateInvariants(GlobalConfig &, ITargetVector &, llvm::Function &);
+
+void generateChecks(GlobalConfig &, ITargetVector &, llvm::Function &);
+} // namespace meminstrument
 
 #endif

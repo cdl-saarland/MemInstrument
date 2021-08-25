@@ -55,7 +55,8 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(ConfigKind::splay, "splay",
                    "splay-tree-based instrumentation"),
-        clEnumValN(ConfigKind::optimization_checks_only, "optimization_checks_only",
+        clEnumValN(ConfigKind::optimization_checks_only,
+                   "optimization-checks-only",
                    "instrumentation that inserts only external checks"),
         clEnumValN(ConfigKind::rt_stat, "rt_stat",
                    "instrumentation for collection run-time statistics only"),
@@ -193,6 +194,8 @@ const char *getModeName(MIMode M) {
     return "FilterITargets";
   case MIMode::GENERATE_WITNESSES:
     return "GenerateWitnesses";
+  case MIMode::GENERATE_INVARIANTS:
+    return "GenerateInvariants";
   case MIMode::GENERATE_OPTIMIZATION_CHECKS:
     return "GenerateExternalChecks";
   case MIMode::GENERATE_CHECKS:
@@ -215,6 +218,8 @@ cl::opt<MIMode> MIModeOpt(
                           "only until ITarget filtering is done"),
                clEnumValN(MIMode::GENERATE_WITNESSES, "genwitnesses",
                           "only until witness generation is done"),
+               clEnumValN(MIMode::GENERATE_INVARIANTS, "geninvariants",
+                          "only until invariant generation is done"),
                clEnumValN(MIMode::GENERATE_OPTIMIZATION_CHECKS, "genextchecks",
                           "only until external check generation is done"),
                clEnumValN(MIMode::GENERATE_CHECKS, "genchecks",

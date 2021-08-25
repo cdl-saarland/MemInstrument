@@ -17,13 +17,26 @@
 using namespace meminstrument;
 using namespace llvm;
 
+void meminstrument::generateInvariants(GlobalConfig &CFG, ITargetVector &Vec,
+                                       Function &F) {
+  auto &IM = CFG.getInstrumentationMechanism();
+
+  for (auto &T : Vec) {
+    if (T->isValid()) {
+      if (T->isInvariant()) {
+        IM.insertCheck(*T);
+      }
+    }
+  }
+}
+
 void meminstrument::generateChecks(GlobalConfig &CFG, ITargetVector &Vec,
                                    Function &F) {
   auto &IM = CFG.getInstrumentationMechanism();
 
   for (auto &T : Vec) {
     if (T->isValid()) {
-      if (T->isCheck() || T->isInvariant()) {
+      if (T->isCheck()) {
         IM.insertCheck(*T);
       }
     }
