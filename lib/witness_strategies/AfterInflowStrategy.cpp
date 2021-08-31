@@ -11,6 +11,7 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/Support/CommandLine.h"
 
 #include <set>
 

@@ -20,6 +20,7 @@
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Support/CommandLine.h"
 
 #ifdef DEBUG_TYPE
 #undef DEBUG_TYPE

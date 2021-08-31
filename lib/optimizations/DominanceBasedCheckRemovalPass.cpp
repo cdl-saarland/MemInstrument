@@ -11,6 +11,7 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Dominators.h"
+#include "llvm/Support/CommandLine.h"
 
 using namespace llvm;
 using namespace meminstrument;
