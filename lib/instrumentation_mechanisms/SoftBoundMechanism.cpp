@@ -510,7 +510,7 @@ auto SoftBoundMechanism::updateNotPreservedAttributes(
     argAttrs.push_back(AttributeSet::get(*context, argAttrBuilder));
   }
 
-  return AttributeList::get(attrs.getContext(),
+  return AttributeList::get(*context,
                             AttributeSet::get(*context, funAttrBuilder),
                             attrs.getRetAttributes(), argAttrs);
 }
@@ -1196,7 +1196,7 @@ void SoftBoundMechanism::freeVaListProxy(IRBuilder<> &builder,
   setVarArgMetadata(freeCall, mdInfo);
 }
 
-auto SoftBoundMechanism::addBitCasts(IRBuilder<> builder, Value *base,
+auto SoftBoundMechanism::addBitCasts(IRBuilder<> &builder, Value *base,
                                      Value *bound) const
     -> std::pair<Value *, Value *> {
 

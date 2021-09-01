@@ -145,7 +145,7 @@ private:
 
   /// Add bit casts if the types are not yet those that base and bound should
   /// have.
-  auto addBitCasts(llvm::IRBuilder<>, llvm::Value *base,
+  auto addBitCasts(llvm::IRBuilder<> &, llvm::Value *base,
                    llvm::Value *bound) const
       -> std::pair<llvm::Value *, llvm::Value *>;
 

@@ -65,7 +65,7 @@ auto InternalSoftBoundConfig::getWrappedName(const StringRef funName)
                 wrappedName) != availableWrappers.end()) {
     return wrappedName;
   }
-  return funName;
+  return funName.str();
 }
 
 bool InternalSoftBoundConfig::isWrappedName(const StringRef funName) {
