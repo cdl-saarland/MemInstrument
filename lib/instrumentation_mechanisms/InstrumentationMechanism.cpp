@@ -110,18 +110,18 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
   return GV;
 }
 
-Value *InstrumentationMechanism::insertFunDecl_impl(std::vector<Type *> &Vec,
+FunctionCallee InstrumentationMechanism::insertFunDecl_impl(std::vector<Type *> &Vec,
                                                     Module &M, StringRef Name,
                                                     AttributeList AList,
                                                     Type *RetTy) {
   auto *FunTy = FunctionType::get(RetTy, Vec, /*isVarArg*/ false);
-  auto *Res = M.getOrInsertFunction(Name, FunTy, AList).getCallee();
-  setNoInstrument(Res);
+  FunctionCallee Res = M.getOrInsertFunction(Name, FunTy, AList);
+  setNoInstrument(Res.getCallee());
   return Res;
 }
 
 Instruction *
-InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                      const std::vector<Value *> &&args,
                                      const Twine &Name) {
   auto *Res = B.CreateCall(Fun, args);
@@ -129,19 +129,19 @@ InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
   return Res;
 }
 
-Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                                   Value *arg,
                                                   const Twine &Name) {
   return insertCall(B, Fun, std::vector<Value *>{arg}, Name);
 }
 
 Instruction *
-InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                      const std::vector<Value *> &&args) {
   return insertCall(B, Fun, std::move(args), "inserted_call");
 }
 
-Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, Value *Fun,
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                                   Value *arg) {
   return insertCall(B, Fun, arg, "inserted_call");
 }

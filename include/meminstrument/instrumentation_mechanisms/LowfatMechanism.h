@@ -59,9 +59,9 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Value *getFailFunction(void) const override;
+  virtual llvm::FunctionCallee getFailFunction(void) const override;
 
-  virtual llvm::Value *getVerboseFailFunction(void) const override;
+  virtual llvm::FunctionCallee getVerboseFailFunction(void) const override;
 
   virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const override;
 
@@ -76,12 +76,12 @@ public:
   virtual const char *getName(void) const override { return "Lowfat"; }
 
 private:
-  llvm::Value *CheckDerefFunction = nullptr;
-  llvm::Value *CheckOOBFunction = nullptr;
-  llvm::Value *GetUpperBoundFunction = nullptr;
-  llvm::Value *GetLowerBoundFunction = nullptr;
-  llvm::Value *FailFunction = nullptr;
-  llvm::Value *VerboseFailFunction = nullptr;
+  llvm::FunctionCallee CheckDerefFunction = nullptr;
+  llvm::FunctionCallee CheckOOBFunction = nullptr;
+  llvm::FunctionCallee GetUpperBoundFunction = nullptr;
+  llvm::FunctionCallee GetLowerBoundFunction = nullptr;
+  llvm::FunctionCallee FailFunction = nullptr;
+  llvm::FunctionCallee VerboseFailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

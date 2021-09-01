@@ -108,7 +108,9 @@ void NoopMechanism::materializeBounds(ITarget &) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-Value *NoopMechanism::getFailFunction(void) const { return FailFunction; }
+FunctionCallee NoopMechanism::getFailFunction(void) const {
+  return FailFunction;
+}
 
 void NoopMechanism::initialize(Module &M) {
   auto &Ctx = M.getContext();
@@ -136,8 +138,7 @@ void NoopMechanism::initialize(Module &M) {
   AttributeList NoReturnAttr = AttributeList::get(
       Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
   FailFunction =
-      M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx))
-          .getCallee();
+      M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx));
 }
 
 WitnessPtr NoopMechanism::getWitnessPhi(PHINode *) const {

@@ -26,32 +26,32 @@ public:
   RunTimeHandles() = default;
 
   // Init function
-  llvm::Function *init = nullptr;
+  llvm::FunctionCallee init = nullptr;
 
   // Check functions
 
   //... for spatial safety
-  llvm::Function *spatialCallCheck = nullptr;
-  llvm::Function *spatialCheck = nullptr;
+  llvm::FunctionCallee spatialCallCheck = nullptr;
+  llvm::FunctionCallee spatialCheck = nullptr;
 
   //... for temporal safety [not implemented]
 
   // Shadow stack operations
-  llvm::Function *allocateShadowStack = nullptr;
-  llvm::Function *deallocateShadowStack = nullptr;
+  llvm::FunctionCallee allocateShadowStack = nullptr;
+  llvm::FunctionCallee deallocateShadowStack = nullptr;
 
   //... for spatial safety
-  llvm::Function *loadBaseStack = nullptr;
-  llvm::Function *loadBoundStack = nullptr;
-  llvm::Function *storeBaseStack = nullptr;
-  llvm::Function *storeBoundStack = nullptr;
+  llvm::FunctionCallee loadBaseStack = nullptr;
+  llvm::FunctionCallee loadBoundStack = nullptr;
+  llvm::FunctionCallee storeBaseStack = nullptr;
+  llvm::FunctionCallee storeBoundStack = nullptr;
 
   //... for temporal safety [not implemented]
 
   // In memory pointer information gathering/propagation
-  llvm::Function *loadInMemoryPtrInfo = nullptr;
-  llvm::Function *storeInMemoryPtrInfo = nullptr;
-  llvm::Function *copyInMemoryMetadata = nullptr;
+  llvm::FunctionCallee loadInMemoryPtrInfo = nullptr;
+  llvm::FunctionCallee storeInMemoryPtrInfo = nullptr;
+  llvm::FunctionCallee copyInMemoryMetadata = nullptr;
 
   // Argument types
   llvm::PointerType *baseTy = nullptr;
@@ -66,18 +66,18 @@ public:
   llvm::PointerType *varArgProxyTy = nullptr;
   llvm::PointerType *varArgProxyPtrTy = nullptr;
 
-  llvm::Function *allocateVarArgProxy = nullptr;
-  llvm::Function *loadNextInfoVarArgProxy = nullptr;
-  llvm::Function *copyVarArgProxy = nullptr;
-  llvm::Function *freeVarArgProxy = nullptr;
-  llvm::Function *loadVarArgProxyStack = nullptr;
-  llvm::Function *storeVarArgProxyStack = nullptr;
-  llvm::Function *loadInMemoryProxyPtrInfo = nullptr;
-  llvm::Function *storeInMemoryProxyPtrInfo = nullptr;
+  llvm::FunctionCallee allocateVarArgProxy = nullptr;
+  llvm::FunctionCallee loadNextInfoVarArgProxy = nullptr;
+  llvm::FunctionCallee copyVarArgProxy = nullptr;
+  llvm::FunctionCallee freeVarArgProxy = nullptr;
+  llvm::FunctionCallee loadVarArgProxyStack = nullptr;
+  llvm::FunctionCallee storeVarArgProxyStack = nullptr;
+  llvm::FunctionCallee loadInMemoryProxyPtrInfo = nullptr;
+  llvm::FunctionCallee storeInMemoryProxyPtrInfo = nullptr;
 
   // Fail functions and statistics
-  llvm::Function *externalCheckCounter = nullptr;
-  llvm::Function *failFunction = nullptr;
+  llvm::FunctionCallee externalCheckCounter = nullptr;
+  llvm::FunctionCallee failFunction = nullptr;
 
   // Highest valid pointer value
   uintptr_t highestAddr;

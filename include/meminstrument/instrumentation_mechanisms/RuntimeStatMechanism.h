@@ -47,7 +47,7 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Value *getFailFunction(void) const override;
+  virtual llvm::FunctionCallee getFailFunction(void) const override;
 
   virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const override;
 
@@ -79,7 +79,7 @@ private:
 
   llvm::Type *SizeType;
 
-  llvm::Value *StatIncFunction = nullptr;
+  llvm::FunctionCallee StatIncFunction = nullptr;
 
   llvm::Constant *StatTableID = nullptr;
 

@@ -50,7 +50,7 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Value *getFailFunction(void) const override;
+  virtual llvm::FunctionCallee getFailFunction(void) const override;
 
   virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const override;
 
@@ -66,11 +66,11 @@ public:
   virtual const char *getName(void) const override { return "Dummy"; }
 
 private:
-  llvm::Value *CreateWitnessFunction = nullptr;
-  llvm::Value *CheckAccessFunction = nullptr;
-  llvm::Value *GetUpperBoundFunction = nullptr;
-  llvm::Value *GetLowerBoundFunction = nullptr;
-  llvm::Value *FailFunction = nullptr;
+  llvm::FunctionCallee CreateWitnessFunction = nullptr;
+  llvm::FunctionCallee CheckAccessFunction = nullptr;
+  llvm::FunctionCallee GetUpperBoundFunction = nullptr;
+  llvm::FunctionCallee GetLowerBoundFunction = nullptr;
+  llvm::FunctionCallee FailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

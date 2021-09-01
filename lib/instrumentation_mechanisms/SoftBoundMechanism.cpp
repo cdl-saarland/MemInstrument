@@ -400,11 +400,11 @@ bool SoftBoundMechanism::skipInstrumentation(Module &module) const {
   return change;
 }
 
-auto SoftBoundMechanism::getFailFunction() const -> Value * {
+auto SoftBoundMechanism::getFailFunction() const -> FunctionCallee {
   return handles.failFunction;
 }
 
-auto SoftBoundMechanism::getExtCheckCounterFunction() const -> Value * {
+auto SoftBoundMechanism::getExtCheckCounterFunction() const -> FunctionCallee {
   if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
     return handles.externalCheckCounter;
   }
@@ -576,7 +576,7 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
   IRBuilder<> builder(entryBlock);
 
   // Call the run-time init functions
-  builder.CreateCall(FunctionCallee(initFun));
+  builder.CreateCall(initFun);
 
   // Take care of globally initialized global variables
   for (GlobalVariable &global : module.globals()) {
@@ -983,8 +983,7 @@ void SoftBoundMechanism::handleInvariant(const InvariantIT &target) const {
 
     // Load base and bound into the local variables
     SmallVector<Value *, 3> args = {load, baseAlloc, boundAlloc};
-    auto loadCall = builder.CreateCall(
-        FunctionCallee(handles.loadNextInfoVarArgProxy), args);
+    auto loadCall = builder.CreateCall(handles.loadNextInfoVarArgProxy, args);
     setVarArgMetadata(loadCall, mdStr);
     return;
   }
@@ -1057,8 +1056,7 @@ void SoftBoundMechanism::handleShadowStackAllocation(
   // Allocate the shadow stack
   auto sizeVal = ConstantInt::get(handles.intTy, size, true);
   SmallVector<Value *, 1> args = {sizeVal};
-  auto allocCall =
-      builder.CreateCall(FunctionCallee(handles.allocateShadowStack), args);
+  auto allocCall = builder.CreateCall(handles.allocateShadowStack, args);
   setMetadata(allocCall, shadowStackInfo);
 
   // Deallocate the shadow stack space after the call
@@ -1072,8 +1070,7 @@ void SoftBoundMechanism::handleShadowStackAllocation(
   builder.SetInsertPoint(locAfter->getNextNode());
 
   // Deallocate the shadow stack
-  auto deallocCall =
-      builder.CreateCall(FunctionCallee(handles.deallocateShadowStack));
+  auto deallocCall = builder.CreateCall(handles.deallocateShadowStack);
   setMetadata(deallocCall, shadowStackInfo);
 
   DEBUG_WITH_TYPE("softbound-genchecks",
@@ -1099,8 +1096,7 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
     args.push_back(intrInst->getArgOperand(0));
     args.push_back(intrInst->getArgOperand(1));
     args.push_back(intrInst->getArgOperand(2));
-    auto cpyCall =
-        builder.CreateCall(FunctionCallee(handles.copyInMemoryMetadata), args);
+    auto cpyCall = builder.CreateCall(handles.copyInMemoryMetadata, args);
     setMetadata(cpyCall, InternalSoftBoundConfig::getMetadataInfoStr());
 
     DEBUG_WITH_TYPE("softbound-genchecks", {
@@ -1143,8 +1139,7 @@ void SoftBoundMechanism::initializeVaListProxy(
       callIT.getLocation()->getFunction());
   auto sizeVal = ConstantInt::get(handles.intTy, size, true);
   SmallVector<Value *, 1> args = {sizeVal};
-  auto allocProxy =
-      builder.CreateCall(FunctionCallee(handles.allocateVarArgProxy), args);
+  auto allocProxy = builder.CreateCall(handles.allocateVarArgProxy, args);
   setVarArgMetadata(allocProxy, mdInfo, "sb.vararg.proxy.start");
 
   // Store to alloc prepared for this.
@@ -1171,8 +1166,7 @@ void SoftBoundMechanism::copyVaListProxy(IRBuilder<> &builder,
 
   // Create a copy of the proxy object
   SmallVector<Value *, 1> args = {proxyPtr};
-  auto copyCall =
-      builder.CreateCall(FunctionCallee(handles.copyVarArgProxy), args);
+  auto copyCall = builder.CreateCall(handles.copyVarArgProxy, args);
   setVarArgMetadata(copyCall, mdInfo, "sb.vararg.proxy.copy");
 
   SoftBoundVarArgWitness *trgWit =
@@ -1198,8 +1192,7 @@ void SoftBoundMechanism::freeVaListProxy(IRBuilder<> &builder,
 
   // Free it
   SmallVector<Value *, 1> args = {proxyPtr};
-  auto freeCall =
-      builder.CreateCall(FunctionCallee(handles.freeVarArgProxy), args);
+  auto freeCall = builder.CreateCall(handles.freeVarArgProxy, args);
   setVarArgMetadata(freeCall, mdInfo);
 }
 
@@ -1431,8 +1424,7 @@ auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
 
   SmallVector<Value *, 3> args = {ptr, allocBase, allocBound};
 
-  auto call =
-      builder.CreateCall(FunctionCallee(handles.loadInMemoryPtrInfo), args);
+  auto call = builder.CreateCall(handles.loadInMemoryPtrInfo, args);
   setMetadata(call, mdInfo);
 
   auto base = builder.CreateLoad(allocBase);
@@ -1461,8 +1453,7 @@ void SoftBoundMechanism::insertMetadataStore(IRBuilder<> &builder, Value *ptr,
                     << "\n\tBound: " << *bound << "\n";);
 
   SmallVector<Value *, 3> args = {ptr, base, bound};
-  auto call =
-      builder.CreateCall(FunctionCallee(handles.storeInMemoryPtrInfo), args);
+  auto call = builder.CreateCall(handles.storeInMemoryPtrInfo, args);
   setMetadata(call, InternalSoftBoundConfig::getMetadataInfoStr());
 }
 
@@ -1487,8 +1478,7 @@ auto SoftBoundMechanism::insertVarArgMetadataLoad(IRBuilder<> &builder,
 
   SmallVector<Value *, 2> args = {ptr, allocProxy};
 
-  auto call = builder.CreateCall(
-      FunctionCallee(handles.loadInMemoryProxyPtrInfo), args);
+  auto call = builder.CreateCall(handles.loadInMemoryProxyPtrInfo, args);
   setVarArgMetadata(call, mdInfo);
 
   return allocProxy;
@@ -1515,8 +1505,7 @@ void SoftBoundMechanism::insertVarArgMetadataStore(IRBuilder<> &builder,
                     << "\n";);
 
   SmallVector<Value *, 2> args = {ptr, loadedProxy};
-  auto call = builder.CreateCall(
-      FunctionCallee(handles.storeInMemoryProxyPtrInfo), args);
+  auto call = builder.CreateCall(handles.storeInMemoryProxyPtrInfo, args);
   setVarArgMetadata(call, InternalSoftBoundConfig::getMetadataInfoStr());
 }
 
@@ -1528,11 +1517,9 @@ auto SoftBoundMechanism::insertShadowStackLoad(IRBuilder<> &builder,
 
   auto mdStr = InternalSoftBoundConfig::getShadowStackLoadStr();
   SmallVector<Value *, 1> args = {locIndexVal};
-  auto callLoadBase =
-      builder.CreateCall(FunctionCallee(handles.loadBaseStack), args);
+  auto callLoadBase = builder.CreateCall(handles.loadBaseStack, args);
   setMetadata(callLoadBase, mdStr, "sb.base.load");
-  auto callLoadBound =
-      builder.CreateCall(FunctionCallee(handles.loadBoundStack), args);
+  auto callLoadBound = builder.CreateCall(handles.loadBoundStack, args);
   setMetadata(callLoadBound, mdStr, "sb.bound.load");
 
   return std::make_pair(callLoadBase, callLoadBound);
@@ -1549,11 +1536,9 @@ void SoftBoundMechanism::insertShadowStackStore(IRBuilder<> &builder,
 
   SmallVector<Value *, 2> argsBase = {lowerBound, locIndexVal};
   SmallVector<Value *, 2> argsBound = {upperBound, locIndexVal};
-  auto callStoreBase =
-      builder.CreateCall(FunctionCallee(handles.storeBaseStack), argsBase);
+  auto callStoreBase = builder.CreateCall(handles.storeBaseStack, argsBase);
   setMetadata(callStoreBase, mdStr);
-  auto callStoreBound =
-      builder.CreateCall(FunctionCallee(handles.storeBoundStack), argsBound);
+  auto callStoreBound = builder.CreateCall(handles.storeBoundStack, argsBound);
   setMetadata(callStoreBound, mdStr);
 
   LLVM_DEBUG(dbgs() << "\tBase store: " << *callStoreBase
@@ -1569,8 +1554,7 @@ auto SoftBoundMechanism::insertVarArgShadowStackLoad(IRBuilder<> &builder,
   // Insert calls to the C run-time that look up the proxy pointer
   auto indexVal = ConstantInt::get(handles.intTy, index, true);
   SmallVector<Value *, 1> args = {indexVal};
-  auto proxyPtr =
-      builder.CreateCall(FunctionCallee(handles.loadVarArgProxyStack), args);
+  auto proxyPtr = builder.CreateCall(handles.loadVarArgProxyStack, args);
   setVarArgMetadata(proxyPtr, mdStr, "sb.vararg.proxy.load");
 
   return proxyPtr;
@@ -1585,8 +1569,7 @@ void SoftBoundMechanism::insertVarArgShadowStackStore(IRBuilder<> &builder,
   // Insert calls to the C run-time that look up the proxy pointer
   auto indexVal = ConstantInt::get(handles.intTy, index, true);
   SmallVector<Value *, 2> args = {proxyPtr, indexVal};
-  auto storeCall =
-      builder.CreateCall(FunctionCallee(handles.storeVarArgProxyStack), args);
+  auto storeCall = builder.CreateCall(handles.storeVarArgProxyStack, args);
   setVarArgMetadata(storeCall, mdStr);
 }
 
@@ -1815,7 +1798,7 @@ void SoftBoundMechanism::insertSpatialDereferenceCheck(
                   dbgs() << "\tLB: " << *bw->getLowerBound()
                          << "\n\tUB: " << *bw->getUpperBound() << "\n\tinstr: "
                          << *instrumentee << "\n\tsize: " << *size << "\n";);
-  auto call = builder.CreateCall(FunctionCallee(handles.spatialCheck), args);
+  auto call = builder.CreateCall(handles.spatialCheck, args);
   setMetadata(call, InternalSoftBoundConfig::getCheckInfoStr());
 
   DEBUG_WITH_TYPE("softbound-genchecks",
@@ -1837,8 +1820,7 @@ void SoftBoundMechanism::insertSpatialCallCheck(
   SmallVector<Value *, 3> args = {bw->getLowerBound(), bw->getUpperBound(),
                                   instrumentee};
 
-  auto call =
-      builder.CreateCall(FunctionCallee(handles.spatialCallCheck), args);
+  auto call = builder.CreateCall(handles.spatialCallCheck, args);
   setMetadata(call, InternalSoftBoundConfig::getCheckInfoStr());
 
   DEBUG_WITH_TYPE("softbound-genchecks",

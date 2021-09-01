@@ -136,7 +136,7 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-Value *DummyMechanism::getFailFunction(void) const { return FailFunction; }
+FunctionCallee DummyMechanism::getFailFunction(void) const { return FailFunction; }
 
 void DummyMechanism::initialize(Module &M) {
   auto &Ctx = M.getContext();

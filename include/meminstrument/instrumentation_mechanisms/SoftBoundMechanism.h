@@ -50,9 +50,9 @@ public:
 
   virtual bool skipInstrumentation(llvm::Module &) const;
 
-  virtual auto getFailFunction() const -> llvm::Value * override;
+  virtual auto getFailFunction() const -> llvm::FunctionCallee  override;
 
-  virtual auto getExtCheckCounterFunction() const -> llvm::Value * override;
+  virtual auto getExtCheckCounterFunction() const -> llvm::FunctionCallee  override;
 
   virtual auto getName() const -> const char * override;
 

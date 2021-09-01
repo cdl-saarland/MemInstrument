@@ -238,13 +238,13 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-Value *SplayMechanism::getFailFunction(void) const { return FailFunction; }
+FunctionCallee SplayMechanism::getFailFunction(void) const { return FailFunction; }
 
-Value *SplayMechanism::getExtCheckCounterFunction(void) const {
+FunctionCallee SplayMechanism::getExtCheckCounterFunction(void) const {
   return ExtCheckCounterFunction;
 }
 
-Value *SplayMechanism::getVerboseFailFunction(void) const {
+FunctionCallee SplayMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;
 }
 

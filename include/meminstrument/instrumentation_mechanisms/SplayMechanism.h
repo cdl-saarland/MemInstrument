@@ -61,11 +61,11 @@ public:
 
   virtual void materializeBounds(ITarget &Target) override;
 
-  virtual llvm::Value *getFailFunction(void) const override;
+  virtual llvm::FunctionCallee getFailFunction(void) const override;
 
-  virtual llvm::Value *getExtCheckCounterFunction(void) const override;
+  virtual llvm::FunctionCallee getExtCheckCounterFunction(void) const override;
 
-  virtual llvm::Value *getVerboseFailFunction(void) const override;
+  virtual llvm::FunctionCallee getVerboseFailFunction(void) const override;
 
   virtual WitnessPtr getWitnessPhi(llvm::PHINode *) const override;
 
@@ -81,18 +81,18 @@ public:
   virtual const char *getName(void) const override { return "Splay"; }
 
 private:
-  llvm::Value *GlobalAllocFunction = nullptr;
-  llvm::Value *AllocFunction = nullptr;
-  llvm::Value *CheckInboundsFunction = nullptr;
-  llvm::Value *CheckDereferenceFunction = nullptr;
-  llvm::Value *GetUpperBoundFunction = nullptr;
-  llvm::Value *GetLowerBoundFunction = nullptr;
-  llvm::Value *FailFunction = nullptr;
-  llvm::Value *ExtCheckCounterFunction = nullptr;
-  llvm::Value *VerboseFailFunction = nullptr;
-  llvm::Value *WarningFunction = nullptr;
+  llvm::FunctionCallee GlobalAllocFunction = nullptr;
+  llvm::FunctionCallee AllocFunction = nullptr;
+  llvm::FunctionCallee CheckInboundsFunction = nullptr;
+  llvm::FunctionCallee CheckDereferenceFunction = nullptr;
+  llvm::FunctionCallee GetUpperBoundFunction = nullptr;
+  llvm::FunctionCallee GetLowerBoundFunction = nullptr;
+  llvm::FunctionCallee FailFunction = nullptr;
+  llvm::FunctionCallee ExtCheckCounterFunction = nullptr;
+  llvm::FunctionCallee VerboseFailFunction = nullptr;
+  llvm::FunctionCallee WarningFunction = nullptr;
 
-  llvm::Value *ConfigFunction = nullptr;
+  llvm::FunctionCallee ConfigFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
