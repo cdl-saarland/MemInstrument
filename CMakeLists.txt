@@ -19,7 +19,7 @@ find_path(
 if(LIFETIMEKILLER_BASE)
   message(STATUS "Found LifeTimeKiller in ${LIFETIMEKILLER_BASE}")
 else()
-  message(FATAL_ERROR "LifeTimeKiller not found ${LIFETIMEKILLER_BASE}")
+  message(FATAL_ERROR "LifeTimeKiller not found.")
 endif()
 
 include_directories(BEFORE ${LIFETIMEKILLER_BASE}/include)
@@ -46,11 +46,11 @@ if(PICO_BASE)
       ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
     set(PICO_AVAILABLE 1)
   else()
-    message(STATUS "PMDA not found ${PMDA_BASE}")
+    message(STATUS "PMDA not found.")
   endif()
 
 else()
-  message(STATUS "PICO not found ${PICO_BASE}")
+  message(STATUS "PICO not found.")
 endif()
 
 # See if we have an installation of sqlite3, this is necessary for reading
