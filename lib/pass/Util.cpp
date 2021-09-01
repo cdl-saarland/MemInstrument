@@ -96,7 +96,9 @@ uint64_t getAccessID(Instruction *inst) {
   assert(isa<MDString>(mdNode->getOperand(0)));
 
   auto *strOp = cast<MDString>(mdNode->getOperand(0));
-  return std::stoi(strOp->getString());
+  uint64_t result;
+  strOp->getString().getAsInteger(10, result);
+  return result;
 }
 
 bool hasPointerAccessSize(const Value *V) {
