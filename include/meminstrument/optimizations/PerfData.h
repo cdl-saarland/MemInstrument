@@ -13,7 +13,11 @@
 #ifndef MEMINSTRUMENT_OPTIMIZATION_PERFDATA_H
 #define MEMINSTRUMENT_OPTIMIZATION_PERFDATA_H
 
-#include <string>
+#include <cstdint>
+
+namespace llvm {
+class StringRef;
+}
 
 namespace meminstrument {
 
@@ -25,8 +29,8 @@ namespace meminstrument {
 ///
 /// This requires an installation of sqlite3; if this is not available, it will
 /// return 0 in any case.
-uint64_t getHotnessIndex(const std::string &ModuleName,
-                         const std::string &FunctionName, uint64_t AccessId);
+uint64_t getHotnessIndex(llvm::StringRef ModuleName,
+                         llvm::StringRef FunctionName, uint64_t AccessId);
 
 } // namespace meminstrument
 

@@ -11,6 +11,7 @@
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -32,7 +33,6 @@ cl::opt<std::string>
 #if HAS_SQLITE3
 
 #include <sqlite3.h>
-#include <sstream>
 
 namespace {
 
@@ -44,8 +44,8 @@ struct QueryResult {
 static int callback(void *data, int numCols, char **fields, char **) {
   QueryResult *qr = (QueryResult *)data;
   assert(numCols == 1);
-  std::istringstream iss(fields[0]);
-  iss >> qr->value;
+  StringRef num(fields[0]);
+  num.getAsInteger(10, qr->value);
   qr->did_something = true;
   return 0;
 }
@@ -67,8 +67,8 @@ void queryValue(sqlite3 *db, std::string &query, QueryResult &qr) {
 
 } // namespace
 
-uint64_t getHotnessIndex(const std::string &ModuleName,
-                         const std::string &FunctionName, uint64_t AccessId) {
+uint64_t getHotnessIndex(StringRef ModuleName, StringRef FunctionName,
+                         uint64_t AccessId) {
   static sqlite3 *db = nullptr;
   static bool failed = false;
 
@@ -92,11 +92,11 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
   }
 
   if (!found_mid) {
-    std::stringstream ss;
+    std::string stmt;
+    raw_string_ostream ss(stmt);
     ss << "SELECT mid FROM modulenames"
        << "WHERE mname==\"" << ModuleName << "\" "
        << "LIMIT 1";
-    auto stmt = ss.str();
 
     QueryResult qr;
     queryValue(db, stmt, qr);
@@ -111,13 +111,13 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
     found_mid = true;
   }
 
-  std::stringstream ss;
+  std::string stmt;
+  raw_string_ostream ss(stmt);
   ss << "SELECT value FROM data "
      << "WHERE mid==\"" << mid << "\" "
      << "AND fname==\"" << FunctionName << "\" "
      << "AND aid==" << AccessId << " "
      << "LIMIT 1";
-  auto stmt = ss.str();
 
   QueryResult qr;
   queryValue(db, stmt, qr);
@@ -132,7 +132,7 @@ uint64_t getHotnessIndex(const std::string &ModuleName,
 
 #else
 
-uint64_t getHotnessIndex(const std::string &, const std::string &, uint64_t) {
+uint64_t getHotnessIndex(StringRef, StringRef, uint64_t) {
   ++FailingHotnessLookUps;
 
   static bool first_time = true;
