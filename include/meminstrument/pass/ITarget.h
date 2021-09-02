@@ -247,7 +247,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &, const ITarget &);
 
 class CheckIT : public ITarget {
 public:
-  virtual bool operator==(const ITarget &) const = 0;
+  virtual bool operator==(const ITarget &) const override = 0;
 
   static bool classof(const ITarget *);
 
@@ -307,7 +307,7 @@ private:
 
 class InvariantIT : public ITarget {
 public:
-  virtual bool operator==(const ITarget &) const = 0;
+  virtual bool operator==(const ITarget &) const override = 0;
 
   static bool classof(const ITarget *);
 

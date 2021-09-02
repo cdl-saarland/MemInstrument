@@ -39,7 +39,7 @@ public:
   // OptimizationInterface methods
 
   virtual void updateITargetsForFunction(MemInstrumentPass &, ITargetVector &,
-                                         llvm::Function &);
+                                         llvm::Function &) override;
 };
 
 } // namespace meminstrument
