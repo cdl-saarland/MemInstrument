@@ -67,6 +67,8 @@ void queryValue(sqlite3 *db, std::string &query, QueryResult &qr) {
 
 } // namespace
 
+namespace meminstrument {
+
 uint64_t getHotnessIndex(StringRef ModuleName, StringRef FunctionName,
                          uint64_t AccessId) {
   static sqlite3 *db = nullptr;
@@ -130,7 +132,11 @@ uint64_t getHotnessIndex(StringRef ModuleName, StringRef FunctionName,
   return qr.value;
 }
 
+}
+
 #else
+
+namespace meminstrument {
 
 uint64_t getHotnessIndex(StringRef, StringRef, uint64_t) {
   ++FailingHotnessLookUps;
@@ -145,4 +151,5 @@ uint64_t getHotnessIndex(StringRef, StringRef, uint64_t) {
   return 0;
 }
 
+}
 #endif
