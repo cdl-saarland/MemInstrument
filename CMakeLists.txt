@@ -22,8 +22,6 @@ else()
   message(FATAL_ERROR "LifeTimeKiller not found.")
 endif()
 
-include_directories(BEFORE ${LIFETIMEKILLER_BASE}/include)
-
 message(STATUS "Looking for PMDA + PICO...")
 
 find_path(
@@ -41,9 +39,6 @@ if(PICO_BASE)
 
   if(PMDA_BASE)
     message(STATUS "Found PMDA in ${PMDA_BASE}")
-    include_directories(
-      BEFORE ${PMDA_BASE}/include ${PICO_BASE}/include
-      ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
     set(PICO_AVAILABLE 1)
   else()
     message(FATAL_ERROR "PICO found but not PMDA.")
@@ -103,22 +98,6 @@ file(
 # ------------------------------------------------------------------------------
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# ##############################################################################
-# TODO This should be a target property only
-
-# LLVM globally defines whether RTTI + exceptions should be used, stick to that.
-if(NOT LLVM_ENABLE_RTTI)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
-endif()
-
-# Increase the warning level for our project a bit.
-set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wno-long-long -Wall")
-
-include_directories(BEFORE ${MEMINSTRUMENT_SOURCE_DIR}/include
-                    ${MEMINSTRUMENT_BINARY_DIR}/include ${RT_INCLUDE_PATH})
-# ##############################################################################
 
 add_subdirectory(lib)
 add_subdirectory(test)

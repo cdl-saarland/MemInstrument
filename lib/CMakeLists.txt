@@ -36,6 +36,36 @@ add_library(
   RegisterPasses.cpp
   Config.cpp)
 
+if(PICO_AVAILABLE)
+  target_include_directories(
+    meminstrumentobjlib BEFORE
+    PUBLIC
+      ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include
+      $<BUILD_INTERFACE:${PICO_BASE}/include>
+      $<BUILD_INTERFACE:${PMDA_BASE}/include>
+      $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}>
+  )
+endif()
+
+target_include_directories(
+  meminstrumentobjlib BEFORE
+  PUBLIC $<BUILD_INTERFACE:${MEMINSTRUMENT_SOURCE_DIR}/include>
+         $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/include>
+         $<BUILD_INTERFACE:${LIFETIMEKILLER_BASE}/include>
+         $<BUILD_INTERFACE:${RT_INCLUDE_PATH}>
+         $<INSTALL_INTERFACE:include>)
+
+# LLVM globally defines whether RTTI + exceptions should be used, stick to
+# that.
+if(NOT LLVM_ENABLE_RTTI)
+  target_compile_options(meminstrumentobjlib PRIVATE -fno-exceptions -fno-rtti)
+endif()
+
+target_compile_options(meminstrumentobjlib PRIVATE -fno-common -Woverloaded-virtual
+                                        -Wno-long-long -Wall -Wextra -pedantic)
+
+add_dependencies(meminstrumentobjlib intrinsics_gen)
+
 configure_file("../include/meminstrument/Definitions.h.in"
                "../include/meminstrument/Definitions.h")
 
@@ -53,15 +83,6 @@ function(setup_meminstrument_library name)
     # TODO we currently have a cyclic dependency between PICO and meminstrument,
     # this will fail in a shared lib build.
     target_link_libraries(${name} PUBLIC PMDA PICO)
-
-    target_include_directories(
-      ${name} BEFORE
-      PUBLIC
-        $<BUILD_INTERFACE:${PICO_BASE}/include>
-        $<BUILD_INTERFACE:${PMDA_BASE}/include>
-        $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}/include>
-        $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/../PICO/include>
-    )
   endif()
 
   if(HAS_SQLITE3)
@@ -70,21 +91,6 @@ function(setup_meminstrument_library name)
 
   set_target_properties(${name} PROPERTIES LINKER_LANGUAGE CXX PREFIX "")
 
-  target_include_directories(
-    ${name} BEFORE
-    PUBLIC $<BUILD_INTERFACE:${MEMINSTRUMENT_SOURCE_DIR}/include>
-           $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/include>
-           $<BUILD_INTERFACE:${LIFETIMEKILLER_BASE}/include>
-           $<INSTALL_INTERFACE:include>)
-
-  # LLVM globally defines whether RTTI + exceptions should be used, stick to
-  # that.
-  if(NOT LLVM_ENABLE_RTTI)
-    target_compile_options(${name} PRIVATE -fno-exceptions -fno-rtti)
-  endif()
-
-  target_compile_options(${name} PRIVATE -fno-common -Woverloaded-virtual
-                                         -Wno-long-long -Wall -Wextra -pedantic)
   install(
     TARGETS ${name}
     EXPORT LLVMExports
@@ -92,8 +98,6 @@ function(setup_meminstrument_library name)
     ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX}
     INCLUDES DESTINATION include)
   set_property(GLOBAL APPEND PROPERTY LLVM_EXPORTS ${name})
-
-  add_dependencies(${name} intrinsics_gen)
 
 endfunction(setup_meminstrument_library)
 
