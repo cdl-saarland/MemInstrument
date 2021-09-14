@@ -113,8 +113,7 @@ set(i 0)
 foreach(file IN LISTS files)
   add_custom_command(
     OUTPUT meminstrument-check-format${i}
-    COMMAND
-      clang-format -sort-includes -style=llvm ${file} | diff -u ${file} -
+    COMMAND clang-format -sort-includes -style=llvm ${file} | diff -u ${file} -
     VERBATIM
     COMMENT "Checking format of ${file}...")
   list(APPEND check_format_depends "meminstrument-check-format${i}")

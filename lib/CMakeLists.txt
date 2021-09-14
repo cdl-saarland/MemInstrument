@@ -39,12 +39,10 @@ add_library(
 if(PICO_AVAILABLE)
   target_include_directories(
     meminstrumentobjlib BEFORE
-    PUBLIC
-      ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include
-      $<BUILD_INTERFACE:${PICO_BASE}/include>
-      $<BUILD_INTERFACE:${PMDA_BASE}/include>
-      $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}>
-  )
+    PUBLIC ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include
+           $<BUILD_INTERFACE:${PICO_BASE}/include>
+           $<BUILD_INTERFACE:${PMDA_BASE}/include>
+           $<BUILD_INTERFACE:${ISL_INCLUDE_DIR}>)
 endif()
 
 target_include_directories(
@@ -55,14 +53,14 @@ target_include_directories(
          $<BUILD_INTERFACE:${RT_INCLUDE_PATH}>
          $<INSTALL_INTERFACE:include>)
 
-# LLVM globally defines whether RTTI + exceptions should be used, stick to
-# that.
+# LLVM globally defines whether RTTI + exceptions should be used, stick to that.
 if(NOT LLVM_ENABLE_RTTI)
   target_compile_options(meminstrumentobjlib PRIVATE -fno-exceptions -fno-rtti)
 endif()
 
-target_compile_options(meminstrumentobjlib PRIVATE -fno-common -Woverloaded-virtual
-                                        -Wno-long-long -Wall -Wextra -pedantic)
+target_compile_options(
+  meminstrumentobjlib PRIVATE -fno-common -Woverloaded-virtual -Wno-long-long
+                              -Wall -Wextra -pedantic)
 
 add_dependencies(meminstrumentobjlib intrinsics_gen)
 
@@ -96,7 +94,8 @@ function(setup_meminstrument_library name)
     EXPORT LLVMExports
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX}
-    INCLUDES DESTINATION include)
+    INCLUDES
+    DESTINATION include)
   set_property(GLOBAL APPEND PROPERTY LLVM_EXPORTS ${name})
 
 endfunction(setup_meminstrument_library)
@@ -113,8 +112,5 @@ setup_meminstrument_library(LLVMmeminstrument)
 if(BUILD_SHARED_LIBS)
   link_directories(${LLVM_LIBRARY_DIR})
   llvm_map_components_to_libnames(llvm_libs all)
-  target_link_libraries(
-    meminstrument PUBLIC
-    ${llvm_libs}
-  )
+  target_link_libraries(meminstrument PUBLIC ${llvm_libs})
 endif()
