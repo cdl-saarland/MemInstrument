@@ -46,7 +46,7 @@ if(PICO_BASE)
       ${MEMINSTRUMENT_BINARY_DIR}/../PICO/include ${ISL_INCLUDE_DIR})
     set(PICO_AVAILABLE 1)
   else()
-    message(STATUS "PMDA not found.")
+    message(FATAL_ERROR "PICO found but not PMDA.")
   endif()
 
 else()
