@@ -48,7 +48,10 @@ function(setup_meminstrument_library name)
   # (see project/myproject level CMakelists to enforce that these libraries are
   # found)
   target_link_libraries(${name} PUBLIC lifetimekiller)
+
   if(PICO_AVAILABLE)
+    # TODO we currently have a cyclic dependency between PICO and meminstrument,
+    # this will fail in a shared lib build.
     target_link_libraries(${name} PUBLIC PMDA PICO)
 
     target_include_directories(
@@ -104,13 +107,10 @@ add_library(LLVMmeminstrument MODULE $<TARGET_OBJECTS:meminstrumentobjlib>)
 setup_meminstrument_library(LLVMmeminstrument)
 
 if(BUILD_SHARED_LIBS)
-  target_link_libraries(
-    meminstrument
-    LLVMSupport
-    LLVMCore
-    LLVMTransformUtils
-    LLVMAnalysis
-    LLVMipo
-    LLVMMC)
   link_directories(${LLVM_LIBRARY_DIR})
+  llvm_map_components_to_libnames(llvm_libs all)
+  target_link_libraries(
+    meminstrument PUBLIC
+    ${llvm_libs}
+  )
 endif()
