@@ -287,8 +287,8 @@ void transformCallByValArgs(CallBase &call, IRBuilder<> &builder) {
       builder.SetInsertPoint(&call);
       auto size =
           call.getModule()->getDataLayout().getTypeAllocSize(callArgElemType);
-      auto cpy = builder.CreateMemCpy(alloc, alloc->getAlignment(), callArg,
-                                      alloc->getAlignment(), size);
+      auto cpy = builder.CreateMemCpy(alloc, alloc->getAlign(), callArg,
+                                      alloc->getAlign(), size);
       // TODO We cannot mark this memcpy "noinstrument" as it might be relevant
       // to propagate metadata for some instrumentations. However, a check on
       // dest is redundant, as we generate the dest ourselves with a valid size
