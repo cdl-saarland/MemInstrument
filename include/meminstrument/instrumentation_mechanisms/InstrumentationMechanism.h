@@ -39,7 +39,7 @@ public:
   /// Set-Up code that is executed once in the beginning before using the
   /// instrumentation. Classical uses are inserting necessary Functions and/or
   /// declarations and creating relevant LLVM types for later use.
-  virtual void initialize(llvm::Module &M) = 0;
+  virtual void initialize(llvm::Module &) = 0;
 
   /// Generates a Witness for the instrumentee of the target at the location of
   /// the target and store it in the target.
@@ -86,45 +86,46 @@ public:
 
   /// Provides an llvm Function in the module that can be called to abort the
   /// execution of the instrumented program.
-  virtual llvm::FunctionCallee getFailFunction(void) const = 0;
+  virtual llvm::FunctionCallee getFailFunction() const = 0;
 
   /// Provides an llvm Function in the module that can be called to abort the
   /// execution of the instrumented program with a custom error message.
   /// Optional.
-  virtual llvm::FunctionCallee getVerboseFailFunction(void) const {
+  virtual llvm::FunctionCallee getVerboseFailFunction() const {
     llvm_unreachable("Not supported!");
   }
 
   /// Provides a function to call in the instrumented program to increment a
   /// run-time counter (for statistics).
   /// Optional.
-  virtual llvm::FunctionCallee getExtCheckCounterFunction(void) const {
+  virtual llvm::FunctionCallee getExtCheckCounterFunction() const {
     llvm_unreachable("Not supported!");
   }
 
   /// Returns the name of the instrumentation mechanism for printing and easy
   /// recognition.
-  virtual const char *getName(void) const = 0;
+  virtual const char *getName() const = 0;
 
-  virtual ~InstrumentationMechanism(void) {}
+  virtual ~InstrumentationMechanism() {}
 
   InstrumentationMechanism(GlobalConfig &cfg) : globalConfig(cfg) {}
 
   /// Convenient helper function to insert a string literal into an LLVM
   /// Module, useful for use with the verbose fail function provided by
   /// getVerboseFailFunction().
-  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &M,
-                                                   llvm::StringRef Str);
+  static llvm::GlobalVariable *insertStringLiteral(llvm::Module &,
+                                                   llvm::StringRef);
 
 protected:
   GlobalConfig &globalConfig;
 
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
-  static llvm::FunctionCallee
-  insertFunDecl_impl(std::vector<llvm::Type *> &Vec, llvm::Module &M,
-                     llvm::StringRef Name, llvm::AttributeList AList,
-                     llvm::Type *RetTy);
+  static llvm::FunctionCallee insertFunDecl_impl(std::vector<llvm::Type *> &Vec,
+                                                 llvm::Module &M,
+                                                 llvm::StringRef Name,
+                                                 llvm::AttributeList AList,
+                                                 llvm::Type *RetTy);
 
   /// Recursive case for the implementation of the insertFunDecl helper
   /// function.
@@ -148,8 +149,8 @@ protected:
   /// instrumentation.
   template <typename... Args>
   static llvm::FunctionCallee insertFunDecl(llvm::Module &M,
-                                             llvm::StringRef Name,
-                                             llvm::Type *RetTy, Args... args) {
+                                            llvm::StringRef Name,
+                                            llvm::Type *RetTy, Args... args) {
     std::vector<llvm::Type *> Vec;
     // create an empty AttributeList
     llvm::ArrayRef<std::pair<unsigned, llvm::AttributeSet>> ar;

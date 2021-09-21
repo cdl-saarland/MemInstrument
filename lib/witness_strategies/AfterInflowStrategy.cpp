@@ -31,10 +31,12 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
 
-STATISTIC(NumUnsupportedConstExprs, "[AIS error] Unsupported constant expressions");
+STATISTIC(NumUnsupportedConstExprs,
+          "[AIS error] Unsupported constant expressions");
 
-STATISTIC(NumUnsupportedConstVals, "[AIS error] Unsupported constant values other than"
-                                   " constant expressions");
+STATISTIC(NumUnsupportedConstVals,
+          "[AIS error] Unsupported constant values other than"
+          " constant expressions");
 
 STATISTIC(NumUnsupportedInsns, "[AIS error] Unsupported instructions");
 

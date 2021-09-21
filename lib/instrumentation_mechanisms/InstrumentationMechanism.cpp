@@ -110,10 +110,10 @@ GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
   return GV;
 }
 
-FunctionCallee InstrumentationMechanism::insertFunDecl_impl(std::vector<Type *> &Vec,
-                                                    Module &M, StringRef Name,
-                                                    AttributeList AList,
-                                                    Type *RetTy) {
+FunctionCallee
+InstrumentationMechanism::insertFunDecl_impl(std::vector<Type *> &Vec,
+                                             Module &M, StringRef Name,
+                                             AttributeList AList, Type *RetTy) {
   auto *FunTy = FunctionType::get(RetTy, Vec, /*isVarArg*/ false);
   FunctionCallee Res = M.getOrInsertFunction(Name, FunTy, AList);
   setNoInstrument(Res.getCallee());
@@ -129,7 +129,8 @@ InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
   return Res;
 }
 
-Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B,
+                                                  FunctionCallee Fun,
                                                   Value *arg,
                                                   const Twine &Name) {
   return insertCall(B, Fun, std::vector<Value *>{arg}, Name);
@@ -141,7 +142,8 @@ InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
   return insertCall(B, Fun, std::move(args), "inserted_call");
 }
 
-Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
+Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B,
+                                                  FunctionCallee Fun,
                                                   Value *arg) {
   return insertCall(B, Fun, arg, "inserted_call");
 }

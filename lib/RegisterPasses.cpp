@@ -55,11 +55,10 @@ static RegisterPass<MemInstrumentPass>
 // Registration for the provided optimization passes
 
 static RegisterPass<AnnotationBasedRemovalPass>
-    RegisterAnnotationBasedRemovalPass(
-        "mi-annotation-based-check-removal",
-        "Annotation Based Check Removal Pass",
-        false, // CFGOnly
-        true); // isAnalysis
+    RegisterAnnotationBasedRemovalPass("mi-annotation-based-check-removal",
+                                       "Annotation Based Check Removal Pass",
+                                       false, // CFGOnly
+                                       true); // isAnalysis
 
 static RegisterPass<DominanceBasedCheckRemovalPass>
     RegisterDominanceBasedCheckRemovalPass("mi-dominance-based-check-removal",

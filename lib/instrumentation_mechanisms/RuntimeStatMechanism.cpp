@@ -148,9 +148,8 @@ void RuntimeStatMechanism::materializeBounds(ITarget &) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-FunctionCallee RuntimeStatMechanism::getFailFunction(void) const {
-  llvm_unreachable("FunctionCallee ction calls are not supported by this mechanism!");
-  return nullptr;
+FunctionCallee RuntimeStatMechanism::getFailFunction() const {
+  llvm_unreachable("FailFunction calls are not supported by this mechanism!");
 }
 
 uint64_t RuntimeStatMechanism::populateStringMap(Module &M) {
@@ -244,8 +243,8 @@ void RuntimeStatMechanism::initialize(Module &M) {
                          Constant::getNullValue(SizeType), "MI_StatID");
 
   auto InitFun = insertFunDecl(M, "__mi_stat_init", SizeType, SizeType);
-  auto InitEntryFun = insertFunDecl(M, "__mi_stat_init_entry", VoidTy,
-                                      SizeType, SizeType, StringType);
+  auto InitEntryFun = insertFunDecl(M, "__mi_stat_init_entry", VoidTy, SizeType,
+                                    SizeType, StringType);
 
   auto Fun =
       registerCtors(M, std::make_pair<StringRef, int>("__mi_stat_setup", 0));

@@ -176,7 +176,9 @@ void LowfatMechanism::materializeBounds(ITarget &Target) {
   }
 }
 
-FunctionCallee LowfatMechanism::getFailFunction(void) const { return FailFunction; }
+FunctionCallee LowfatMechanism::getFailFunction(void) const {
+  return FailFunction;
+}
 
 FunctionCallee LowfatMechanism::getVerboseFailFunction(void) const {
   return VerboseFailFunction;

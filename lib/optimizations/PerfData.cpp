@@ -132,7 +132,7 @@ uint64_t getHotnessIndex(StringRef ModuleName, StringRef FunctionName,
   return qr.value;
 }
 
-}
+} // namespace meminstrument
 
 #else
 
@@ -151,5 +151,5 @@ uint64_t getHotnessIndex(StringRef, StringRef, uint64_t) {
   return 0;
 }
 
-}
+} // namespace meminstrument
 #endif
