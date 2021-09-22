@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %filecheck %s
 
 ; CHECK: value invariant for Multi at entry::[store,{{.*}}]
 ; CHECK-NEXT: dereference check with constant size 8B for opt at entry::[store,{{.*}}]

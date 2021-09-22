@@ -1,4 +1,4 @@
-// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1  %s -mllvm -mi-config=softbound -mllvm -mi-mode=gatheritargets -mllvm -debug-only=meminstrument-itargetprovider -emit-llvm -o - 2>&1 | %fileCheck %s
+// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1  %s -mllvm -mi-config=softbound -mllvm -mi-mode=gatheritargets -mllvm -debug-only=meminstrument-itargetprovider -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: dereference check with constant size 8B for y at entry
 // CHECK-NEXT: value invariant{{.*}}at entry::[ret,{{.*}}]

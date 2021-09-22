@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %filecheck %s
 
 ; CHECK: dereference check with constant size 4B for p at loop::[store,2]
 ; CHECK: dereference check with constant size 4B for a at exit

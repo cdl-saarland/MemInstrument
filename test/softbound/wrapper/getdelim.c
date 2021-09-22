@@ -1,5 +1,5 @@
 // RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound %linksb -o %t
-// RUN: %t %testFolder/softbound/wrapper/somefile.txt
+// RUN: %t %testfolder/softbound/wrapper/somefile.txt
 
 // Source (modified): https://pubs.opengroup.org/onlinepubs/9699919799/functions/getdelim.html
 

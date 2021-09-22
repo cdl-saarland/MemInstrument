@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -S | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -S | %filecheck %s
 
 ; CHECK: %sb.base.load = call i8* @__softboundcets_load_base_shadow_stack(i32 0)
 ; CHECK-NEXT: %sb.bound.load = call i8* @__softboundcets_load_bound_shadow_stack(i32 0)

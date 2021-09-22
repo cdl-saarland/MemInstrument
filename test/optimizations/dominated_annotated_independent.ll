@@ -1,4 +1,4 @@
-; RUN: %opt -S -load %passlib -meminstrument -mi-config=splay -mi-opt-dominance -mi-opt-annotation -stats %s 2>&1 | %fileCheck %s
+; RUN: %opt -S -load %passlib -meminstrument -mi-config=splay -mi-opt-dominance -mi-opt-annotation -stats %s 2>&1 | %filecheck %s
 
 ; CHECK: 1 {{.*}} checks filtered by annotation
 ; CHECK: 1 {{.*}} discarded because of dominating subsumption

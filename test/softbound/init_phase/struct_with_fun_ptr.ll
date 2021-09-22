@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -mi-mode=setup -debug-only=softbound -S 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=softbound -mi-mode=setup -debug-only=softbound -S 2>&1 | %filecheck %s
 
 ; CHECK: Insert metadata store
 ; CHECK-NEXT: Ptr: i8* bitcast (i32 (i32, i32)** getelementptr inbounds (%struct.STR, %struct.STR* @add_str, i32 0, i32 1) to i8*)

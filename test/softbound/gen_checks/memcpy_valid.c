@@ -1,4 +1,4 @@
-// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound-genchecks -emit-llvm -o - 2>&1 | %fileCheck %s
+// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound-genchecks -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: value invariant for s
 // CHECK-NEXT: Metadata for pointer store to memory saved.

@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=genchecks -debug-only=softbound-genchecks %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=genchecks -debug-only=softbound-genchecks %s 2>&1 | %filecheck %s
 
 ; CHECK: define {{.*}} { i32*, i32* } @f()
 ; CHECK: {{.*}}allocate{{.*}} 1

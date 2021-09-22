@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %filecheck %s
 
 ; CHECK: value invariant{{.*}}at entry::.fca.0.insert
 ; CHECK-NEXT: value invariant for .fca.1.insert at {{.*}}ret

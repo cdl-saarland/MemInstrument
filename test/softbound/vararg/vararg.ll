@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -stats -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=VarArgImpl %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -stats -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=VarArgImpl %s 2>&1 | %filecheck %s
 
 ; CHECK: 6 meminstrument{{.*}}The # of loads and stores tagged as varargs metadata management
 

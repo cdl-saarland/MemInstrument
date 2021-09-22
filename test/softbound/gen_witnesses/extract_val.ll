@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=genwitnesses -debug-only=meminstrument %s 2>&1 | %fileCheck %s
+; RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=genwitnesses -debug-only=meminstrument %s 2>&1 | %filecheck %s
 
 ; CHECK: value invariant{{.*}}at entry::.fca.0.insert
 ; CHECK-NEXT: value invariant for .fca.1.insert at {{.*}}ret

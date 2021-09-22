@@ -1,4 +1,4 @@
-// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %fileCheck %s
+// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: Base store:  {{.*}}@__softboundcets_store_base_shadow_stack({{.*}} @GA{{.*}}, i32 0)
 // CHECK-NEXT: Bound store: {{.*}}@__softboundcets_store_bound_shadow_stack({{.*}} @GA{{.*}}, i32 0)

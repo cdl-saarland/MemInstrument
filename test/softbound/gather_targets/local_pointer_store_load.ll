@@ -1,4 +1,4 @@
-; RUN: %opt -mem2reg %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %fileCheck %s
+; RUN: %opt -mem2reg %loadlibs -meminstrument -S -mi-config=softbound -mi-mode=gatheritargets -debug-only=meminstrument-itargetprovider %s 2>&1 | %filecheck %s
 
 ; CHECK: dereference check with constant size 4B for retval at entry::[store,{{.*}}]
 ; CHECK-NEXT: dereference check with constant size 4B for x at entry::[store,{{.*}}]
