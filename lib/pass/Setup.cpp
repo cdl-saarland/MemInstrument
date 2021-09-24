@@ -17,6 +17,10 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/LineIterator.h"
+#include "llvm/Support/MemoryBuffer.h"
+
+#include <string>
 
 using namespace llvm;
 using namespace meminstrument;
@@ -28,10 +32,18 @@ STATISTIC(NumVarArgMetadataLoadStore,
 // Number of byval arguments converted.
 STATISTIC(ByValArgsConverted, "Number of byval arguments converted at calls");
 
+STATISTIC(NumFunctionsSkipped,
+          "Number of functions ignored due to the given ignore file");
+
 cl::opt<bool> LabelAccesses(
     "mi-label-accesses",
     cl::desc("Add unique ids as metadata to load an store instructions"),
     cl::init(false));
+
+cl::opt<std::string> FunctionsToSkip(
+    "mi-ignored-functions-file",
+    cl::desc("Do not instrument functions listed in the given file. The file "
+             "should contain one function name per line."));
 
 /// Mark instruction that are only there to manage varargs and do not actually
 /// belong to the source code. Currently, va_arg is rarely (not at all?) used in
@@ -228,6 +240,53 @@ void labelAccesses(Function &F) {
   }
 }
 
+void markFunctionsToSkip(Module &module) {
+
+  // Check if there is something to do
+  if (FunctionsToSkip.empty()) {
+    return;
+  }
+
+  // Open to file
+  ErrorOr<std::unique_ptr<MemoryBuffer>> fileContent =
+      MemoryBuffer::getFile(FunctionsToSkip);
+
+  if (auto errorCode = fileContent.getError()) {
+    LLVM_DEBUG(dbgs() << "An error occurred while opening the file with "
+                         "functions to skip:\n"
+                      << errorCode.message() << "\n";);
+    return;
+  }
+
+  // Read the function names from the file
+  const auto &content = fileContent.get();
+  llvm::SmallVector<std::string, 5> toIgnore;
+  for (auto lineIt = line_iterator(*content.get()); !lineIt.is_at_end();
+       lineIt++) {
+    auto funName = lineIt->trim();
+    LLVM_DEBUG(dbgs() << "Read function name: " << funName << "\n";);
+    toIgnore.push_back(funName.str());
+  }
+
+  // Mark the functions in this module such that they will not be instrumented
+  for (auto &fun : module) {
+    if (fun.isDeclaration()) {
+      continue;
+    }
+
+    if (!fun.hasName()) {
+      continue;
+    }
+
+    auto name = fun.getName();
+    if (std::find(toIgnore.begin(), toIgnore.end(), name) != toIgnore.end()) {
+      ++NumFunctionsSkipped;
+      LLVM_DEBUG(dbgs() << "Marked function noinstrument: " << name << "\n";);
+      setNoInstrument(&fun);
+    }
+  }
+}
+
 void meminstrument::prepareModule(Module &module) {
 
   for (auto &fun : module) {
@@ -248,4 +307,7 @@ void meminstrument::prepareModule(Module &module) {
 
   // Remove `byval` attributes by allocating them at call sites
   transformByValFunctions(module);
+
+  // Mark functions that should not be instrumented
+  markFunctionsToSkip(module);
 }

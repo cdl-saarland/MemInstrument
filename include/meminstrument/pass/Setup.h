@@ -18,8 +18,11 @@
 namespace meminstrument {
 
 /// Make some initial transformations that are required by all instrumentations.
-/// Transforms function with byval arguments. Additionally, instruction in the
-/// code that are generated as bookkeeping for varargs are labeled as such.
+/// * Transforms function with byval arguments
+/// * Instructions in the code that are generated as bookkeeping for varargs are
+/// labeled as such
+/// * If certain functions should be ignored (given in a file as command line
+/// argument), mark them such that they are no instrumented later on
 void prepareModule(llvm::Module &);
 
 } // namespace meminstrument
