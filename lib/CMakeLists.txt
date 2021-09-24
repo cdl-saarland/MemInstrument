@@ -6,6 +6,7 @@ add_library(
   pass/WitnessGeneration.cpp
   pass/CheckGeneration.cpp
   pass/ITarget.cpp
+  pass/Setup.cpp
   pass/Util.cpp
   pass/WitnessGraph.cpp
   optimizations/AnnotationBasedRemovalPass.cpp

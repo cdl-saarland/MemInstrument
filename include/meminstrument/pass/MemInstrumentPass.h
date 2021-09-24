@@ -41,8 +41,6 @@ public:
 
 private:
   std::unique_ptr<GlobalConfig> CFG;
-
-  void prepareModule(llvm::Module &);
 };
 
 } // namespace meminstrument
