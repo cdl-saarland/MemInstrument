@@ -261,8 +261,8 @@ void markFunctionsToSkip(Module &module) {
   // Read the function names from the file
   const auto &content = fileContent.get();
   llvm::SmallVector<std::string, 5> toIgnore;
-  for (auto lineIt = line_iterator(*content.get()); !lineIt.is_at_end();
-       lineIt++) {
+  for (auto lineIt = line_iterator(*content.get(), true, '#');
+       !lineIt.is_at_end(); lineIt++) {
     auto funName = lineIt->trim();
     LLVM_DEBUG(dbgs() << "Read function name: " << funName << "\n";);
     toIgnore.push_back(funName.str());
