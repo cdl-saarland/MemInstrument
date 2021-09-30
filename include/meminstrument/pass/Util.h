@@ -83,7 +83,7 @@ bool hasPointerAccessSize(const llvm::Value *);
 size_t getPointerAccessSize(const llvm::DataLayout &, llvm::Value *);
 
 /// Determine whether the given type is or points to the llvm type for a va_list
-bool isVarArgMetadataType(llvm::Type *);
+bool isVarArgMetadataType(const llvm::Type *);
 
 /// If the function has varargs or a va_list as argument, return the values
 /// through which the varargs can be accessed.

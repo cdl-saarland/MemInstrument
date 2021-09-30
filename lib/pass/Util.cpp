@@ -136,19 +136,19 @@ size_t getPointerAccessSize(const DataLayout &DL, Value *V) {
   return Size;
 }
 
-bool isVarArgMetadataType(Type *type) {
+bool isVarArgMetadataType(const Type *type) {
   auto varArgStructName = "struct.__va_list_tag";
-  if (PointerType *pTy = dyn_cast<PointerType>(type)) {
+  if (const auto *pTy = dyn_cast<PointerType>(type)) {
     type = pTy->getPointerElementType();
   }
-  if (StructType *sTy = dyn_cast<StructType>(type)) {
+  if (const auto *sTy = dyn_cast<StructType>(type)) {
     if (sTy->hasName() && sTy->getName() == varArgStructName) {
       return true;
     }
   }
-  if (ArrayType *arTy = dyn_cast<ArrayType>(type)) {
-    Type *someTy = arTy->getElementType();
-    if (StructType *stTy = dyn_cast<StructType>(someTy)) {
+  if (const auto *arTy = dyn_cast<ArrayType>(type)) {
+    const auto *someTy = arTy->getElementType();
+    if (const auto *stTy = dyn_cast<StructType>(someTy)) {
       if (stTy->hasName() && stTy->getName() == varArgStructName) {
         return true;
       }
