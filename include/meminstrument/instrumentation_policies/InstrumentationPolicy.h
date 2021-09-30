@@ -57,6 +57,9 @@ protected:
   void insertCheckTargetsLoadStore(ITargetVector &Dest,
                                    llvm::Instruction *Inst);
 
+  /// Create check targets for the given call.
+  void insertCheckTargetsForCall(ITargetVector &Dest, llvm::CallBase *);
+
   /// Iff a pointer is stored to memory, this function will create an invariant
   /// target for the stored pointer.
   void insertInvariantTargetStore(ITargetVector &Dest, llvm::StoreInst *) const;

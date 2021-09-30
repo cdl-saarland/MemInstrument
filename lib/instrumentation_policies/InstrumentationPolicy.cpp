@@ -15,11 +15,23 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/Support/CommandLine.h"
 
 #include "meminstrument/pass/Util.h"
 
 using namespace meminstrument;
 using namespace llvm;
+
+static cl::opt<bool>
+    NoCallChecks("mi-policy-no-call-checks",
+                 cl::desc("Don't check function pointers for validity upon "
+                          "calls (reduces the safety guarantees)"),
+                 cl::init(false));
+
+static cl::opt<bool> IgnoreInlineASM(
+    "mi-policy-ignore-inline-asm",
+    cl::desc("Ignore inline assembler (reduces the safety guarantees)"),
+    cl::init(false));
 
 namespace {
 STATISTIC(NumUnsizedTypes, "[IP error] Number of module with unsized types");
@@ -81,6 +93,32 @@ void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
   }
 
   Dest.push_back(ITargetBuilder::createSpatialCheckTarget(PtrOp, Inst));
+}
+
+void InstrumentationPolicy::insertCheckTargetsForCall(ITargetVector &dest,
+                                                      CallBase *call) {
+
+  // Call check targets only make sense if the function cannot be identified
+  // statically
+  assert(!call->getCalledFunction());
+
+  // Don't insert check if they are disabled by a CL flag
+  if (NoCallChecks) {
+    return;
+  }
+
+  // Decide what to do if we encounter inline ASM
+  if (isa<InlineAsm>(call->getCalledOperand())) {
+    if (IgnoreInlineASM) {
+      return;
+    }
+    globalConfig.noteError();
+    return;
+  }
+
+  // Create a target to check the validity of the pointer value called
+  dest.push_back(
+      ITargetBuilder::createCallCheckTarget(call->getCalledOperand(), call));
 }
 
 void InstrumentationPolicy::insertInvariantTargetStore(ITargetVector &Dest,

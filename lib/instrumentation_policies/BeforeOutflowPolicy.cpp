@@ -49,8 +49,7 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
       if (!validateSize(I->getCalledOperand())) {
         return;
       }
-      Dest.push_back(
-          ITargetBuilder::createCallCheckTarget(I->getCalledOperand(), I));
+      insertCheckTargetsForCall(Dest, I);
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {
       // skip debug information pseudo-calls

@@ -29,7 +29,7 @@ public:
 
 private:
   /// Add all targets required upon a call.
-  void addCallTargets(ITargetVector &, llvm::CallBase *) const;
+  void addCallTargets(ITargetVector &, llvm::CallBase *);
 
   /// Insert additional targets that make vararg metadata available.
   void insertVarArgInvariantTargets(ITargetVector &, llvm::Instruction *);
