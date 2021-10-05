@@ -2,7 +2,7 @@
 // RUN: %opt %loadlibs -mem2reg -meminstrument -mi-config=splay -stats %t0.ll -S > %t1.ll 2> %t4.stats
 // RUN: grep "2 meminstrument.*The # of inbounds checks inserted" %t4.stats
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
-// RUN: %not %t2 2> %t3.log
+// RUN: %not --crash %t2 2> %t3.log
 // RUN: fgrep "Memory safety violation!" %t3.log
 
 #include <stdarg.h>

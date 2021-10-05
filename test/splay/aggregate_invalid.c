@@ -1,5 +1,5 @@
 // RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=splay %linksplay -o %t
-// RUN: %not %t 2> /dev/null
+// RUN: %not --crash %t 2> /dev/null
 
 #include <stdio.h>
 #include <stdlib.h>

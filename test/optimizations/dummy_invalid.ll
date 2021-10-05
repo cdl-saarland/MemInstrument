@@ -6,7 +6,7 @@
 ; RUN: fgrep "generating optimized checks" %t2.log
 
 ; RUN: %clink -ldl -l:libsplay.a -o %t3 %t1.ll
-; RUN: %not %t3 2> %t4.log
+; RUN: %not --crash %t3 2> %t4.log
 ; RUN: fgrep "Memory safety violation" %t4.log
 
 define i32 @main() {
