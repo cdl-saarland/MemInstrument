@@ -4,6 +4,8 @@
 // RUN: %not --crash %t2 2> %t3.log
 // RUN: fgrep "Memory safety violation!" %t3.log
 
+#include <stdlib.h>
+
 int main(void)
 {
   int *a = malloc(4*sizeof(int));
