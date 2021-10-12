@@ -52,6 +52,8 @@ public:
 
   virtual auto getFailFunction() const -> llvm::FunctionCallee override;
 
+  virtual auto getVerboseFailFunction() const -> llvm::FunctionCallee override;
+
   virtual auto getExtCheckCounterFunction() const
       -> llvm::FunctionCallee override;
 

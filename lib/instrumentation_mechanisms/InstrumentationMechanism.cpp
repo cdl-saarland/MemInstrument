@@ -87,6 +87,22 @@ InstrumentationMechanism::registerCtors(
   return Functions;
 }
 
+void InstrumentationMechanism::insertCommonFunctionDeclarations(
+    Module &module) {
+
+  auto &ctx = module.getContext();
+  auto *voidTy = Type::getVoidTy(ctx);
+  auto *ptrTy = Type::getInt8PtrTy(ctx);
+
+  AttributeList NoReturnAttr = AttributeList::get(
+      ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
+
+  failFunction = insertFunDecl(module, "__mi_fail", NoReturnAttr, voidTy);
+  verboseFailFunction =
+      insertFunDecl(module, "__mi_fail_with_msg", NoReturnAttr, voidTy, ptrTy);
+  warningFunction = insertFunDecl(module, "__mi_warning", voidTy, ptrTy);
+}
+
 GlobalVariable *InstrumentationMechanism::insertStringLiteral(Module &M,
                                                               StringRef Str) {
   auto &Ctx = M.getContext();

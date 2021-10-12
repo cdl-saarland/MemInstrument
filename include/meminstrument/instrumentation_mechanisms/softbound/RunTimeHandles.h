@@ -77,7 +77,6 @@ public:
 
   // Fail functions and statistics
   llvm::FunctionCallee externalCheckCounter = nullptr;
-  llvm::FunctionCallee failFunction = nullptr;
 
   // Highest valid pointer value
   uintptr_t highestAddr;

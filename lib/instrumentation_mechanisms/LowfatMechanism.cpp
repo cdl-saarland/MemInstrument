@@ -177,14 +177,18 @@ void LowfatMechanism::materializeBounds(ITarget &Target) {
 }
 
 FunctionCallee LowfatMechanism::getFailFunction(void) const {
-  return FailFunction;
+  return failFunction;
 }
 
 FunctionCallee LowfatMechanism::getVerboseFailFunction(void) const {
-  return VerboseFailFunction;
+  return verboseFailFunction;
 }
 
 void LowfatMechanism::insertFunctionDeclarations(Module &M) {
+
+  // Register common functions
+  insertCommonFunctionDeclarations(M);
+
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
 
@@ -196,12 +200,6 @@ void LowfatMechanism::insertFunctionDeclarations(Module &M) {
       insertFunDecl(M, "__lowfat_get_upper_bound", PtrArgType, WitnessType);
   GetLowerBoundFunction =
       insertFunDecl(M, "__lowfat_get_lower_bound", PtrArgType, WitnessType);
-
-  AttributeList NoReturnAttr = AttributeList::get(
-      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
-  FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
-  VerboseFailFunction =
-      insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
 }
 
 void LowfatMechanism::initTypes(LLVMContext &Ctx) {

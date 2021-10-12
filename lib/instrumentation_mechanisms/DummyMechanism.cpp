@@ -137,10 +137,14 @@ void DummyMechanism::materializeBounds(ITarget &Target) {
 }
 
 FunctionCallee DummyMechanism::getFailFunction(void) const {
-  return FailFunction;
+  return failFunction;
 }
 
 void DummyMechanism::initialize(Module &M) {
+
+  // Register common functions
+  insertCommonFunctionDeclarations(M);
+
   auto &Ctx = M.getContext();
   initTypes(Ctx);
   auto *VoidTy = Type::getVoidTy(Ctx);
@@ -152,10 +156,6 @@ void DummyMechanism::initialize(Module &M) {
                                         SizeType, WitnessType);
   GetUpperBoundFunction = insertFunDecl(M, "__memsafe_dummy_get_upper_bound",
                                         SizeType, WitnessType);
-
-  AttributeList NoReturnAttr = AttributeList::get(
-      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
-  FailFunction = insertFunDecl(M, "__memsafe_dummy_fail", NoReturnAttr, VoidTy);
 }
 
 WitnessPtr DummyMechanism::getWitnessPhi(PHINode *Phi) const {

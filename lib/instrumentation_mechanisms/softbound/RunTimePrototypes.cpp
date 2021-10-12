@@ -83,7 +83,7 @@ auto PrototypeInserter::insertRunTimeProtoypes() const -> RunTimeHandles {
 
   insertSetupFunctions(handles);
   insertCommonFunctions(handles);
-  insertFailAndStatsFunctions(handles);
+  insertStatsFunctions(handles);
 
   return handles;
 }
@@ -180,16 +180,13 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
       "__softboundcets_proxy_metadata_store", voidTy, voidPtrTy, varArgProxyTy);
 }
 
-void PrototypeInserter::insertFailAndStatsFunctions(
+void PrototypeInserter::insertStatsFunctions(
     RunTimeHandles &handles) const {
 
   if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
     handles.externalCheckCounter =
-        createAndInsertPrototype("__rt_stat_inc_external_check", voidTy);
+        createAndInsertPrototype("__softboundcets_inc_external_check", voidTy);
   }
-
-  handles.failFunction =
-      createAndInsertPrototype("__softboundcets_abort", voidTy);
 }
 
 template <typename... ArgsTy>

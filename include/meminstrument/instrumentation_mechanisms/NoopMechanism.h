@@ -65,8 +65,6 @@ public:
 private:
   llvm::Type *SizeType = nullptr;
 
-  llvm::FunctionCallee FailFunction = nullptr;
-
   llvm::Value *LowerBoundLocation = nullptr;
   llvm::Value *UpperBoundLocation = nullptr;
 

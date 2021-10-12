@@ -401,7 +401,11 @@ bool SoftBoundMechanism::skipInstrumentation(Module &module) const {
 }
 
 auto SoftBoundMechanism::getFailFunction() const -> FunctionCallee {
-  return handles.failFunction;
+  return failFunction;
+}
+
+auto SoftBoundMechanism::getVerboseFailFunction() const -> FunctionCallee {
+  return verboseFailFunction;
 }
 
 auto SoftBoundMechanism::getExtCheckCounterFunction() const -> FunctionCallee {
@@ -516,6 +520,10 @@ auto SoftBoundMechanism::updateNotPreservedAttributes(
 }
 
 void SoftBoundMechanism::insertFunDecls(Module &module) {
+
+  // Register common functions
+  insertCommonFunctionDeclarations(module);
+
   PrototypeInserter protoInserter(module);
   handles = protoInserter.insertRunTimeProtoypes();
   handles.highestAddr = determineHighestValidAddress();

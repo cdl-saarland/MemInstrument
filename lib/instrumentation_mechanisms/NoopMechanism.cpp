@@ -109,10 +109,14 @@ void NoopMechanism::materializeBounds(ITarget &) {
 }
 
 FunctionCallee NoopMechanism::getFailFunction(void) const {
-  return FailFunction;
+  return failFunction;
 }
 
 void NoopMechanism::initialize(Module &M) {
+
+  // Register common functions
+  insertCommonFunctionDeclarations(M);
+
   auto &Ctx = M.getContext();
 
   SizeType = Type::getInt64Ty(Ctx);
@@ -134,11 +138,6 @@ void NoopMechanism::initialize(Module &M) {
   CheckResultLocation = new GlobalVariable(
       M, SizeType, /*isConstant*/ false, GlobalValue::InternalLinkage,
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
-
-  AttributeList NoReturnAttr = AttributeList::get(
-      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
-  FailFunction =
-      M.getOrInsertFunction("abort", NoReturnAttr, Type::getVoidTy(Ctx));
 }
 
 WitnessPtr NoopMechanism::getWitnessPhi(PHINode *) const {

@@ -87,10 +87,7 @@ private:
   llvm::FunctionCallee CheckDereferenceFunction = nullptr;
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
-  llvm::FunctionCallee FailFunction = nullptr;
   llvm::FunctionCallee ExtCheckCounterFunction = nullptr;
-  llvm::FunctionCallee VerboseFailFunction = nullptr;
-  llvm::FunctionCallee WarningFunction = nullptr;
 
   llvm::FunctionCallee ConfigFunction = nullptr;
 

@@ -70,7 +70,6 @@ private:
   llvm::FunctionCallee CheckAccessFunction = nullptr;
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
-  llvm::FunctionCallee FailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;

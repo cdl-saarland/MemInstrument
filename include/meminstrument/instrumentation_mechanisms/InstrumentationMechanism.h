@@ -118,6 +118,9 @@ public:
 
 protected:
   GlobalConfig &globalConfig;
+  llvm::FunctionCallee failFunction = nullptr;
+  llvm::FunctionCallee verboseFailFunction = nullptr;
+  llvm::FunctionCallee warningFunction = nullptr;
 
 private:
   /// Base case for the implementation of the insertFunDecl helper function.
@@ -144,6 +147,10 @@ protected:
   static std::unique_ptr<std::vector<llvm::Function *>>
   registerCtors(llvm::Module &M,
                 llvm::ArrayRef<std::pair<llvm::StringRef, int>> List);
+
+  /// Insert function declarations usable by all mechanisms through shared
+  /// functionality
+  void insertCommonFunctionDeclarations(llvm::Module &);
 
   /// Inserts a function declaration into a Module and marks it for no
   /// instrumentation.

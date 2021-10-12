@@ -239,7 +239,7 @@ void SplayMechanism::materializeBounds(ITarget &Target) {
 }
 
 FunctionCallee SplayMechanism::getFailFunction(void) const {
-  return FailFunction;
+  return failFunction;
 }
 
 FunctionCallee SplayMechanism::getExtCheckCounterFunction(void) const {
@@ -247,10 +247,14 @@ FunctionCallee SplayMechanism::getExtCheckCounterFunction(void) const {
 }
 
 FunctionCallee SplayMechanism::getVerboseFailFunction(void) const {
-  return VerboseFailFunction;
+  return verboseFailFunction;
 }
 
 void SplayMechanism::insertFunctionDeclarations(Module &M) {
+
+  // Register common functions
+  insertCommonFunctionDeclarations(M);
+
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
   auto *StringTy = Type::getInt8PtrTy(Ctx);
@@ -286,17 +290,8 @@ void SplayMechanism::insertFunctionDeclarations(Module &M) {
   GetUpperBoundFunction =
       insertFunDecl(M, "__splay_get_upper_as_ptr", PtrArgType, WitnessType);
 
-  AttributeList NoReturnAttr = AttributeList::get(
-      Ctx, AttributeList::FunctionIndex, Attribute::NoReturn);
-  FailFunction = insertFunDecl(M, "__mi_fail", NoReturnAttr, VoidTy);
-
   ExtCheckCounterFunction =
       insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
-
-  VerboseFailFunction =
-      insertFunDecl(M, "__mi_fail_with_msg", NoReturnAttr, VoidTy, PtrArgType);
-
-  WarningFunction = insertFunDecl(M, "__mi_warning", VoidTy, PtrArgType);
 
   if (globalConfig.hasUseNoop()) {
     ConfigFunction =

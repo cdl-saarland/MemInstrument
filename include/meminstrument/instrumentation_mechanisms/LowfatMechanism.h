@@ -80,8 +80,6 @@ private:
   llvm::FunctionCallee CheckOOBFunction = nullptr;
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
-  llvm::FunctionCallee FailFunction = nullptr;
-  llvm::FunctionCallee VerboseFailFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
