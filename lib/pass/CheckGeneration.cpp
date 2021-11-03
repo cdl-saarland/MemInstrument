@@ -10,15 +10,28 @@
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
 
-#include "llvm/ADT/Statistic.h"
-
 #include "meminstrument/pass/Util.h"
+
+#include "llvm/ADT/Statistic.h"
+#include "llvm/Support/CommandLine.h"
 
 using namespace meminstrument;
 using namespace llvm;
 
+static cl::opt<bool> NoInvariantChecks(
+    "mi-no-invariant-checks",
+    cl::desc("Don't place checks for invariants (this will horribly break e.g. "
+             "SoftBound and gives less guarantees for other instrumentations, "
+             "so make sure you know what you do)"),
+    cl::init(false));
+
 void meminstrument::generateInvariants(GlobalConfig &CFG, ITargetVector &Vec,
                                        Function &F) {
+
+  if (NoInvariantChecks) {
+    return;
+  }
+
   auto &IM = CFG.getInstrumentationMechanism();
 
   for (auto &T : Vec) {
