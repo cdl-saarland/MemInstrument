@@ -39,7 +39,8 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     return true;
 
   auto &IM = CFG->getInstrumentationMechanism();
-  if (M.getName().endswith("tools/timeit.c")) {
+  if (M.getName().endswith("tools/timeit.c") ||
+      M.getName().endswith("fpcmp.c")) {
     // small hack to avoid unnecessary work in the lnt tests
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: skip module `" << M.getName().str()
                       << "`\n";);
