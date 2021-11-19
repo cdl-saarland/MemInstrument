@@ -106,6 +106,11 @@ public:
   /// recognition.
   virtual const char *getName() const = 0;
 
+  /// Defines whether the invariants of this mechanism are special cases of
+  /// checks or not. This property allows, e.g., to optimize invariants that are
+  /// checks similar to checks.
+  virtual bool invariantsAreChecks() const = 0;
+
   virtual ~InstrumentationMechanism() {}
 
   InstrumentationMechanism(GlobalConfig &cfg) : globalConfig(cfg) {}

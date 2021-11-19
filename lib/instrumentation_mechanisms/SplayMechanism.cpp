@@ -493,3 +493,5 @@ WitnessPtr SplayMechanism::getWitnessSelect(SelectInst *Sel,
   ++SplayNumWitnessSelects;
   return std::make_shared<SplayWitness>(NewSel, Sel);
 }
+
+bool SplayMechanism::invariantsAreChecks() const { return true; }

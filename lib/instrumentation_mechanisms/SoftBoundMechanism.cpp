@@ -419,6 +419,8 @@ auto SoftBoundMechanism::getExtCheckCounterFunction() const -> FunctionCallee {
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
 
+bool SoftBoundMechanism::invariantsAreChecks() const { return false; }
+
 //===---------------------------- private ---------------------------------===//
 
 void SoftBoundMechanism::replaceWrappedFunction(Module &module) const {

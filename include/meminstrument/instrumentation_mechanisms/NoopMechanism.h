@@ -62,6 +62,8 @@ public:
 
   virtual ~NoopMechanism(void) {}
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   llvm::Type *SizeType = nullptr;
 

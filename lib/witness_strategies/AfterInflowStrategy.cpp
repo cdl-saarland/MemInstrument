@@ -524,6 +524,8 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
 void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
 
+  assert(globalConfig.getInstrumentationMechanism().invariantsAreChecks());
+
   // Check whether the value of the instrumentee is definitely the same as
   // when we extracted its witness. In this case, we can skip inbounds checks
   // for out-flowing pointers (as we assume the values to be valid anyway).

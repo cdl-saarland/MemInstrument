@@ -59,6 +59,8 @@ public:
 
   virtual auto getName() const -> const char * override;
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   /// Handles for SoftBound run-time function declarations for which calls are
   /// inserted during instrumentation

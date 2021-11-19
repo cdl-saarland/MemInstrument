@@ -155,3 +155,5 @@ WitnessPtr NoopMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
   llvm_unreachable("Selects are not supported by this mechanism!");
   return nullptr;
 }
+
+bool NoopMechanism::invariantsAreChecks() const { return false; }

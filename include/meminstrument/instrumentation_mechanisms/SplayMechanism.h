@@ -80,6 +80,8 @@ public:
 
   virtual const char *getName(void) const override { return "Splay"; }
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   llvm::FunctionCallee GlobalAllocFunction = nullptr;
   llvm::FunctionCallee AllocFunction = nullptr;

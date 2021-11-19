@@ -329,3 +329,5 @@ WitnessPtr RuntimeStatMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
   llvm_unreachable("Selects are not supported by this mechanism!");
   return nullptr;
 }
+
+bool RuntimeStatMechanism::invariantsAreChecks() const { return false; }

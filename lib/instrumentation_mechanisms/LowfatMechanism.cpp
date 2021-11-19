@@ -250,3 +250,5 @@ WitnessPtr LowfatMechanism::getWitnessSelect(SelectInst *Sel,
   ++LowfatNumWitnessSelects;
   return std::make_shared<LowfatWitness>(NewSel, Sel);
 }
+
+bool LowfatMechanism::invariantsAreChecks() const { return true; }

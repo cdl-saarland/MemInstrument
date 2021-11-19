@@ -16,10 +16,11 @@
 using namespace llvm;
 using namespace meminstrument;
 
-cl::opt<bool> InvariantIsCheck(
-    "mi-opt-dominance-invariant-is-check",
-    cl::desc("Assume that invariants are (one byte) checks (holds for splay "
-             "and lowfat, but not for softbound)"),
+cl::opt<bool> OptimizeInvariants(
+    "mi-opt-dominance-optimize-invariants",
+    cl::desc("In addition to checks, also optimize invariant (checks). Note "
+             "that this is only possible for mechanisms where invariants are "
+             "special kinds of checks."),
     cl::init(false));
 
 STATISTIC(NumITargetsSubsumed, "The # of instrumentation targets discarded "
@@ -54,6 +55,12 @@ void DominanceBasedCheckRemovalPass::updateITargetsForFunction(
 
   const auto &domTree =
       mip.getAnalysis<DominatorTreeWrapperPass>(fun).getDomTree();
+
+  // Make sure that the invariants can be optimized similar to checks in case
+  // this is requested.
+  if (OptimizeInvariants) {
+    assert(mip.getConfig().getInstrumentationMechanism().invariantsAreChecks());
+  }
 
   for (auto &target : targets) {
     for (auto &otherTarget : targets) {
@@ -112,10 +119,7 @@ bool DominanceBasedCheckRemovalPass::subsumes(const ITarget &one,
     }
   }
 
-  if (InvariantIsCheck) {
-    // TODO this only holds for instrumentations that use one-byte "check"
-    // invariants. Find a proper solution to report an error if this CL flag is
-    // given and an instrumentation that does not support that this is used.
+  if (OptimizeInvariants) {
     if (other.isInvariant()) {
       return one.isInvariant() || isa<ConstSizeCheckIT>(&one) ||
              isa<VarSizeCheckIT>(&one);

@@ -65,6 +65,8 @@ public:
 
   virtual const char *getName(void) const override { return "Dummy"; }
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   llvm::FunctionCallee CreateWitnessFunction = nullptr;
   llvm::FunctionCallee CheckAccessFunction = nullptr;

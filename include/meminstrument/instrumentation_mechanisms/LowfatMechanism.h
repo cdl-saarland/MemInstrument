@@ -75,6 +75,8 @@ public:
 
   virtual const char *getName(void) const override { return "Lowfat"; }
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   llvm::FunctionCallee CheckDerefFunction = nullptr;
   llvm::FunctionCallee CheckOOBFunction = nullptr;

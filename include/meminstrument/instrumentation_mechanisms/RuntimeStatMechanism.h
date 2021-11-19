@@ -64,6 +64,8 @@ public:
 
   virtual ~RuntimeStatMechanism(void) {}
 
+  virtual bool invariantsAreChecks() const override;
+
 private:
   struct StringMapItem {
     StringMapItem(uint64_t Idx, llvm::StringRef Str)

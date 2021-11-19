@@ -193,3 +193,5 @@ WitnessPtr DummyMechanism::getWitnessSelect(SelectInst *Sel,
 
   return std::make_shared<DummyWitness>(NewSel);
 }
+
+bool DummyMechanism::invariantsAreChecks() const { return true; }
