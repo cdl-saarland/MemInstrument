@@ -6,6 +6,8 @@
 // CHECK-NEXT: __softboundcets_init()
 // CHECK-NEXT: ret void
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -2,6 +2,8 @@
 
 // CHECK-NOT: Insert metadata store
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

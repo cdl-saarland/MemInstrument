@@ -4,6 +4,8 @@
 // CHECK: 1 {{.*}} inbounds targets discarded because of witness graph information
 // CHECK: 2 {{.*}} dereference checks inserted
 
+// REQUIRES: asserts
+
 int **p;
 
 int *example_no_change() {

@@ -9,6 +9,8 @@
 ; RUN: %not --crash %t3 2> %t4.log
 ; RUN: fgrep "Memory safety violation" %t4.log
 
+; REQUIRES: asserts
+
 define i32 @main() {
 test_bb:
   %p = alloca i32, i64 12

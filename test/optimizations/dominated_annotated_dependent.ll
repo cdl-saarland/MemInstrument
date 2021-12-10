@@ -4,6 +4,8 @@
 ; CHECK: 2 {{.*}} discarded because of dominating subsumption
 ; CHECK-NOT: 1 {{.*}} dereference checks inserted
 
+; REQUIRES: asserts
+
 define i32 @f(i32* %p, i32 %x) {
 entry:
   br label %test_bb

@@ -16,6 +16,8 @@
 // CHECK-NEXT: Base: {{.*}} @x
 // CHECK-NEXT: Bound: {{.*}} getelementptr inbounds (i32, i32* @x, i32 1)
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

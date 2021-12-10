@@ -5,6 +5,8 @@
 // RUN: %not --crash %t2 2> %t3.log
 // RUN: fgrep "Memory safety violation!" %t3.log
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdarg.h>
 

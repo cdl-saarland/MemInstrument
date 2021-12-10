@@ -5,6 +5,8 @@
 // CHECK-NEXT: Base: i8* null
 // CHECK-NEXT: Bound: i8* null
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

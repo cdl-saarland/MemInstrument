@@ -14,6 +14,8 @@
 // CHECK-NEXT: Base: {{.*}} @Ar to i8*
 // CHECK-NEXT: Bound: {{.*}} getelementptr inbounds ([15 x i32], [15 x i32]* @Ar, i32 1)
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

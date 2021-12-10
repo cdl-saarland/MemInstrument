@@ -7,6 +7,8 @@
 // CHECK: Insert metadata store:
 // CHECK-NEXT: Ptr: i8* bitcast (i32** @Ar to i8*)
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

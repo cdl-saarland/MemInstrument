@@ -5,6 +5,8 @@
 // CHECK-NEXT: Base: i8* bitcast ([3 x i32]* @Ar to i8*)
 // CHECK-NEXT: Bound: i8* bitcast ([3 x i32]* getelementptr inbounds ([3 x i32], [3 x i32]* @Ar, i32 1) to i8*)
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

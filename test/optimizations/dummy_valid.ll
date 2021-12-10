@@ -8,6 +8,8 @@
 ; RUN: %clink -ldl -l:libsplay.a -o %t3 %t1.ll
 ; RUN: %t3
 
+; REQUIRES: asserts
+
 define i32 @main() {
 test_bb:
   %p = alloca i32, i64 12

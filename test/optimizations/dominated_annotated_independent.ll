@@ -4,6 +4,8 @@
 ; CHECK: 1 {{.*}} discarded because of dominating subsumption
 ; CHECK: 1 {{.*}} dereference checks inserted
 
+; REQUIRES: asserts
+
 define i32 @f(i32* %p, i32* %q) {
 entry:
   %x = load i32, i32* %q, align 4

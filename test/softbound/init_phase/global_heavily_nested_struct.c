@@ -2,6 +2,8 @@
 
 // CHECK: 38 softbound{{.*}}Number of metadata stores inserted
 
+// REQUIRES: asserts
+
 #include <stdio.h>
 #include <stdlib.h>
 

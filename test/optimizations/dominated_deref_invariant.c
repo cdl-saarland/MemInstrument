@@ -3,6 +3,8 @@
 
 // CHECK: 1 {{.*}} instrumentation targets discarded because of dominating subsumption
 
+// REQUIRES: asserts
+
 int **p;
 int x;
 

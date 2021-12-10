@@ -4,6 +4,8 @@
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2
 
+// REQUIRES: asserts
+
 #include <stdarg.h>
 #include <stdio.h>
 

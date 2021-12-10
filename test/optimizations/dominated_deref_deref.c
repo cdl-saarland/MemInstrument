@@ -4,6 +4,7 @@
 // CHECK: 1 {{.*}} discarded because of dominating subsumption
 // CHECK: 1 {{.*}} dereference checks inserted
 
+// REQUIRES: asserts
 
 int example_dom_opt(int *q) {
     if (*q > 0) {
