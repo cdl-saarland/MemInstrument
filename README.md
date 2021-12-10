@@ -47,6 +47,54 @@ Note that an LLVM debug build currently requires around 60GB of memory.
   * `check-meminstrument` to run the `meminstrument` test suite
   * `meminstrument-update-format` to run `clangformat` on all `meminstrument` source files
 
-### 5. Using the Instrumentation Passes
+## Using the Instrumentation Passes
 
-TODO
+### Basic usage
+
+... with clang:
+
+```
+clang -Ox -Xclang -load -Xclang <path to LLVM build>/lib/LLVMmeminstrument.so
+```
+Note that at least optimization level `-O1` is required, without it the instrumentation will not be run.
+
+... with opt:
+
+```
+opt -load <path to LLVM build>/lib/LLVMmeminstrument.so -meminstrument
+```
+
+Various different instrumentations are available, the default is `splay`. To run the others, use:
+
+```
+-mi-config=<instrumentation>
+```
+
+The most interesting options for `<instrumentation>` are `splay`, `lowfat` and `softbound`.
+
+Note: If you want to pass arguments for the instrumentation to `clang`, add `-mllvm` in front of each of them (e.g. `-mllvm -mi-config=lowfat -mllvm -mi-mode=setup`).
+
+### Linking
+
+The compiled program needs to be linked against the C part of the instrumentation.
+Use
+
+```
+-L</path/to/instrumentation-mechanisms>/lib -ldl -l:lib<instrumentation>.a
+```
+
+to link the library.
+
+For SoftBound(CETS) use:
+
+```
+-L</path/to/instrumentation-mechanisms>/lib -lm -lrt -lsoftboundcets_rt -luuid -ldl -lcrypt
+```
+
+### Full list of available options
+
+The available command line flags for the instrumentations can be found under "MemInstrument Options" in the help of `opt`.
+
+```
+opt -load <path to LLVM build>/lib/LLVMmeminstrument.so --help
+```
