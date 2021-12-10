@@ -7,31 +7,29 @@
   * a modern Linux operating system with a modern C++ compiler (e.g. `g++`, other operating systems might also work but are not officially supported)
   * `git`
   * `cmake` (version >= ??)
-  * a supported build system, e.g. `ninja` or GNU make
+  * a supported build system, e.g. `ninja` (recommended) or GNU make
+  * the build C part of the implementation, the [instrumentation-mechanisms](https://gitlab.cs.uni-saarland.de/cdl/safe-c/instrumentation-mechanisms)
 
 ### 1. Setting up LLVM
 
-Start in your project root folder. Clone the [LLVM sources from the monorepo](https://github.com/llvm/llvm-project) as `llvm-project` and checkout the required branch (currently supported: `release/9.x`).
+Start in your project root folder. Clone the [LLVM sources from the monorepo](https://github.com/llvm/llvm-project) as `llvm-project` and checkout the required branch (currently supported: `release/12.x`).
 
 ### 2. Setting up meminstrument
 
-Clone this repository and the `lifetimekiller` pass into `llvm-project/llvm/projects`.
-
+Clone this repository and the [`lifetimekiller`](https://gitlab.cs.uni-saarland.de/cdl/safe-c/lifetimekiller) pass into `llvm-project/llvm/projects`.
 
 ### 3. Building LLVM+Clang+meminstrument
 
 Create a new folder `build` in your project root folder and `cd` into it. Create build files via `cmake` with the following command:
 
 ```
-cmake -G <build tool> -DLLVM_ENABLE_PROJECTS='clang' <additional flags> ../llvm-project/llvm/
+cmake -G <build tool> -DLLVM_ENABLE_PROJECTS='clang' -DCMAKE_INCLUDE_PATH=</path/to/instrumentation-mechanisms> <additional flags> ../llvm-project/llvm/
 ```
 
 where `<build tool>` is your preferred build tool (e.g. `Ninja`).
 Interesting additional flags for development are:
 
-  * `-DMEMINSTRUMENT_USE_PICO=1` to tell the meminstrument instrumentation pass to make use of the [PICO](https://public.cdl.uni-saarland.de/safe-c/PICO) pass to optimize checks
-  * `-DPICO_USE_MEMINSTRUMENT=1` to tell PICO that it will be used by meminstrument
-  * `-DCMAKE_INCLUDE_PATH=</path/to/instrumentation-mechanisms/lib>` to allow finding runtime libraries for the implemented instrumentation mechanisms from a separate repository. (Omitting can make tests fail.)
+  * `-DPICO_USE_MEMINSTRUMENT=1` to tell [PICO](https://gitlab.cs.uni-saarland.de/cdl/safe-c/PICO) that it will be used by meminstrument (only if you also build PICO)
   * `-DLLVM_ENABLE_ASSERTIONS=1` to enforce assertions in the code
   * `-DCMAKE_BUILD_TYPE=Debug` to enable a debug build for better error messages and debugging capabilities
   * `-DLLVM_PARALLEL_LINK_JOBS=<n>` to limit the number of concurrent link jobs to `<n>`. This should be rather low for systems with less than 8GB of RAM as linking `clang` can require considerable amounts of memory (especially when building a debug build)
