@@ -6,9 +6,9 @@
 
   * a modern Linux operating system with a modern C++ compiler (e.g. `g++`, other operating systems might also work but are not officially supported)
   * `git`
-  * `cmake` (version >= ??)
+  * `cmake` (version as required by LLVM)
   * a supported build system, e.g. `ninja` (recommended) or GNU make
-  * the build C part of the implementation, the [instrumentation-mechanisms](https://gitlab.cs.uni-saarland.de/cdl/safe-c/instrumentation-mechanisms)
+  * the built C part of the implementation, the [instrumentation-mechanisms](https://gitlab.cs.uni-saarland.de/cdl/safe-c/instrumentation-mechanisms)
 
 ### 1. Setting up LLVM
 
@@ -37,6 +37,8 @@ Interesting additional flags for development are:
   * `-DCMAKE_INSTALL_PREFIX=</path/to/install/directory>` to specify an installation directory for llvm
 
 When the build files are generated, use your build system to build the project (e.g. by typing `ninja`). This might take a while.
+
+Note that an LLVM debug build currently requires around 60GB of memory.
 
 ### 4. Build Targets
 
