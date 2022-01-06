@@ -507,6 +507,11 @@ void transformObfuscatedLoad(LoadInst *load) {
 
   // Adapt users to use the new load
   for (auto *user : load->users()) {
+
+    if (auto inst = dyn_cast<Instruction>(user)) {
+      builder.SetInsertPoint(inst);
+    }
+
     // Check if the users require a i64 or cast the value immediately anyway
     if (auto intToPtrCast = dyn_cast<IntToPtrInst>(user)) {
       auto ptrTy = user->getType();
@@ -527,7 +532,6 @@ void transformObfuscatedLoad(LoadInst *load) {
     }
 
     if (auto storeInst = dyn_cast<StoreInst>(user)) {
-      builder.SetInsertPoint(storeInst);
       auto storeLoc = createStoreLocationCast(
           builder, storeInst->getPointerOperand(), ptrLoad->getType());
       builder.CreateStore(ptrLoad, storeLoc);
