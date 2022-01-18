@@ -141,6 +141,9 @@ InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                      const std::vector<Value *> &&args,
                                      const Twine &Name) {
   auto *Res = B.CreateCall(Fun, args);
+  if (!Res->getType()->isVoidTy()) {
+    Res->setName(Name);
+  }
   setNoInstrument(Res);
   return Res;
 }
@@ -155,13 +158,13 @@ Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B,
 Instruction *
 InstrumentationMechanism::insertCall(IRBuilder<> &B, FunctionCallee Fun,
                                      const std::vector<Value *> &&args) {
-  return insertCall(B, Fun, std::move(args), "inserted_call");
+  return insertCall(B, Fun, std::move(args), "inserted.call");
 }
 
 Instruction *InstrumentationMechanism::insertCall(IRBuilder<> &B,
                                                   FunctionCallee Fun,
                                                   Value *arg) {
-  return insertCall(B, Fun, arg, "inserted_call");
+  return insertCall(B, Fun, arg, "inserted.call");
 }
 
 Value *InstrumentationMechanism::insertCast(Type *DestType, Value *FromVal,
