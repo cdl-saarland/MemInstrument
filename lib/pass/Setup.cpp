@@ -508,9 +508,7 @@ void transformObfuscatedLoad(LoadInst *load) {
   // Adapt users to use the new load
   for (auto *user : load->users()) {
 
-    if (auto inst = dyn_cast<Instruction>(user)) {
-      builder.SetInsertPoint(inst);
-    }
+    builder.SetInsertPoint(ptrLoad->getNextNode());
 
     // Check if the users require a i64 or cast the value immediately anyway
     if (auto intToPtrCast = dyn_cast<IntToPtrInst>(user)) {
