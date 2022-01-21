@@ -497,8 +497,10 @@ void transformObfuscatedLoad(LoadInst *load) {
   auto ptrToPtrCast = builder.CreateBitCast(
       load->getPointerOperand(),
       PointerType::getUnqual(PointerType::getInt8PtrTy(load->getContext())));
+  setPointerDeobfuscation(ptrToPtrCast);
 
   auto ptrLoad = builder.CreateLoad(ptrToPtrCast, "mi.deobfuscated.ptr.load");
+  setPointerDeobfuscation(ptrLoad);
 
   // A user might have several occurrences of values that need to be replaced
   // (e.g. phis), use triples to collect the information
@@ -518,6 +520,9 @@ void transformObfuscatedLoad(LoadInst *load) {
       // We might need to cast our i8* to the other pointer type
       if (ptrTy != ptrLoad->getType()) {
         toReplaceWith = builder.CreateBitCast(ptrLoad, ptrTy);
+        if (canHoldMetadata(toReplaceWith)) {
+          setPointerDeobfuscation(toReplaceWith);
+        }
       }
 
       for (auto intToPtrCastUser : intToPtrCast->users()) {
@@ -530,9 +535,15 @@ void transformObfuscatedLoad(LoadInst *load) {
     }
 
     if (auto storeInst = dyn_cast<StoreInst>(user)) {
+      builder.SetInsertPoint(storeInst);
       auto storeLoc = createStoreLocationCast(
           builder, storeInst->getPointerOperand(), ptrLoad->getType());
-      builder.CreateStore(ptrLoad, storeLoc);
+      if (canHoldMetadata(storeLoc)) {
+        setPointerDeobfuscation(storeLoc);
+      }
+      auto store = builder.CreateStore(ptrLoad, storeLoc);
+      setPointerDeobfuscation(store);
+
       removeQueue.insert(storeInst);
       LoadStoreObfuscationPatternReplaced++;
       continue;
@@ -540,6 +551,10 @@ void transformObfuscatedLoad(LoadInst *load) {
 
     // Place a cast if the user really requires an integer
     auto ptrToInt = builder.CreatePtrToInt(ptrLoad, load->getType());
+    if (canHoldMetadata(ptrToInt)) {
+      setPointerDeobfuscation(ptrToInt);
+    }
+
     replaceInfo.insert(std::make_tuple(user, load, ptrToInt));
     IntroducedPtrToIntCasts++;
   }

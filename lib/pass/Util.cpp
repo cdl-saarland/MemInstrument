@@ -21,6 +21,7 @@ using namespace meminstrument;
 #define NOINSTRUMENT_MD "no_instrument"
 #define VARARG_MD "vararg_handling"
 #define VARARG_LOAD_MD "vararg_load_arg"
+#define PTR_DEOB_MD "ptr_deobfuscation"
 #define ACCESS_ID "mi_access_id"
 
 namespace {
@@ -63,6 +64,8 @@ void setNoInstrument(Value *V) { addMIMetadata(V, NOINSTRUMENT_MD); }
 void setVarArgHandling(Value *V) { addMIMetadata(V, VARARG_MD); }
 
 void setVarArgLoadArg(Value *V) { addMIMetadata(V, VARARG_LOAD_MD); }
+
+void setPointerDeobfuscation(Value *V) { addMIMetadata(V, PTR_DEOB_MD); }
 
 void setAccessID(Instruction *inst, uint64_t id) {
   auto &ctx = inst->getContext();
@@ -134,6 +137,10 @@ size_t getPointerAccessSize(const DataLayout &DL, Value *V) {
   size_t Size = DL.getTypeStoreSize(PointeeType);
 
   return Size;
+}
+
+bool canHoldMetadata(const Value *V) {
+  return isa<Instruction>(V) || isa<GlobalObject>(V);
 }
 
 bool isVarArgMetadataType(const Type *type) {

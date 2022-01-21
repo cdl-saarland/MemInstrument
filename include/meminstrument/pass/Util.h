@@ -48,6 +48,10 @@ void setVarArgHandling(llvm::Value *);
 /// vararg.
 void setVarArgLoadArg(llvm::Value *);
 
+/// Add metadata to a Value to indicate that it was introduced by the pointer
+/// deobfuscation transformation.
+void setPointerDeobfuscation(llvm::Value *);
+
 /// Add metadata with the given \p id as value.
 void setAccessID(llvm::Instruction *, uint64_t id);
 
@@ -81,6 +85,9 @@ bool hasPointerAccessSize(const llvm::Value *);
 
 /// Get the size of an access to the pointer Value V.
 size_t getPointerAccessSize(const llvm::DataLayout &, llvm::Value *);
+
+/// Determines whether the given value can hold metadata.
+bool canHoldMetadata(const llvm::Value *);
 
 /// Determine whether the given type is or points to the llvm type for a va_list
 bool isVarArgMetadataType(const llvm::Type *);
