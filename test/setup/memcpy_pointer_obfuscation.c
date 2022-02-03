@@ -1,5 +1,5 @@
 // RUN: %clang -O1 %s -S -emit-llvm -o %t
-// RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-transform-obfuscated-ptr-load-store=1 -stats %t 2>&1 | %filecheck %s
+// RUN: %opt %loadlibs -meminstrument -S -mi-config=softbound -mi-no-obfuscated-ptr-load-store-transformation=0 -stats %t 2>&1 | %filecheck %s
 
 // CHECK: 1{{.*}}Number of load/store pairs of ints which are actually pointers replaced
 // CHECK-DAG: 1{{.*}}Number of metadata loads inserted

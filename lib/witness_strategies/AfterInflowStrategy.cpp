@@ -42,11 +42,11 @@ STATISTIC(NumUnsupportedInsns, "[AIS error] Unsupported instructions");
 
 STATISTIC(NumUnsupportedValOps, "[AIS error] Unsupported value operands");
 
-cl::opt<bool> ShareBoundsOpt(
-    "mi-share-bounds",
+cl::opt<bool> NoShareBoundsOpt(
+    "mi-no-bounds-share",
     cl::desc(
         "Materialize bounds so that multiple targets can have the same bounds"),
-    cl::init(true));
+    cl::init(false));
 
 } // namespace
 
@@ -330,15 +330,15 @@ void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
       }
     }
 
-    if (ShareBoundsOpt) {
-      Target->setBoundWitnesses(witnesses);
-    } else {
+    if (NoShareBoundsOpt) {
       WitnessMap newWitnesses;
       for (auto &KV : witnesses) {
         auto newW = IM.getRelocatedClone(*KV.second, Target->getLocation());
         newWitnesses[KV.first] = newW;
       }
       Target->setBoundWitnesses(newWitnesses);
+    } else {
+      Target->setBoundWitnesses(witnesses);
     }
     return;
   }

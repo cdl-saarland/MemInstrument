@@ -34,11 +34,13 @@ ModulePass *createMemInstrumentPass() { return new MemInstrumentPass(); }
 } // namespace llvm
 
 namespace {
-cl::opt<bool>
-    UseLifeTimeKillerOpt("mi-use-lifetime-killer",
-                         cl::desc("Eliminate all llvm.lifetime.* intrinsics "
-                                  "before memory safety instrumentation"),
-                         cl::init(true));
+cl::opt<bool> DontUseLifeTimeKillerOpt(
+    "mi-no-lifetime-killer",
+    cl::desc("Do not eliminate llvm.lifetime.* intrinsics "
+             "before the memory safety instrumentation. Note that some "
+             "instrumentations require the removal of lifetime intrinsics to "
+             "work properly."),
+    cl::init(false));
 cl::opt<bool> NoMemInstrumentOpt(
     "mi-no-meminstrument",
     cl::desc(
@@ -80,9 +82,10 @@ static RegisterPass<DummyExternalChecksPass>
 
 static void registerMeminstrumentPass(const PassManagerBuilder &,
                                       legacy::PassManagerBase &PM) {
-  if (UseLifeTimeKillerOpt) {
+  if (!DontUseLifeTimeKillerOpt) {
     PM.add(createLifeTimeKillerPass());
   }
+
   if (NoMemInstrumentOpt) {
     return;
   }

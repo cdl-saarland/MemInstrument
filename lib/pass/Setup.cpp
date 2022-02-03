@@ -62,13 +62,17 @@ cl::opt<bool> LabelAccesses(
     cl::desc("Add unique ids as metadata to load an store instructions"),
     cl::init(false));
 
-cl::opt<bool> TransformObfuscatedPointer(
-    "mi-transform-obfuscated-ptr-load-store",
-    cl::desc("Transform obfuscated ptr loads/stores"), cl::init(true));
+cl::opt<bool> NoTransformObfuscatedPointer(
+    "mi-no-obfuscated-ptr-load-store-transformation",
+    cl::desc("Do not transform obfuscated ptr loads/stores. Note that this can "
+             "lead to false positives or false negatives."),
+    cl::init(false));
 
-cl::opt<bool> ConvertByValArgs("mi-convert-byval-args",
-                               cl::desc("Transform byval arguments"),
-                               cl::init(true));
+cl::opt<bool>
+    NoConvertByValArgs("mi-no-byval-arg-transformation",
+                       cl::desc("Do not transform byval arguments. Note that "
+                                "this is required by some instrumentations."),
+                       cl::init(false));
 
 cl::opt<std::string> FunctionsToSkip(
     "mi-ignored-functions-file",
@@ -705,14 +709,14 @@ void meminstrument::prepareModule(Module &module) {
       NumVarArgs++;
     }
 
-    if (TransformObfuscatedPointer) {
+    if (!NoTransformObfuscatedPointer) {
       // Check if some values are used as pointers and are than stored(/loaded)
       // as i64 later. Replace these cases to consistently use pointers.
       transformPointerObfuscations(fun);
     }
   }
 
-  if (ConvertByValArgs) {
+  if (!NoConvertByValArgs) {
     // Remove `byval` attributes by allocating them at call sites
     transformByValFunctions(module);
   }
