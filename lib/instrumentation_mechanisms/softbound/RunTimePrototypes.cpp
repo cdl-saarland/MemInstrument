@@ -180,8 +180,7 @@ void PrototypeInserter::insertCommonFunctions(RunTimeHandles &handles) const {
       "__softboundcets_proxy_metadata_store", voidTy, voidPtrTy, varArgProxyTy);
 }
 
-void PrototypeInserter::insertStatsFunctions(
-    RunTimeHandles &handles) const {
+void PrototypeInserter::insertStatsFunctions(RunTimeHandles &handles) const {
 
   if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
     handles.externalCheckCounter =
