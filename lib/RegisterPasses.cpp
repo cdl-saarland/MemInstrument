@@ -81,7 +81,7 @@ static RegisterPass<DummyExternalChecksPass>
 static void registerMeminstrumentPass(const PassManagerBuilder &,
                                       legacy::PassManagerBase &PM) {
   if (UseLifeTimeKillerOpt) {
-    PM.add(new lifetimekiller::LifeTimeKillerPass());
+    PM.add(createLifeTimeKillerPass());
   }
   if (NoMemInstrumentOpt) {
     return;
