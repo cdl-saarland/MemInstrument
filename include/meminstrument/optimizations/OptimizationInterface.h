@@ -21,10 +21,11 @@
 #ifndef MEMINSTRUMENT_OPTIMIZATION_OPTIMIZATIONINTERFACE_H
 #define MEMINSTRUMENT_OPTIMIZATION_OPTIMIZATIONINTERFACE_H
 
-#include "meminstrument/Config.h"
 #include "meminstrument/pass/ITarget.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
+
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
 
 namespace meminstrument {
 
