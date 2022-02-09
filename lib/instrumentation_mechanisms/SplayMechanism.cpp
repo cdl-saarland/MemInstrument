@@ -455,6 +455,13 @@ void SplayMechanism::initialize(Module &M) {
         if (auto *AI = dyn_cast<AllocaInst>(&I)) {
           instrumentAlloca(M, AI);
         }
+        if (isLifeTimeIntrinsic(&I)) {
+          MemInstrumentError::report(
+              "Found a call to a lifetime intrinsic, but splay does not "
+              "support them. Don't use `-mi-no-lifetime-killer` with "
+              "clang+splay. In case you use opt, make sure to add "
+              "`-lifetimekiller` before `-meminstrument`.");
+        }
       }
     }
   }

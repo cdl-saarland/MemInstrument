@@ -1,5 +1,5 @@
 // RUN: %clang -emit-llvm -c -S -o %t0.ll %s
-// RUN: %opt %loadlibs -mem2reg -meminstrument -mi-config=splay %t0.ll -mi-simplify-witnessgraph=0 -S > %t1.ll
+// RUN: %opt %loadlibs %preppasses -meminstrument -mi-config=splay %t0.ll -mi-simplify-witnessgraph=0 -S > %t1.ll
 // RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
 // RUN: %t2
 

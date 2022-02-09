@@ -14,6 +14,8 @@
 #include "llvm/IR/GlobalObject.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
+
 #include "llvm/IR/Metadata.h"
 
 using namespace llvm;
@@ -165,6 +167,18 @@ size_t getPointerAccessSize(const DataLayout &DL, Value *V) {
 
 bool canHoldMetadata(const Value *V) {
   return isa<Instruction>(V) || isa<GlobalObject>(V);
+}
+
+bool isLifeTimeIntrinsic(const Instruction *inst) {
+  if (auto *intr = dyn_cast<IntrinsicInst>(inst)) {
+    switch (intr->getIntrinsicID()) {
+    case Intrinsic::lifetime_start:
+    case Intrinsic::lifetime_end:
+      return true;
+    default:;
+    }
+  }
+  return false;
 }
 
 bool isVarArgMetadataType(const Type *type) {

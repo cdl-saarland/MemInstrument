@@ -1,8 +1,6 @@
-; RUN: %opt %loadlibs -mem2reg -meminstrument %s -mi-config=splay -S > %t1.ll
-; RUN: %clink -ldl -l:libsplay.a -o %t2 %t1.ll
-; RUN: %t2 2> %t3.err
-; RUN: %not fgrep "non-existing witness" %t3.err
-; This testcase turned out to be rather pointless
+; RUN: %not %opt %loadlibs -mem2reg -meminstrument %s -mi-config=splay -S 2>&1 | %filecheck %s
+
+; CHECK: {{.*}}Meminstrument Error{{.*}}lifetime intrinsic
 
 declare void @llvm.lifetime.start(i64, i8* nocapture) #3
 declare void @llvm.lifetime.end(i64, i8* nocapture) #3

@@ -119,6 +119,9 @@ size_t getPointerAccessSize(const llvm::DataLayout &, llvm::Value *);
 /// Determines whether the given value can hold metadata.
 bool canHoldMetadata(const llvm::Value *);
 
+/// Determine if the given instruction is a call to a lifetime intrinsic.
+bool isLifeTimeIntrinsic(const llvm::Instruction *);
+
 /// Determine whether the given type is or points to the llvm type for a va_list
 bool isVarArgMetadataType(const llvm::Type *);
 
