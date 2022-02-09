@@ -254,6 +254,16 @@ void transformByValFunctions(Module &module) {
       for (auto &inst : block) {
         if (auto *cb = dyn_cast<CallBase>(&inst)) {
           if (cb->hasByValArgument()) {
+
+            assert(cb->getCalledFunction());
+
+            if (cb->getCalledFunction()->isVarArg()) {
+              MemInstrumentError::report(
+                  "Function `" + cb->getCalledFunction()->getName() +
+                  "` has varargs and byvalue arguments. Safety for these "
+                  "arguments cannot be assured.");
+            }
+
             transformCallByValArgs(*cb, builder);
           }
         }
