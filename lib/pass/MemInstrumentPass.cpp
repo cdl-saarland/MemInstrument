@@ -64,7 +64,7 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
   IM.initialize(M);
 
-  if (Mode == MIMode::SETUP || CFG->hasErrors())
+  if (Mode == MIMode::SETUP)
     return true;
 
   std::map<Function *, ITargetVector> TargetMap;
@@ -81,12 +81,12 @@ bool MemInstrumentPass::runOnModule(Module &M) {
     gatherITargets(*CFG, Targets, F);
   }
 
-  if (Mode == MIMode::GATHER_ITARGETS || CFG->hasErrors())
+  if (Mode == MIMode::GATHER_ITARGETS)
     return true;
 
   optRunner.updateITargets(TargetMap);
 
-  if (Mode == MIMode::FILTER_ITARGETS || CFG->hasErrors())
+  if (Mode == MIMode::FILTER_ITARGETS)
     return true;
 
   for (auto &F : M) {
@@ -100,18 +100,18 @@ bool MemInstrumentPass::runOnModule(Module &M) {
 
     generateWitnesses(*CFG, Targets, F);
 
-    if (Mode == MIMode::GENERATE_WITNESSES || CFG->hasErrors())
+    if (Mode == MIMode::GENERATE_WITNESSES)
       continue;
 
     generateInvariants(*CFG, Targets, F);
 
-    if (Mode == MIMode::GENERATE_INVARIANTS || CFG->hasErrors()) {
+    if (Mode == MIMode::GENERATE_INVARIANTS) {
       continue;
     }
 
     optRunner.placeChecks(Targets, F);
 
-    if (Mode == MIMode::GENERATE_OPTIMIZATION_CHECKS || CFG->hasErrors())
+    if (Mode == MIMode::GENERATE_OPTIMIZATION_CHECKS)
       continue;
 
     LLVM_DEBUG(dbgs() << "MemInstrumentPass: generating checks\n";);

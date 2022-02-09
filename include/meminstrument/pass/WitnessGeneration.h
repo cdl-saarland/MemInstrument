@@ -22,8 +22,7 @@
 
 namespace meminstrument {
 
-void generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
-                       llvm::Function &F);
+void generateWitnesses(GlobalConfig &, ITargetVector &, llvm::Function &);
 }
 
 #endif

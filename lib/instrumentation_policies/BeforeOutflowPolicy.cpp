@@ -46,9 +46,7 @@ void BeforeOutflowPolicy::classifyTargets(ITargetVector &Dest,
 
     auto *Fun = I->getCalledFunction();
     if (!Fun) { // call via function pointer
-      if (!validateSize(I->getCalledOperand())) {
-        return;
-      }
+      validateSize(I->getCalledOperand());
       insertCheckTargetsForCall(Dest, I);
     }
     if (Fun && Fun->hasName() && Fun->getName().startswith("llvm.dbg.")) {

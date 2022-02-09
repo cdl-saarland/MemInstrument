@@ -21,8 +21,6 @@ namespace meminstrument {
 class PointerBoundsPolicy : public InstrumentationPolicy {
 
 public:
-  PointerBoundsPolicy(GlobalConfig &);
-
   auto getName() const -> const char * override;
 
   void classifyTargets(ITargetVector &, llvm::Instruction *) override;

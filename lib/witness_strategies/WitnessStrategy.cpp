@@ -7,16 +7,6 @@
 
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
-#include "meminstrument/witness_strategies/AfterInflowStrategy.h"
-#include "meminstrument/witness_strategies/NoneStrategy.h"
-
-#include "llvm/ADT/Statistic.h"
-#include "llvm/IR/Constant.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/IRBuilder.h"
-
-#include "meminstrument/pass/Util.h"
-
 using namespace meminstrument;
 using namespace llvm;
 

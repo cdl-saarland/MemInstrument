@@ -14,8 +14,9 @@
 #ifndef MEMINSTRUMENT_PASS_UTIL_H
 #define MEMINSTRUMENT_PASS_UTIL_H
 
-#include "llvm/IR/GlobalObject.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/Error.h"
 
 #define DEBUG_TYPE "meminstrument"
 
@@ -33,7 +34,36 @@
   } while (false)
 #endif
 
+namespace llvm {
+class Function;
+class GlobalObject;
+class Instruction;
+class Value;
+class DataLayout;
+template <typename T, unsigned> class SmallVector;
+class Type;
+} // namespace llvm
+
 namespace meminstrument {
+
+/// MemInstrument mechanism to report fatal errors.
+class MemInstrumentError : public llvm::ErrorInfo<MemInstrumentError> {
+public:
+  static char ID;
+
+  MemInstrumentError(const llvm::Twine &msg) : errorMessage(msg) {}
+
+  std::error_code convertToErrorCode() const override;
+
+  void log(llvm::raw_ostream &) const override;
+
+  [[noreturn]] static void report(const llvm::Twine &);
+
+  [[noreturn]] static void report(const llvm::Twine &, llvm::Value *);
+
+private:
+  const llvm::Twine &errorMessage;
+};
 
 /// Add metadata to a Value to indicate that it was introduced by the
 /// instrumentation and should therefore be ignored in further instrumentation

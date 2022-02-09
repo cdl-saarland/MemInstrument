@@ -25,8 +25,6 @@
 
 namespace meminstrument {
 
-struct GlobalConfig;
-
 struct WitnessGraphNode;
 
 class WitnessGraph;
@@ -39,8 +37,6 @@ class WitnessGraph;
 /// according to the WitnessStrategy.
 class WitnessStrategy {
 public:
-  WitnessStrategy(GlobalConfig &cfg) : globalConfig(cfg) {}
-
   virtual ~WitnessStrategy(void) {}
 
   /// Add the necessary WitnessGraphNodes for Witnesses for Node. This is
@@ -50,7 +46,8 @@ public:
 
   /// Optional method to simplify a WitnessGraph once constructed, e.g. by
   /// removing superfluous phis.
-  virtual void simplifyWitnessGraph(WitnessGraph &WG) const {}
+  virtual void simplifyWitnessGraph(InstrumentationMechanism &IM,
+                                    WitnessGraph &WG) const {}
 
   /// Use the InstrumentationMechanism to materialize the witness for Node.
   virtual void createWitness(InstrumentationMechanism &IM,
@@ -77,8 +74,6 @@ protected:
   static WitnessGraphNode *getInternalNode(WitnessGraph &WG,
                                            llvm::Value *Instrumentee,
                                            llvm::Instruction *Location);
-
-  GlobalConfig &globalConfig;
 };
 } // namespace meminstrument
 

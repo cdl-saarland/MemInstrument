@@ -7,9 +7,6 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 
-#include "meminstrument/Config.h"
-
-#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
@@ -32,23 +29,12 @@ static cl::opt<bool> IgnoreInlineASM(
     cl::desc("Ignore inline assembler (reduces the safety guarantees)"),
     cl::init(false));
 
-namespace {
-STATISTIC(NumUnsizedTypes, "[IP error] Number of module with unsized types");
-STATISTIC(InsertAggregateIntoAggregate,
-          "[IP error] Number of modules with sub-aggregate inserts");
-} // namespace
+InstrumentationPolicy::InstrumentationPolicy() {}
 
-InstrumentationPolicy::InstrumentationPolicy(GlobalConfig &cfg)
-    : globalConfig(cfg) {}
-
-bool InstrumentationPolicy::validateSize(Value *Ptr) {
+void InstrumentationPolicy::validateSize(Value *Ptr) {
   if (!hasPointerAccessSize(Ptr)) {
-    ++NumUnsizedTypes;
-    LLVM_DEBUG(dbgs() << "Found pointer to unsized type: `" << *Ptr << "'!\n";);
-    globalConfig.noteError();
-    return false;
+    MemInstrumentError::report("Found pointer to unsized type: ", Ptr);
   }
-  return true;
 }
 
 bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(
@@ -56,7 +42,7 @@ bool InstrumentationPolicy::insertCheckTargetsForIntrinsic(
   switch (II->getIntrinsicID()) {
   case Intrinsic::memcpy:
     // TODO we could add a CallInvariant target here to ensure that src and dest
-    // don't overlap. Note however that splat/lowfat cannot yet handle
+    // don't overlap. Note however that splay/lowfat cannot yet handle
     // CallInvariants.
   case Intrinsic::memmove: {
     auto *MT = cast<MemTransferInst>(II);
@@ -87,10 +73,7 @@ void InstrumentationPolicy::insertCheckTargetsLoadStore(ITargetVector &Dest,
   auto PtrOp = isa<LoadInst>(Inst) ? cast<LoadInst>(Inst)->getPointerOperand()
                                    : cast<StoreInst>(Inst)->getPointerOperand();
 
-  if (!validateSize(PtrOp)) {
-    return;
-  }
-
+  validateSize(PtrOp);
   Dest.push_back(ITargetBuilder::createSpatialCheckTarget(PtrOp, Inst));
 }
 
@@ -111,8 +94,11 @@ void InstrumentationPolicy::insertCheckTargetsForCall(ITargetVector &dest,
     if (IgnoreInlineASM) {
       return;
     }
-    globalConfig.noteError();
-    return;
+
+    MemInstrumentError::report(
+        "Found inline assembler (to ignore inline "
+        "assembler, use `-mi-policy-ignore-inline-asm`): ",
+        call);
   }
 
   // Create a target to check the validity of the pointer value called
@@ -150,8 +136,8 @@ void InstrumentationPolicy::insertInvariantTargetInsertVal(
   // If the inserted value is an aggregate, we are operating on a complex
   // aggregate, skip for now
   if (iValOp->getType()->isAggregateType()) {
-    ++InsertAggregateIntoAggregate;
-    return;
+    MemInstrumentError::report(
+        "Sub-aggregate inserts are not supported.\nInsertion found: ", iVal);
   }
 
   // Non-pointer inserts do not matter

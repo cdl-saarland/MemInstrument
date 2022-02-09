@@ -13,7 +13,6 @@
 #ifndef MEMINSTRUMENT_INSTRUMENTATION_POLICIES_NONEPOLICY_H
 #define MEMINSTRUMENT_INSTRUMENTATION_POLICIES_NONEPOLICY_H
 
-#include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 #include "meminstrument/pass/ITarget.h"
 
@@ -28,9 +27,6 @@ public:
                                llvm::Instruction *Loc) override;
 
   virtual const char *getName(void) const override { return "None"; }
-
-  NonePolicy(GlobalConfig &cfg, const llvm::DataLayout &)
-      : InstrumentationPolicy(cfg) {}
 };
 
 } // namespace meminstrument

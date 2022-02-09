@@ -61,6 +61,28 @@ void addMIMetadata(Value *V, const char *toAdd) {
 
 namespace meminstrument {
 
+char MemInstrumentError::ID = 0;
+
+std::error_code MemInstrumentError::convertToErrorCode() const {
+  return inconvertibleErrorCode();
+}
+
+void MemInstrumentError::log(raw_ostream &stream) const {
+  stream << "[Meminstrument Error] " << errorMessage;
+}
+
+void MemInstrumentError::report(const Twine &msg) {
+  ExitOnError()(make_error<MemInstrumentError>(msg));
+  llvm_unreachable("Error reporting failed.");
+}
+
+void MemInstrumentError::report(const Twine &msg, Value *val) {
+  auto str = msg.str();
+  raw_string_ostream stream(str);
+  stream << *val;
+  MemInstrumentError::report(str);
+}
+
 void setNoInstrument(Value *V) { addMIMetadata(V, NOINSTRUMENT_MD); }
 
 void setVarArgHandling(Value *V) { addMIMetadata(V, VARARG_MD); }

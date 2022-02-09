@@ -59,7 +59,14 @@ void DominanceBasedCheckRemovalPass::updateITargetsForFunction(
   // Make sure that the invariants can be optimized similar to checks in case
   // this is requested.
   if (OptimizeInvariants) {
-    assert(mip.getConfig().getInstrumentationMechanism().invariantsAreChecks());
+    auto &IM = mip.getConfig().getInstrumentationMechanism();
+    if (!IM.invariantsAreChecks()) {
+      MemInstrumentError::report("The instrumentation mechanism `" +
+                                 Twine(IM.getName()) +
+                                 "` does not support optimizing invariants the "
+                                 "same way as checks. Don't "
+                                 "use -mi-opt-dominance-optimize-invariants.");
+    }
   }
 
   for (auto &target : targets) {

@@ -1,8 +1,6 @@
-// RUN: %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -mi-sb-inttoptr-disallow -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %not %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -mi-sb-inttoptr-disallow -emit-llvm -o - 2>&1 | %filecheck %s
 
-// CHECK-NOT: Insert metadata store
-
-// REQUIRES: asserts
+// CHECK: Meminstrument Error{{.*}}Integer to pointer cast found{{.*}}
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -21,8 +21,6 @@
 
 namespace meminstrument {
 
-class GlobalConfig;
-
 /// Subclasses of this abstract class describe where memory safety checks
 /// should be placed.
 /// This class is not concerned with how these checks are implemented, refer to
@@ -40,14 +38,12 @@ public:
   virtual ~InstrumentationPolicy(void) {}
 
 protected:
-  GlobalConfig &globalConfig;
-
-  InstrumentationPolicy(GlobalConfig &cfg);
+  InstrumentationPolicy();
 
   /// Helper function to check whether Ptr is a Value with type pointer
   /// pointing to some type with a size. If this is not the case, an error is
-  /// noted and false is returned.
-  bool validateSize(llvm::Value *Ptr);
+  /// reported.
+  void validateSize(llvm::Value *Ptr);
 
   /// Create check targets for the given intrinsic.
   bool insertCheckTargetsForIntrinsic(ITargetVector &Dest,

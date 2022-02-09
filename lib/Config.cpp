@@ -20,7 +20,6 @@
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 #include "meminstrument/witness_strategies/NoneStrategy.h"
 
-#include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CommandLine.h"
 
 #include <cstdlib>
@@ -33,8 +32,6 @@ using namespace llvm;
 using namespace meminstrument;
 
 namespace {
-
-STATISTIC(ErrorsStat, "Number of errors that occurred during instrumentation");
 
 cl::OptionCategory
     MemInstrumentCat("MemInstrument Options",
@@ -140,17 +137,16 @@ cl::opt<IPKind> IPOpt(
                           "stores, calls, function arguments)")),
     cl::cat(MemInstrumentCat), cl::init(IPKind::default_val));
 
-InstrumentationPolicy *createInstrumentationPolicy(GlobalConfig &cfg, IPKind k,
-                                                   const DataLayout &DL) {
+InstrumentationPolicy *createInstrumentationPolicy(IPKind k) {
   switch (k) {
   case IPKind::beforeOutflow:
-    return new BeforeOutflowPolicy(cfg, DL);
+    return new BeforeOutflowPolicy();
   case IPKind::accessOnly:
-    return new AccessOnlyPolicy(cfg, DL);
+    return new AccessOnlyPolicy();
   case IPKind::none:
-    return new NonePolicy(cfg, DL);
+    return new NonePolicy();
   case IPKind::pointerBounds:
-    return new PointerBoundsPolicy(cfg);
+    return new PointerBoundsPolicy();
   case IPKind::default_val:
     return nullptr;
   }
@@ -170,12 +166,12 @@ cl::opt<WSKind> WSOpt(
                clEnumValN(WSKind::none, "none", "place no witnesses")),
     cl::cat(MemInstrumentCat), cl::init(WSKind::default_val));
 
-WitnessStrategy *createWitnessStrategy(GlobalConfig &cfg, WSKind k) {
+WitnessStrategy *createWitnessStrategy(WSKind k) {
   switch (k) {
   case WSKind::after_inflow:
-    return new AfterInflowStrategy(cfg);
+    return new AfterInflowStrategy();
   case WSKind::none:
-    return new NoneStrategy(cfg);
+    return new NoneStrategy();
   case WSKind::default_val:
     return nullptr;
   }
@@ -497,12 +493,11 @@ GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
   IMKind imk = X_OR_DEFAULT(IMKind, IMOpt, Cfg->getInstrumentationMechanism());
   instrumentationMechanism = createInstrumentationMechanism(*this, imk);
 
-  const DataLayout &DL = M.getDataLayout();
   IPKind ipk = X_OR_DEFAULT(IPKind, IPOpt, Cfg->getInstrumentationPolicy());
-  instrumentationPolicy = createInstrumentationPolicy(*this, ipk, DL);
+  instrumentationPolicy = createInstrumentationPolicy(ipk);
 
   WSKind wsk = X_OR_DEFAULT(WSKind, WSOpt, Cfg->getWitnessStrategy());
-  witnessStrategy = createWitnessStrategy(*this, wsk);
+  witnessStrategy = createWitnessStrategy(wsk);
 
 #undef X_OR_DEFAULT
 
@@ -571,10 +566,3 @@ void GlobalConfig::dump(raw_ostream &Stream) const {
   Stream << "         InstrumentVerbose: " << instrumentVerbose << '\n';
   Stream << "}}}\n\n";
 }
-
-void GlobalConfig::noteError(void) {
-  ++ErrorsStat;
-  ++numErrors;
-}
-
-bool GlobalConfig::hasErrors(void) const { return numErrors != 0; }

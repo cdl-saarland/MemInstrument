@@ -7,8 +7,6 @@
 
 #include "meminstrument/witness_strategies/NoneStrategy.h"
 
-#include "meminstrument/pass/Util.h"
-
 using namespace meminstrument;
 using namespace llvm;
 
@@ -30,5 +28,3 @@ void NoneStrategy::createWitness(InstrumentationMechanism &IM,
 
   IM.insertWitnesses(*(Node->Target));
 }
-
-void NoneStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {}

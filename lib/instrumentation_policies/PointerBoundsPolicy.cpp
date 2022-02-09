@@ -14,7 +14,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "meminstrument/instrumentation_policies/PointerBoundsPolicy.h"
-#include "meminstrument/Config.h"
 #include "meminstrument/pass/Util.h"
 
 #include "llvm/ADT/Statistic.h"
@@ -34,9 +33,6 @@ STATISTIC(NumComplexAggregateTypes, "Number of complex aggregates encountered");
 //===----------------------------------------------------------------------===//
 //                   Implementation of PointerBoundsPolicy
 //===----------------------------------------------------------------------===//
-
-PointerBoundsPolicy::PointerBoundsPolicy(GlobalConfig &config)
-    : InstrumentationPolicy(config) {}
 
 auto PointerBoundsPolicy::getName() const -> const char * {
   return "PointerBoundsPolicy";
@@ -208,8 +204,7 @@ void PointerBoundsPolicy::insertInvariantTargetAggregate(ITargetVector &vec,
 
   // No handling for nested aggregates implemented yet
   if (isNested(agg->getType())) {
-    globalConfig.noteError();
-    return;
+    MemInstrumentError::report("Found nested aggregate: ", agg);
   }
 
   // An invariant target is only required if the aggregate contains at least

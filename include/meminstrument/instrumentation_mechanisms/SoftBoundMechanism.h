@@ -275,11 +275,11 @@ private:
   /// identifies unproblematic vectors.
   bool isSimpleVectorTy(const llvm::VectorType *) const;
 
-  /// Check if the instruction is supported.
-  bool isUnsupportedInstruction(unsigned opCode) const;
+  /// Report an error if the instruction is unsupported.
+  void reportIfInstructionIsUnsupported(unsigned opCode) const;
 
-  /// Returns true iff the constant contains an integer to pointer cast.
-  bool containsUnsupportedOp(const llvm::Constant *) const;
+  /// Report an error if the constant is unsupported.
+  void reportIfConstantIsUnsupported(const llvm::Constant *) const;
 
   /// Compute the highest valid address. This is needed in case wide bounds are
   /// used.

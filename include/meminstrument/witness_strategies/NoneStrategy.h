@@ -23,14 +23,10 @@ namespace meminstrument {
 
 class NoneStrategy : public WitnessStrategy {
 public:
-  NoneStrategy(GlobalConfig &cfg) : WitnessStrategy(cfg) {}
+  virtual void addRequired(WitnessGraphNode *) const override;
 
-  virtual void addRequired(WitnessGraphNode *Node) const override;
-
-  virtual void simplifyWitnessGraph(WitnessGraph &WG) const override;
-
-  virtual void createWitness(InstrumentationMechanism &IM,
-                             WitnessGraphNode *Node) const override;
+  virtual void createWitness(InstrumentationMechanism &,
+                             WitnessGraphNode *) const override;
 
   virtual const char *getName(void) const override { return "None"; }
 };

@@ -93,10 +93,6 @@ public:
     delete witnessStrategy;
   }
 
-  void noteError(void);
-
-  bool hasErrors(void) const;
-
   GlobalConfig(const GlobalConfig &) = delete;
 
   GlobalConfig &operator=(const GlobalConfig &) = delete;
@@ -113,8 +109,6 @@ private:
   bool printWitnessGraph = false;
   bool simplifyWitnessGraph = false;
   bool instrumentVerbose = false;
-
-  uint64_t numErrors = 0;
 
   const char *configName;
 };

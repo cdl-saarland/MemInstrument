@@ -60,21 +60,6 @@ STATISTIC(IntToPtrCast, "Number of int to pointer casts");
 STATISTIC(PtrToIntCast,
           "[SB possible error source] Number of pointer to int casts");
 
-// The setup phase detected code in the module which will prevent the
-// instrumentation from making the program safe.
-STATISTIC(
-    SetupError,
-    "Number of modules for which the setup phase already detected problems");
-
-// Detailed statistics on which setup error occurred:
-
-STATISTIC(InAllocaArg,
-          "[SB setup error] Number of inalloca arguments encountered");
-STATISTIC(
-    ExceptionHandlingInst,
-    "[SB setup error] Number of exception handling instructions encountered");
-STATISTIC(IntToPtrCastError, "[SB setup error] Number of int to pointer casts");
-
 using namespace llvm;
 using namespace meminstrument;
 using namespace softbound;
@@ -126,8 +111,7 @@ void SoftBoundMechanism::initialize(Module &module) {
   // Currently only spatial safety is implemented, don't do anything if temporal
   // memory safety is requested.
   if (!InternalSoftBoundConfig::ensureOnlySpatial()) {
-    globalConfig.noteError();
-    return;
+    MemInstrumentError::report("Only spatial safety is currently supported.");
   }
 
   // Store the context and data layout to avoid looking it up all the time
@@ -141,10 +125,6 @@ void SoftBoundMechanism::initialize(Module &module) {
   // module (e.g. exception handling)
   checkModule(module);
 
-  if (globalConfig.hasErrors()) {
-    ++SetupError;
-  }
-
   // Insert the declarations for basic metadata and check functions
   insertFunDecls(module);
 
@@ -156,10 +136,6 @@ void SoftBoundMechanism::initialize(Module &module) {
 
   // Generate setup function that inserts metadata stores for global variables
   setUpGlobals(module);
-
-  if (globalConfig.hasErrors()) {
-    ++SetupError;
-  }
 }
 
 void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
@@ -252,10 +228,6 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
   if (isa<IntToPtrInst>(instrumentee)) {
     assert(IntToPtrHandling != BadPtrSrc::Disallow);
     std::tie(base, bound) = getBoundsForIntToPtrCast();
-  }
-
-  if (globalConfig.hasErrors()) {
-    return;
   }
 
   assert(base && bound);
@@ -623,11 +595,6 @@ void SoftBoundMechanism::setUpGlobals(Module &module) const {
     LLVM_DEBUG(dbgs() << "Handle initializer " << *glInit << "\n";);
     std::tie(base, bound) = handleInitializer(glInit, builder, global, Indices);
 
-    // An error already occurred, stop the initialization.
-    if (globalConfig.hasErrors()) {
-      break;
-    }
-
     if (glInit->getType()->isPointerTy()) {
       assert(base && bound);
       LLVM_DEBUG({
@@ -649,18 +616,14 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   Value *base = nullptr;
   Value *bound = nullptr;
 
-  if (globalConfig.hasErrors()) {
-    return std::make_pair(base, bound);
-  }
-
   if (isa<BlockAddress>(glInit)) {
     std::tie(base, bound) = getBoundsConst(glInit);
     return std::make_pair(base, bound);
   }
 
   if (isa<GlobalIndirectSymbol>(glInit)) {
-    globalConfig.noteError();
-    return std::make_pair(base, bound);
+    MemInstrumentError::report("Global indirection symbols are not supported: ",
+                               glInit);
   }
 
   // Return null bounds if a nullptr is explicitly stored somewhere
@@ -689,10 +652,13 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
       switch (constExpr->getOpcode()) {
       case Instruction::IntToPtr: {
         if (IntToPtrHandling == BadPtrSrc::Disallow) {
-          LLVM_DEBUG(
-              dbgs() << "Integer to pointer cast found, report an error.\n";);
-          globalConfig.noteError();
-          return std::make_pair(base, bound);
+          MemInstrumentError::report(
+              "Integer to pointer cast found. To disallow run-time accesses to "
+              "pointers casted from integers, use "
+              "`-mi-sb-inttoptr-null-bounds`. "
+              "To fully give up safety guarantees for accesses through this "
+              "pointer, use `-mi-sb-inttoptr-wide-bounds`.\nDetected cast: ",
+              constExpr);
         }
         return getBoundsForIntToPtrCast();
       }
@@ -735,8 +701,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
 
       // Only allow simple vector types that do not contain pointer values
       if (!isSimpleVectorTy(vecTy)) {
-        globalConfig.noteError();
-        return std::make_pair(base, bound);
+        MemInstrumentError::report(
+            "Vectors of pointers are not supported.\nFound: ", glInit);
       }
     }
 
@@ -1853,30 +1819,25 @@ bool SoftBoundMechanism::isSimpleVectorTy(const VectorType *vecTy) const {
   return true;
 }
 
-bool SoftBoundMechanism::containsUnsupportedOp(const Constant *cons) const {
+void SoftBoundMechanism::reportIfConstantIsUnsupported(
+    const Constant *cons) const {
   if (!isa<ConstantExpr>(cons)) {
-    return false;
+    return;
   }
 
   auto constExpr = cast<ConstantExpr>(cons);
-  if (isUnsupportedInstruction(constExpr->getOpcode())) {
-    return true;
-  }
+  reportIfInstructionIsUnsupported(constExpr->getOpcode());
 
   for (const auto &op : constExpr->operands()) {
-    if (containsUnsupportedOp(cast<Constant>(op))) {
-      return true;
-    }
+    reportIfConstantIsUnsupported(cast<Constant>(op));
   }
-  return false;
 }
 
-bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
+void SoftBoundMechanism::reportIfInstructionIsUnsupported(unsigned opC) const {
 
   // Bail if exception handling is involved
   if (Instruction::isExceptionalTerminator(opC)) {
-    ++ExceptionHandlingInst;
-    return true;
+    MemInstrumentError::report("Exception handling is unsupported.");
   }
 
   switch (opC) {
@@ -1887,24 +1848,25 @@ bool SoftBoundMechanism::isUnsupportedInstruction(unsigned opC) const {
     // abort on these casts, but keep track of them such that the problem is
     // clear.
     ++PtrToIntCast;
-    return false;
+    return;
   case Instruction::CatchPad:
   case Instruction::CleanupPad:
   case Instruction::LandingPad:
-    ++ExceptionHandlingInst;
-    return true;
+    MemInstrumentError::report("Exception handling is unsupported.");
   case Instruction::IntToPtr: {
     ++IntToPtrCast;
     if (IntToPtrHandling == BadPtrSrc::Disallow) {
-      ++IntToPtrCastError;
-      return true;
+      MemInstrumentError::report(
+          "Integer to pointer cast found. To disallow run-time accesses to "
+          "pointers casted from integers, use `-mi-sb-inttoptr-null-bounds`. "
+          "To fully give up safety guarantees for accesses through this "
+          "pointer, use `-mi-sb-inttoptr-wide-bounds`.");
     }
     break;
   }
   default:
     break;
   }
-  return false;
 }
 
 auto SoftBoundMechanism::determineHighestValidAddress() const -> uintptr_t {
@@ -1933,35 +1895,28 @@ void SoftBoundMechanism::checkModule(Module &module) {
       // emitted, so we cannot instrument them instead of calling the wrapper
       // (as there is - to the best of my knowledge - no guarantee that the
       // function will be inlined).
-      LLVM_DEBUG({
-        dbgs() << "Function " << fun.getName()
-               << " with `available_externally` linkage found, this should be "
-                  "prevented by the `EliminateAvailableExternallyPass` pass.\n";
-      });
-      globalConfig.noteError();
+      MemInstrumentError::report(
+          "Function `" + fun.getName() +
+          "` with `available_externally` linkage found, this should be "
+          "prevented by the `EliminateAvailableExternallyPass` pass.\n");
     }
 
     for (const auto &arg : fun.args()) {
       if (arg.hasInAllocaAttr()) {
-        ++InAllocaArg;
-        globalConfig.noteError();
+        MemInstrumentError::report("Found a function argument with `in_alloc` "
+                                   "attribute at function `" +
+                                   fun.getName() + "`.");
       }
     }
 
     for (const auto &bb : fun) {
       for (const Instruction &inst : bb) {
 
-        if (isUnsupportedInstruction(inst.getOpcode())) {
-          globalConfig.noteError();
-          return;
-        }
+        reportIfInstructionIsUnsupported(inst.getOpcode());
 
         for (const auto &arg : inst.operands()) {
           if (const auto &cons = dyn_cast<Constant>(arg)) {
-            if (containsUnsupportedOp(cons)) {
-              globalConfig.noteError();
-              return;
-            }
+            reportIfConstantIsUnsupported(cons);
           }
         }
       }

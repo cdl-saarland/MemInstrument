@@ -7,8 +7,6 @@
 
 #include "meminstrument/witness_strategies/AfterInflowStrategy.h"
 
-#include "meminstrument/Config.h"
-
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/Support/CommandLine.h"
@@ -30,17 +28,6 @@ STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
 
 STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
                                     "encountered");
-
-STATISTIC(NumUnsupportedConstExprs,
-          "[AIS error] Unsupported constant expressions");
-
-STATISTIC(NumUnsupportedConstVals,
-          "[AIS error] Unsupported constant values other than"
-          " constant expressions");
-
-STATISTIC(NumUnsupportedInsns, "[AIS error] Unsupported instructions");
-
-STATISTIC(NumUnsupportedValOps, "[AIS error] Unsupported value operands");
 
 cl::opt<bool> NoShareBoundsOpt(
     "mi-no-bounds-share",
@@ -77,20 +64,13 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
       Results.push_back(CE);
       break;
     default:
-      ++NumUnsupportedConstExprs;
-      LLVM_DEBUG(dbgs() << "Unsupported constant expression:\n"
-                        << *CE << "\n\n";);
-      globalConfig.noteError();
-      return;
+      MemInstrumentError::report("Unsupported constant expression: ", CE);
     }
 
     return;
   }
 
-  ++NumUnsupportedConstVals;
-  LLVM_DEBUG(dbgs() << "Unsupported constant value:\n" << *C << "\n\n";);
-  globalConfig.noteError();
-  return;
+  MemInstrumentError::report("Unsupported constant value: ", C);
 }
 
 void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
@@ -212,11 +192,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::ShuffleVector:
       ++NumPtrVectorInstructions; // fallthrough
     default:
-      ++NumUnsupportedInsns;
-      LLVM_DEBUG(dbgs() << "Unsupported instruction:\n"
-                        << *Instrumentee << "\n\n";);
-      globalConfig.noteError();
-      return;
+      MemInstrumentError::report("Unsupported instruction: ", Instrumentee);
     }
   }
 
@@ -256,11 +232,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
-  ++NumUnsupportedValOps;
-  LLVM_DEBUG(dbgs() << "Unsupported value operand:\n"
-                    << *toInstrument << "\n\n";);
-  globalConfig.noteError();
-  return;
+  MemInstrumentError::report("Unsupported value operand: ", toInstrument);
 }
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,
@@ -522,9 +494,16 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 }
 } // namespace
 
-void AfterInflowStrategy::simplifyWitnessGraph(WitnessGraph &WG) const {
+void AfterInflowStrategy::simplifyWitnessGraph(InstrumentationMechanism &IM,
+                                               WitnessGraph &WG) const {
 
-  assert(globalConfig.getInstrumentationMechanism().invariantsAreChecks());
+  if (!IM.invariantsAreChecks()) {
+    MemInstrumentError::report("The instrumentation mechanism `" +
+                               Twine(IM.getName()) +
+                               "` does not support optimizing invariants the "
+                               "same way as checks. Don't "
+                               "use -mi-simplify-witnessgraph.");
+  }
 
   // Check whether the value of the instrumentee is definitely the same as
   // when we extracted its witness. In this case, we can skip inbounds checks
