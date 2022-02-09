@@ -7,8 +7,7 @@
 
 #include "meminstrument/instrumentation_policies/InstrumentationPolicy.h"
 
-#include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
-#include "meminstrument/instrumentation_policies/BeforeOutflowPolicy.h"
+#include "meminstrument/Config.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"

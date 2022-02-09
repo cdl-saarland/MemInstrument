@@ -118,8 +118,8 @@ static cl::opt<BadPtrSrc> ZeroSizedArrayHandling(
 //                   Implementation of SoftBoundMechanism
 //===----------------------------------------------------------------------===//
 
-SoftBoundMechanism::SoftBoundMechanism(GlobalConfig &config)
-    : InstrumentationMechanism(config) {}
+SoftBoundMechanism::SoftBoundMechanism(GlobalConfig &cfg)
+    : InstrumentationMechanism(cfg) {}
 
 void SoftBoundMechanism::initialize(Module &module) {
 

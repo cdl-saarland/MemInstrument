@@ -33,9 +33,9 @@ struct NoopWitness : public Witness {
 
 class NoopMechanism : public InstrumentationMechanism {
 public:
-  NoopMechanism(GlobalConfig &CFG) : InstrumentationMechanism(CFG) {}
+  NoopMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
 
-  virtual void insertWitnesses(ITarget &Target) const override;
+  virtual void insertWitnesses(ITarget &) const override;
 
   virtual WitnessPtr
   getRelocatedClone(const Witness &,

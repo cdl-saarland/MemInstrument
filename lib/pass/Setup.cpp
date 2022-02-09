@@ -295,7 +295,7 @@ void markFunctionsToSkip(Module &module) {
 
   // Read the function names from the file
   const auto &content = fileContent.get();
-  llvm::SmallVector<std::string, 5> toIgnore;
+  SmallVector<std::string, 5> toIgnore;
   for (auto lineIt = line_iterator(*content.get(), true, '#');
        !lineIt.is_at_end(); lineIt++) {
     auto funName = lineIt->trim();
@@ -386,7 +386,7 @@ bool valIsActuallyPtr(const Instruction *inst) {
     }
   }
 
-  llvm::DenseSet<const Value *> seen;
+  DenseSet<const Value *> seen;
   while (!workList.empty()) {
     const Value *item = workList.back();
     workList.pop_back();
@@ -426,7 +426,7 @@ auto getSrcIfHasUsageAsPtr(Value *val) -> Value * {
   SmallVector<Value *, 15> workList;
   workList.push_back(val);
 
-  llvm::DenseSet<Value *> seen;
+  DenseSet<Value *> seen;
   while (!workList.empty()) {
     Value *item = workList.back();
     workList.pop_back();

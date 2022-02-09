@@ -35,7 +35,7 @@ struct RuntimeStatWitness : public Witness {
 
 class RuntimeStatMechanism : public InstrumentationMechanism {
 public:
-  RuntimeStatMechanism(GlobalConfig &CFG) : InstrumentationMechanism(CFG) {}
+  RuntimeStatMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
 
   virtual void insertWitnesses(ITarget &Target) const override;
 

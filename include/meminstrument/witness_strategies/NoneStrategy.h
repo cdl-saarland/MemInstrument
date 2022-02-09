@@ -19,9 +19,6 @@
 #include "meminstrument/pass/WitnessGraph.h"
 #include "meminstrument/witness_strategies/WitnessStrategy.h"
 
-#include "llvm/IR/Instruction.h"
-#include "llvm/IR/Value.h"
-
 namespace meminstrument {
 
 class NoneStrategy : public WitnessStrategy {

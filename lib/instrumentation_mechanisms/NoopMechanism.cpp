@@ -14,8 +14,6 @@
 #include "llvm/IR/Value.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
-#include "meminstrument/Config.h"
-
 #include "meminstrument/pass/Util.h"
 
 STATISTIC(NoopMechanismAnnotated, "The number of full bound checks placed");
@@ -142,7 +140,6 @@ void NoopMechanism::initialize(Module &M) {
 
 WitnessPtr NoopMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
-  return nullptr;
 }
 
 void NoopMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
@@ -153,7 +150,6 @@ void NoopMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
 WitnessPtr NoopMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
                                            WitnessPtr &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
-  return nullptr;
 }
 
 bool NoopMechanism::invariantsAreChecks() const { return false; }

@@ -9,10 +9,12 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalObject.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/Metadata.h"
-
-#include "meminstrument/Config.h"
 
 using namespace llvm;
 using namespace meminstrument;

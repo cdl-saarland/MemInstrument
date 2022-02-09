@@ -7,8 +7,6 @@
 
 #include "meminstrument/instrumentation_mechanisms/LowfatMechanism.h"
 
-#include "meminstrument/Config.h"
-
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
