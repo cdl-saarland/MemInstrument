@@ -16,6 +16,7 @@
 #include "meminstrument/pass/ITarget.h"
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 
@@ -82,13 +83,23 @@ private:
   llvm::FunctionCallee CheckOOBFunction = nullptr;
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
+  llvm::FunctionCallee StackMirrorFunction = nullptr;
+  llvm::FunctionCallee StackSizesFunction = nullptr;
+  llvm::FunctionCallee StackOffsetFunction = nullptr;
+  llvm::FunctionCallee StackMaskFunction = nullptr;
 
   llvm::Type *WitnessType = nullptr;
   llvm::Type *PtrArgType = nullptr;
   llvm::Type *SizeType = nullptr;
 
-  void initTypes(llvm::LLVMContext &Ctx);
-  void insertFunctionDeclarations(llvm::Module &M);
+  void initTypes(llvm::LLVMContext &);
+  void insertFunctionDeclarations(llvm::Module &);
+  void instrumentAlloca(llvm::AllocaInst *) const;
+  void handleVariableLengthArray(llvm::AllocaInst *) const;
+  void mirrorPointerAndReplaceAlloca(llvm::IRBuilder<> &,
+                                     llvm::AllocaInst *oldAlloc,
+                                     llvm::Instruction *newAlloc,
+                                     llvm::Value *offset) const;
 };
 
 } // namespace meminstrument
