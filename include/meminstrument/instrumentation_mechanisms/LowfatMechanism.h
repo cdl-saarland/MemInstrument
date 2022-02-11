@@ -49,15 +49,15 @@ class LowfatMechanism : public InstrumentationMechanism {
 public:
   LowfatMechanism(GlobalConfig &cfg) : InstrumentationMechanism(cfg) {}
 
-  virtual void insertWitnesses(ITarget &Target) const override;
+  virtual void insertWitnesses(ITarget &) const override;
 
   virtual WitnessPtr
   getRelocatedClone(const Witness &,
                     llvm::Instruction *location) const override;
 
-  virtual void insertCheck(ITarget &Target) const override;
+  virtual void insertCheck(ITarget &) const override;
 
-  virtual void materializeBounds(ITarget &Target) override;
+  virtual void materializeBounds(ITarget &) override;
 
   virtual llvm::FunctionCallee getFailFunction(void) const override;
 
@@ -71,7 +71,7 @@ public:
                                       WitnessPtr &TrueWitness,
                                       WitnessPtr &FalseWitness) const override;
 
-  virtual void initialize(llvm::Module &M) override;
+  virtual void initialize(llvm::Module &) override;
 
   virtual const char *getName(void) const override { return "Lowfat"; }
 
