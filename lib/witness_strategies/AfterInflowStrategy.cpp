@@ -26,9 +26,6 @@ namespace {
 STATISTIC(NumITargetsRemovedWGSimplify, "The # of inbounds targets discarded "
                                         "because of witness graph information");
 
-STATISTIC(NumPtrVectorInstructions, "The # of vector operations on pointers "
-                                    "encountered");
-
 cl::opt<bool> NoShareBoundsOpt(
     "mi-no-bounds-share",
     cl::desc(
@@ -190,7 +187,9 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     case Instruction::ExtractElement:
     case Instruction::InsertElement:
     case Instruction::ShuffleVector:
-      ++NumPtrVectorInstructions; // fallthrough
+      MemInstrumentError::report(
+          "Vector instructions on pointers are unsupported. Found: ",
+          Instrumentee);
     default:
       MemInstrumentError::report("Unsupported instruction: ", Instrumentee);
     }
