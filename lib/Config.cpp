@@ -228,11 +228,6 @@ cl::opt<cl::boolOrDefault>
                          cl::cat(MemInstrumentCat));
 
 cl::opt<cl::boolOrDefault>
-    SimplifyWitnessGraphOpt("mi-simplify-witnessgraph",
-                            cl::desc("Enable witness graph simplifications"),
-                            cl::cat(MemInstrumentCat));
-
-cl::opt<cl::boolOrDefault>
     InstrumentVerboseOpt("mi-verbose", cl::desc("Use verbose check functions"),
                          cl::cat(MemInstrumentCat));
 
@@ -326,7 +321,6 @@ public:
   virtual WSKind getWitnessStrategy(void) const = 0;
   virtual MIMode getMIMode(void) const = 0;
   virtual bool hasPrintWitnessGraph(void) const = 0;
-  virtual bool hasSimplifyWitnessGraph(void) const = 0;
   virtual bool hasInstrumentVerbose(void) const = 0;
   virtual const char *getName(void) const = 0;
 
@@ -352,7 +346,6 @@ public:
     return MIMode::GENERATE_CHECKS;
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
-  virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
   virtual const char *getName(void) const override { return "Splay"; }
 };
@@ -389,7 +382,6 @@ public:
     return MIMode::GENERATE_CHECKS;
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
-  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return true; }
   virtual const char *getName(void) const override { return "RTStat"; }
 };
@@ -413,7 +405,6 @@ public:
     return MIMode::GENERATE_CHECKS;
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
-  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
   virtual const char *getName(void) const override { return "Noop"; }
 };
@@ -436,7 +427,6 @@ public:
     return MIMode::GENERATE_CHECKS;
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
-  virtual bool hasSimplifyWitnessGraph(void) const override { return true; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
   virtual const char *getName(void) const override { return "Lowfat"; }
 };
@@ -459,7 +449,6 @@ public:
     return MIMode::GENERATE_CHECKS;
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
-  virtual bool hasSimplifyWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
   virtual const char *getName(void) const override { return "SoftBound"; }
 };
@@ -509,8 +498,6 @@ GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
 
   printWitnessGraph =
       getValOrDefault(PrintWitnessGraphOpt, Cfg->hasPrintWitnessGraph());
-  simplifyWitnessGraph =
-      getValOrDefault(SimplifyWitnessGraphOpt, Cfg->hasSimplifyWitnessGraph());
   instrumentVerbose =
       getValOrDefault(InstrumentVerboseOpt, Cfg->hasInstrumentVerbose());
 
@@ -562,7 +549,6 @@ void GlobalConfig::dump(raw_ostream &Stream) const {
          << instrumentationMechanism->getName() << '\n';
   Stream << "                      Mode: " << getModeName(mode) << '\n';
   Stream << "         PrintWitnessGraph: " << printWitnessGraph << '\n';
-  Stream << "      SimplifyWitnessGraph: " << simplifyWitnessGraph << '\n';
   Stream << "         InstrumentVerbose: " << instrumentVerbose << '\n';
   Stream << "}}}\n\n";
 }

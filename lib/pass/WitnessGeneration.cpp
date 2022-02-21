@@ -38,12 +38,10 @@ void meminstrument::generateWitnesses(GlobalConfig &CFG, ITargetVector &Vec,
     WG.dumpDotGraph(("wg." + F.getName() + ".dot").str());
   }
 
-  if (CFG.hasSimplifyWitnessGraph()) {
-    WS.simplifyWitnessGraph(IM, WG);
+  WS.simplifyWitnessGraph(IM, WG);
 
-    if (CFG.hasPrintWitnessGraph()) {
-      WG.dumpDotGraph(("wg.simplified." + F.getName() + ".dot").str());
-    }
+  if (CFG.hasPrintWitnessGraph()) {
+    WG.dumpDotGraph(("wg.simplified." + F.getName() + ".dot").str());
   }
 
   WG.createWitnesses(IM);

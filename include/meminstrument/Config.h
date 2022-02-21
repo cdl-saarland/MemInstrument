@@ -69,8 +69,6 @@ public:
 
   bool hasPrintWitnessGraph(void) { return printWitnessGraph; }
 
-  bool hasSimplifyWitnessGraph(void) { return simplifyWitnessGraph; }
-
   bool hasInstrumentVerbose(void) { return instrumentVerbose; }
 
   uint32_t getNoopGenBoundsTime(void);
@@ -107,7 +105,6 @@ private:
   MIMode mode = MIMode::DEFAULT;
 
   bool printWitnessGraph = false;
-  bool simplifyWitnessGraph = false;
   bool instrumentVerbose = false;
 
   const char *configName;

@@ -32,6 +32,12 @@ cl::opt<bool> NoShareBoundsOpt(
         "Materialize bounds so that multiple targets can have the same bounds"),
     cl::init(false));
 
+cl::opt<bool> OptimizeWitnessGraph(
+    "mi-ais-optimize-witness-graph",
+    cl::desc("Optimize the witnessgraph. Remove invariants whenever a pointer "
+             "value did not change since its last check/inflow."),
+    cl::init(false));
+
 } // namespace
 
 void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
@@ -495,6 +501,10 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
 void AfterInflowStrategy::simplifyWitnessGraph(InstrumentationMechanism &IM,
                                                WitnessGraph &WG) const {
+
+  if (!OptimizeWitnessGraph) {
+    return;
+  }
 
   if (!IM.invariantsAreChecks()) {
     MemInstrumentError::report("The instrumentation mechanism `" +
