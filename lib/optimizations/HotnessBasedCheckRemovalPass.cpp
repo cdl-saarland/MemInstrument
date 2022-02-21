@@ -43,12 +43,6 @@ cl::opt<int> RandomFilteringSeedOpt("mi-opt-hotness-random-filter-seed",
                                     cl::init(424242) // default
 );
 
-cl::opt<bool> InvariantsAreChecks(
-    "mi-opt-hotness-invariant-is-check",
-    cl::desc("Assume that invariants are (one byte) checks (holds for splay "
-             "and lowfat, but not for softbound)"),
-    cl::init(false));
-
 STATISTIC(HotnessCheckRemoved, "The # checks filtered by hotness");
 
 //===--------------------------- ModulePass -------------------------------===//
@@ -118,12 +112,9 @@ void HotnessBasedCheckRemovalPass::updateITargetsForModule(
       // is no hotness index available.
       auto loc = target->getLocation();
       if (isa<LoadInst>(loc) || isa<StoreInst>(loc)) {
-        if (!InvariantsAreChecks) {
-          // TODO disallow skipping this check for Softbound (same issues with
-          // the dom opt)
-          if (!target->isCheck()) {
-            continue;
-          }
+        // Optimize only checks
+        if (!target->isCheck()) {
+          continue;
         }
 
         cpy.push_back(target);
