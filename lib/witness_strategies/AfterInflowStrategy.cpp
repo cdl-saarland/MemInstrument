@@ -511,7 +511,7 @@ void AfterInflowStrategy::simplifyWitnessGraph(InstrumentationMechanism &IM,
                                Twine(IM.getName()) +
                                "` does not support optimizing invariants the "
                                "same way as checks. Don't "
-                               "use -mi-simplify-witnessgraph.");
+                               "use -mi-ais-optimize-witness-graph.");
   }
 
   // Check whether the value of the instrumentee is definitely the same as
