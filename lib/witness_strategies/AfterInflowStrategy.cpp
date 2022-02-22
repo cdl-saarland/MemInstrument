@@ -483,11 +483,6 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
     }
   }
 
-  if (N->Target->hasInstrumentee() &&
-      isa<ExtractElementInst>(N->Target->getInstrumentee())) {
-    return false;
-  }
-
   for (auto *req : N->getRequiredNodes()) {
     bool res = didNotChangeSinceWitness(Seen, req);
     if (!res) {
