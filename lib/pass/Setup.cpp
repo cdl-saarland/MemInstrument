@@ -512,7 +512,9 @@ void transformObfuscatedLoad(LoadInst *load) {
   auto ptrToPtrCast = builder.CreateBitCast(
       load->getPointerOperand(),
       PointerType::getUnqual(PointerType::getInt8PtrTy(load->getContext())));
-  setPointerDeobfuscation(ptrToPtrCast);
+  if (canHoldMetadata(ptrToPtrCast)) {
+    setPointerDeobfuscation(ptrToPtrCast);
+  }
 
   auto ptrLoad = builder.CreateLoad(ptrToPtrCast, "mi.deobfuscated.ptr.load");
   setPointerDeobfuscation(ptrLoad);
