@@ -67,13 +67,13 @@ void AfterInflowStrategy::getPointerOperands(std::vector<Value *> &Results,
       Results.push_back(CE);
       break;
     default:
-      MemInstrumentError::report("Unsupported constant expression: ", CE);
+      llvm_unreachable("Unexpected constant expression encountered.");
     }
 
     return;
   }
 
-  MemInstrumentError::report("Unsupported constant value: ", C);
+  llvm_unreachable("Unexpected constant value encountered.");
 }
 
 void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
@@ -197,7 +197,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
           "Vector instructions on pointers are unsupported. Found: ",
           Instrumentee);
     default:
-      MemInstrumentError::report("Unsupported instruction: ", Instrumentee);
+      llvm_unreachable("Unknown instruction encountered.");
     }
   }
 
@@ -237,7 +237,7 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     return;
   }
 
-  MemInstrumentError::report("Unsupported value operand: ", toInstrument);
+  llvm_unreachable("Unexpected value operand encountered.");
 }
 
 void AfterInflowStrategy::createWitness(InstrumentationMechanism &IM,

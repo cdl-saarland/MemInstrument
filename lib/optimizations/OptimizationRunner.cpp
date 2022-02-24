@@ -97,7 +97,7 @@ void OptimizationRunner::addRequiredAnalyses(AnalysisUsage &analysisUsage) {
       break;
     case InstrumentationOptimizations::pico_checkopt:
 #if !PICO_AVAILABLE
-      llvm_unreachable("PICO selected but not available.");
+      MemInstrumentError::report("PICO selected but not available.");
 #else
       analysisUsage.addRequired<ScalarEvolutionWrapperPass>();
       analysisUsage.addRequired<pmda::PMDA>();
@@ -106,7 +106,7 @@ void OptimizationRunner::addRequiredAnalyses(AnalysisUsage &analysisUsage) {
       break;
 
     default:
-      llvm_unreachable("Unhandled optimization option");
+      llvm_unreachable("Unknown optimization option");
       break;
     }
   }
@@ -138,7 +138,7 @@ auto OptimizationRunner::computeSelectedOpts(MemInstrumentPass &mi)
       break;
     case InstrumentationOptimizations::pico_checkopt:
 #if !PICO_AVAILABLE
-      llvm_unreachable("PICO selected but not available.");
+      MemInstrumentError::report("PICO selected but not available.");
 #else
       opts.push_back(&mi.getAnalysis<pico::PICO>());
 #endif

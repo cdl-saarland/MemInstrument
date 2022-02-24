@@ -316,7 +316,6 @@ void RuntimeStatMechanism::initialize(Module &M) {
 
 WitnessPtr RuntimeStatMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
-  return nullptr;
 }
 
 void RuntimeStatMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
@@ -327,7 +326,6 @@ void RuntimeStatMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
 WitnessPtr RuntimeStatMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
                                                   WitnessPtr &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
-  return nullptr;
 }
 
 bool RuntimeStatMechanism::invariantsAreChecks() const { return false; }

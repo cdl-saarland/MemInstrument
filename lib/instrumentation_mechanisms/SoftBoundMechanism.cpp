@@ -384,9 +384,10 @@ auto SoftBoundMechanism::getExtCheckCounterFunction() const -> FunctionCallee {
   if (InternalSoftBoundConfig::hasRunTimeStatsEnabled()) {
     return handles.externalCheckCounter;
   }
-  llvm_unreachable("Misconfiguration: The run-time needs to be configured to "
-                   "collect run-time statistics (ENABLE_RT_STATS) in order to "
-                   "provide the external checks counter function.");
+  MemInstrumentError::report(
+      "Misconfiguration: The run-time needs to be configured to collect "
+      "run-time statistics in order to provide the external checks counter "
+      "function. Use `MIRT_STATISTICS` to build it.");
 }
 
 auto SoftBoundMechanism::getName() const -> const char * { return "SoftBound"; }
@@ -622,8 +623,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   }
 
   if (isa<GlobalIndirectSymbol>(glInit)) {
-    MemInstrumentError::report("Global indirection symbols are not supported: ",
-                               glInit);
+    MemInstrumentError::report(
+        "Implementation for global indirect symbols is missing: ", glInit);
   }
 
   // Return null bounds if a nullptr is explicitly stored somewhere
@@ -655,9 +656,9 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
           MemInstrumentError::report(
               "Integer to pointer cast found. To disallow run-time accesses to "
               "pointers casted from integers, use "
-              "`-mi-sb-inttoptr-null-bounds`. "
-              "To fully give up safety guarantees for accesses through this "
-              "pointer, use `-mi-sb-inttoptr-wide-bounds`.\nDetected cast: ",
+              "`-mi-sb-inttoptr-null-bounds`. To fully give up safety "
+              "guarantees for accesses through this pointer, use "
+              "`-mi-sb-inttoptr-wide-bounds`.\nDetected cast: ",
               constExpr);
         }
         return getBoundsForIntToPtrCast();
@@ -673,13 +674,12 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
         return std::make_pair(base, bound);
       }
       default:
-        llvm_unreachable("Unimplemented constant expression with pointer type");
+        llvm_unreachable("Unexpected constant expression with pointer type.");
       }
     }
-
     llvm_unreachable(
-        "Unimplemented constant expression with non-pointer/-integer/-float "
-        "type that is not constant data");
+        "Unexpected constant expression with non-pointer/-integer/-float "
+        "type that is not constant data.");
   }
 
   if (isa<GlobalObject>(glInit)) {
@@ -691,9 +691,8 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
     if (isa<Function>(glInit)) {
       return getBoundsForFun(glInit);
     }
-
-    llvm_unreachable(
-        "Global object was neither a function nor a global variable.");
+    llvm_unreachable("Unexpected global object that was neither a function nor "
+                     "a global variable.");
   }
 
   if (ConstantAggregate *ag = dyn_cast<ConstantAggregate>(glInit)) {
@@ -739,7 +738,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
     return std::make_pair(base, bound);
   }
 
-  llvm_unreachable("Unimplemented constant global initializer.");
+  llvm_unreachable("Unexpected constant global initializer.");
 }
 
 void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
@@ -849,7 +848,9 @@ void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
   }
 
   if (isa<GlobalVariable>(instrumentee)) {
-    llvm_unreachable("Implementation for va_lists stored in globals missing");
+    MemInstrumentError::report(
+        "Implementation for va_lists stored in globals missing. Found: ",
+        instrumentee);
   }
 
   if (!proxyPtr) {
@@ -1347,7 +1348,8 @@ auto SoftBoundMechanism::getBoundsForWitness(Constant *constant) const
   }
 
   if (isa<GlobalIndirectSymbol>(constant)) {
-    llvm_unreachable("Global indirect symbols are not handled.");
+    MemInstrumentError::report(
+        "Implementation for global indirect symbols is missing: ", constant);
   }
 
   if (ConstantExpr *constExpr = dyn_cast<ConstantExpr>(constant)) {
@@ -1367,12 +1369,12 @@ auto SoftBoundMechanism::getBoundsForWitness(Constant *constant) const
         return getBoundsForWitness(ptrOp);
       }
       default:
-        llvm_unreachable("Unimplemented constant expression with pointer type");
+        llvm_unreachable("Unexpected constant expression with pointer type.");
       }
     }
   }
 
-  llvm_unreachable("Unhandled case when constructing bound witnesses");
+  llvm_unreachable("Unexpected case when constructing bound witnesses.");
 }
 
 auto SoftBoundMechanism::insertMetadataLoad(IRBuilder<> &builder,
@@ -1579,7 +1581,7 @@ auto SoftBoundMechanism::computeShadowStackLocation(const Argument *arg) const
   }
 
   llvm_unreachable(
-      "Argument not found, shadow stack location cannot be determined");
+      "Argument not found, shadow stack location cannot be determined.");
 }
 
 auto SoftBoundMechanism::computeShadowStackLocation(const CallBase *call,
@@ -1610,7 +1612,7 @@ auto SoftBoundMechanism::computeShadowStackLocation(const CallBase *call,
   }
 
   llvm_unreachable(
-      "Argument not found, shadow stack location cannot be determined");
+      "Argument not found, shadow stack location cannot be determined.");
 }
 
 auto SoftBoundMechanism::determineNumberOfPointers(const Type *ty) const
@@ -1903,9 +1905,10 @@ void SoftBoundMechanism::checkModule(Module &module) {
 
     for (const auto &arg : fun.args()) {
       if (arg.hasInAllocaAttr()) {
-        MemInstrumentError::report("Found a function argument with `in_alloc` "
-                                   "attribute at function `" +
-                                   fun.getName() + "`.");
+        MemInstrumentError::report(
+            "Found a function argument with `in_alloc` attribute at function "
+            "`" +
+            fun.getName() + "`. Implementation for this feature is missing.");
       }
     }
 
