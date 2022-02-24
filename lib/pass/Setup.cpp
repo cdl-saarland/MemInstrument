@@ -255,11 +255,11 @@ void transformByValFunctions(Module &module) {
         if (auto *cb = dyn_cast<CallBase>(&inst)) {
           if (cb->hasByValArgument()) {
 
-            assert(cb->getCalledFunction());
-
-            if (cb->getCalledFunction()->isVarArg()) {
+            if (cb->getFunctionType()->isVarArg()) {
+              auto calledFun = cb->getCalledFunction();
+              auto name = calledFun ? calledFun->getName() : "?";
               MemInstrumentError::report(
-                  "Function `" + cb->getCalledFunction()->getName() +
+                  "Function `" + name +
                   "` has varargs and byvalue arguments. Safety for these "
                   "arguments cannot be assured.");
             }
