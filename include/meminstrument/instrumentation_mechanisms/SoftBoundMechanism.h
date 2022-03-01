@@ -114,7 +114,7 @@ private:
       -> std::pair<llvm::Value *, llvm::Value *>;
 
   /// Insert code that determines the witness for varargs.
-  void insertVarArgWitness(IntermediateIT &) const;
+  void insertVarArgWitness(SourceIT &) const;
 
   /// Handles invariant targets that we use for metadata propagation. It
   /// produces stores to propagate bounds and inserts allocations for metadata

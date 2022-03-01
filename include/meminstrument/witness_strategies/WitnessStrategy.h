@@ -74,6 +74,12 @@ protected:
   static WitnessGraphNode *getInternalNode(WitnessGraph &WG,
                                            llvm::Value *Instrumentee,
                                            llvm::Instruction *Location);
+
+  /// Helper function to create a source node with an appropriate ITarget
+  /// in the WitnessGraph.
+  static WitnessGraphNode *getSourceNode(WitnessGraph &WG,
+                                         llvm::Value *Instrumentee,
+                                         llvm::Instruction *Location);
 };
 } // namespace meminstrument
 

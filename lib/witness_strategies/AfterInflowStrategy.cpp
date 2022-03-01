@@ -477,6 +477,12 @@ bool didNotChangeSinceWitness(std::set<WitnessGraphNode *> &Seen,
 
   Seen.insert(N);
 
+  // In case we reached the source for this pointer, we can assume that the
+  // invariant holds.
+  if (isa<SourceIT>(N->Target)) {
+    return true;
+  }
+
   if (auto GEP = dyn_cast<GetElementPtrInst>(N->Target->getLocation())) {
     if (!GEP->hasAllZeroIndices()) {
       return false;

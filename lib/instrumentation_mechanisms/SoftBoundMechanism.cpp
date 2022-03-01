@@ -142,8 +142,8 @@ void SoftBoundMechanism::insertWitnesses(ITarget &target) const {
 
   LLVM_DEBUG(dbgs() << "Insert witness for: " << target << "\n";);
 
-  assert(isa<IntermediateIT>(&target));
-  IntermediateIT &inTarget = *cast<IntermediateIT>(&target);
+  assert(isa<SourceIT>(&target));
+  SourceIT &inTarget = *cast<SourceIT>(&target);
 
   auto *instrumentee = target.getInstrumentee();
   LLVM_DEBUG(dbgs() << "Instrumentee: " << *instrumentee << "\n";);
@@ -741,7 +741,7 @@ auto SoftBoundMechanism::handleInitializer(Constant *glInit,
   llvm_unreachable("Unexpected constant global initializer.");
 }
 
-void SoftBoundMechanism::insertVarArgWitness(IntermediateIT &target) const {
+void SoftBoundMechanism::insertVarArgWitness(SourceIT &target) const {
   auto instrumentee = target.getInstrumentee();
   auto location = target.getLocation();
   IRBuilder<> builder(location);

@@ -18,6 +18,16 @@ WitnessGraphNode *WitnessStrategy::getInternalNode(WitnessGraph &WG,
   return WG.getInternalNode(NewTarget);
 }
 
+WitnessGraphNode *WitnessStrategy::getSourceNode(WitnessGraph &WG,
+                                                 Value *Instrumentee,
+                                                 Instruction *Location) {
+  auto NewTarget = ITargetBuilder::createSourceTarget(Instrumentee, Location);
+  auto NewNode = WG.getInternalNode(NewTarget);
+  // Source nodes do not have requirements by definition
+  NewNode->HasAllRequirements = true;
+  return NewNode;
+}
+
 void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,
                                          Instruction *Loc) const {
   auto &WG = Node->Graph;
@@ -30,9 +40,8 @@ void WitnessStrategy::requireRecursively(WitnessGraphNode *Node, Value *Req,
 void WitnessStrategy::requireSource(WitnessGraphNode *Node, Value *Req,
                                     Instruction *Loc) const {
   auto &WG = Node->Graph;
-  auto *NewNode = getInternalNode(WG, Req, Loc);
-  NewNode->HasAllRequirements = true;
-  if (NewNode != Node) {
-    Node->addRequirement(NewNode);
-  }
+  auto *NewNode = getSourceNode(WG, Req, Loc);
+  assert(NewNode != Node);
+
+  Node->addRequirement(NewNode);
 }

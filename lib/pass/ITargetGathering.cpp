@@ -24,8 +24,6 @@ STATISTIC(CallCheckTargets,
           "The # of call check instrumentation targets initially gathered");
 STATISTIC(BoundsTargets,
           "The # of bounds instrumentation targets initially gathered");
-STATISTIC(IntermediateTargets,
-          "The # of intermediate instrumentation targets initially gathered");
 
 using namespace meminstrument;
 using namespace llvm;
@@ -58,12 +56,9 @@ void meminstrument::collectStatistics(ITargetVector &targets) {
 
   for (const auto &target : targets) {
 
-    // Skip already invalidated targets
-    if (!target->isValid()) {
-      continue;
-    }
+    assert(target->isValid() && !isa<WitnessSupplyIT>(target));
 
-    if (isa<InvariantIT>(target)) {
+    if (target->isInvariant()) {
       ++NumInvariantTargets;
     }
     if (isa<ConstSizeCheckIT>(target) || isa<VarSizeCheckIT>(target)) {
@@ -74,9 +69,6 @@ void meminstrument::collectStatistics(ITargetVector &targets) {
     }
     if (isa<BoundsIT>(target)) {
       ++BoundsTargets;
-    }
-    if (isa<IntermediateIT>(target)) {
-      ++IntermediateTargets;
     }
   }
 }

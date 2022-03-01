@@ -86,6 +86,11 @@ ITargetPtr ITargetBuilder::createIntermediateTarget(Value *instrumentee,
   return std::make_shared<IntermediateIT>(instrumentee, location);
 }
 
+ITargetPtr ITargetBuilder::createSourceTarget(Value *instrumentee,
+                                              Instruction *location) {
+  return std::make_shared<SourceIT>(instrumentee, location);
+}
+
 size_t ITargetBuilder::getNumITargets(
     const ITargetVector &vec,
     const std::function<bool(const ITarget &)> &predicate) {
@@ -526,15 +531,16 @@ bool BoundsIT::classof(const ITarget *T) {
 }
 
 //===----------------------------------------------------------------------===//
-//                 Implementation of IntermediateIT
+//                 Implementation of WitnessSupplyIT
 //===----------------------------------------------------------------------===//
 
-IntermediateIT::IntermediateIT(Value *instrumentee, Instruction *location)
-    : ITarget(ITargetKind::ITK_Intermediate, instrumentee, location,
+WitnessSupplyIT::WitnessSupplyIT(ITargetKind kind, Value *instrumentee,
+                                 Instruction *location)
+    : ITarget(kind, instrumentee, location,
               /*checkUpper*/ false, /*checkLower*/ false,
               /*checkTemporal*/ false) {}
 
-bool IntermediateIT::joinFlags(const ITarget &other) {
+bool WitnessSupplyIT::joinFlags(const ITarget &other) {
   assert(isValid());
   assert(other.isValid());
   bool oldUBF = hasUpperBoundFlag();
@@ -552,10 +558,22 @@ bool IntermediateIT::joinFlags(const ITarget &other) {
          oldTF != checkTemporalFlag || oldExplBF != explicitBoundsFlag;
 }
 
-bool IntermediateIT::requiresExplicitBounds() const {
+bool WitnessSupplyIT::requiresExplicitBounds() const {
   assert(isValid());
   return explicitBoundsFlag;
 }
+
+bool WitnessSupplyIT::classof(const ITarget *T) {
+  return T->getKind() >= ITargetKind::ITK_Intermediate &&
+         T->getKind() <= ITargetKind::ITK_Source;
+}
+
+//===----------------------------------------------------------------------===//
+//                 Implementation of IntermediateIT
+//===----------------------------------------------------------------------===//
+
+IntermediateIT::IntermediateIT(Value *instrumentee, Instruction *location)
+    : WitnessSupplyIT(ITargetKind::ITK_Intermediate, instrumentee, location) {}
 
 void IntermediateIT::dump(raw_ostream &os) const {
   os << "intermediate target";
@@ -567,4 +585,21 @@ bool IntermediateIT::operator==(const ITarget &other) const {
 
 bool IntermediateIT::classof(const ITarget *T) {
   return T->getKind() == ITargetKind::ITK_Intermediate;
+}
+
+//===----------------------------------------------------------------------===//
+//                 Implementation of SourceIT
+//===----------------------------------------------------------------------===//
+
+SourceIT::SourceIT(Value *instrumentee, Instruction *location)
+    : WitnessSupplyIT(ITargetKind::ITK_Source, instrumentee, location) {}
+
+void SourceIT::dump(raw_ostream &os) const { os << "source target"; }
+
+bool SourceIT::operator==(const ITarget &other) const {
+  return equals(other) && explicitBoundsFlag == other.requiresExplicitBounds();
+}
+
+bool SourceIT::classof(const ITarget *T) {
+  return T->getKind() == ITargetKind::ITK_Source;
 }

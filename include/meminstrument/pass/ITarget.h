@@ -110,6 +110,12 @@ public:
   static ITargetPtr createIntermediateTarget(llvm::Value *instrumentee,
                                              llvm::Instruction *location);
 
+  /// Static factory method for creating an ITarget that marks locations where
+  /// pointer sources are. Allocas, calls and pointer loads are typical cases.
+  /// The result is a SourceIT.
+  static ITargetPtr createSourceTarget(llvm::Value *instrumentee,
+                                       llvm::Instruction *location);
+
   /// Determine the number of ITargets that fulfill the given predicate.
   static size_t
   getNumITargets(const ITargetVector &,
@@ -132,6 +138,7 @@ public:
   enum class ITargetKind {
     ITK_Bounds,
     ITK_Intermediate,
+    ITK_Source,
     ITK_CallCheck,
     ITK_ConstSizeCheck,
     ITK_VarSizeCheck,
@@ -270,7 +277,6 @@ public:
 };
 
 class ConstSizeCheckIT : public CheckIT {
-
 public:
   ConstSizeCheckIT(llvm::Value *instrumentee, llvm::Instruction *location,
                    size_t accessSize, bool checkUpper, bool checkLower);
@@ -288,7 +294,6 @@ private:
 };
 
 class VarSizeCheckIT : public CheckIT {
-
 public:
   VarSizeCheckIT(llvm::Value *instrumentee, llvm::Instruction *location,
                  llvm::Value *accessSizeVal, bool checkUpper, bool checkLower);
@@ -383,23 +388,43 @@ public:
   static bool classof(const ITarget *);
 };
 
-class IntermediateIT : public ITarget {
-
+class WitnessSupplyIT : public ITarget {
 public:
-  IntermediateIT(llvm::Value *instrumentee, llvm::Instruction *location);
+  virtual bool operator==(const ITarget &) const override = 0;
+
+  bool requiresExplicitBounds() const override;
 
   bool joinFlags(const ITarget &);
 
-  bool requiresExplicitBounds() const override;
+  static bool classof(const ITarget *);
+
+protected:
+  WitnessSupplyIT(ITargetKind, llvm::Value *instrumentee,
+                  llvm::Instruction *location);
+
+  bool explicitBoundsFlag = false;
+};
+
+class IntermediateIT : public WitnessSupplyIT {
+public:
+  IntermediateIT(llvm::Value *instrumentee, llvm::Instruction *location);
 
   void dump(llvm::raw_ostream &) const override;
 
   bool operator==(const ITarget &) const override;
 
   static bool classof(const ITarget *);
+};
 
-private:
-  bool explicitBoundsFlag = false;
+class SourceIT : public WitnessSupplyIT {
+public:
+  SourceIT(llvm::Value *instrumentee, llvm::Instruction *location);
+
+  void dump(llvm::raw_ostream &) const override;
+
+  bool operator==(const ITarget &) const override;
+
+  static bool classof(const ITarget *);
 };
 
 } // namespace meminstrument
