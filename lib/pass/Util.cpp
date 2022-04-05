@@ -78,7 +78,7 @@ void MemInstrumentError::report(const Twine &msg) {
   llvm_unreachable("Error reporting failed.");
 }
 
-void MemInstrumentError::report(const Twine &msg, Value *val) {
+void MemInstrumentError::report(const Twine &msg, const Value *val) {
   auto str = msg.str();
   raw_string_ostream stream(str);
   stream << *val;

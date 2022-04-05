@@ -59,7 +59,7 @@ public:
 
   [[noreturn]] static void report(const llvm::Twine &);
 
-  [[noreturn]] static void report(const llvm::Twine &, llvm::Value *);
+  [[noreturn]] static void report(const llvm::Twine &, const llvm::Value *);
 
 private:
   const llvm::Twine &errorMessage;
