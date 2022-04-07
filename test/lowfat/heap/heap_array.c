@@ -4,21 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int x;
-
-int *f(int *p) {
-    p[x] = 0;
-    return p+5;
-}
-
 int main(int argc, char const *argv[]) {
-    int Ar[15];
-    x = 2;
+    char *Ar = malloc(15);
+    printf("Hello %p\n", Ar);
 
-    int *q = f(Ar);
-    int *m = malloc(5 * sizeof(int));
-    int *l = f(m);
+    Ar[4] = 1;
 
-    printf("%p %i %p\n", q, q[2], l);
+    printf("Test\n");
+
+    printf("%p %i\n", Ar, Ar[argc-1]);
     return 0;
 }

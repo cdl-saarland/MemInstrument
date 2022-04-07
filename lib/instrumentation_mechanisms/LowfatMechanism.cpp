@@ -11,6 +11,7 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
@@ -31,8 +32,34 @@ STATISTIC(LowfatNumAllocs, "The # of allocas transformed");
 STATISTIC(LowfatNumVariableLengthArrays,
           "The # of variable length arrays encountered");
 
+STATISTIC(AlreadyHasSection, "Global already has a section.");
+
+STATISTIC(GlobalsCommonLinkage,
+          "[LF possible error source] Number of globals with common linkage");
+
 using namespace llvm;
 using namespace meminstrument;
+
+cl::opt<bool> NoGlobalVarProtection(
+    "mi-lf-no-global-variable-protection",
+    cl::desc("Use lowfat without global variable protection"), cl::init(false));
+
+cl::opt<bool> AllowUnsafeGlobals(
+    "mi-lf-allow-unsafe-globals",
+    cl::desc(
+        "In case some global variable has an unsupported linkage kind or other "
+        "properties that prevent us from relocating it, leave it non-fat."),
+    cl::init(false));
+
+cl::opt<bool> TransformCommonToWeakLinkage(
+    "mi-lf-transform-common-to-weak-linkage",
+    cl::desc(
+        "Lowfat protects globals by moving them to specific sections in which "
+        "the alignment and size constraints of the allocations are ensured. "
+        "Variables with common linkage cannot have a section annotation, and "
+        "hence not be moved. This flag enables chaning the linkage to be weak, "
+        "such that the section annotation can be placed."),
+    cl::init(false));
 
 cl::opt<bool> NoStackProtection("mi-lf-no-stack-protection",
                                 cl::desc("Use lowfat without stack protection"),
@@ -203,6 +230,10 @@ void LowfatMechanism::initialize(Module &module) {
   initTypes(module.getContext());
   insertFunctionDeclarations(module);
 
+  if (!NoGlobalVarProtection) {
+    prepareGlobals(module);
+  }
+
   if (NoStackProtection) {
     return;
   }
@@ -306,6 +337,115 @@ void LowfatMechanism::insertFunctionDeclarations(Module &M) {
       insertFunDecl(M, "__lowfat_lookup_stack_offset", SizeType, SizeType);
   StackMaskFunction = insertFunDecl(M, "__lowfat_compute_aligned", PtrArgType,
                                     PtrArgType, SizeType);
+}
+
+void LowfatMechanism::prepareGlobals(Module &module) const {
+
+  for (auto &global : module.getGlobalList()) {
+    if (global.isDeclaration()) {
+      continue;
+    }
+
+    if (global.hasCommonLinkage()) {
+      ++GlobalsCommonLinkage;
+      if (TransformCommonToWeakLinkage) {
+        global.setLinkage(GlobalValue::WeakAnyLinkage);
+      }
+    }
+
+    if (globalCannotBeInstrumented(global)) {
+      continue;
+    }
+
+    instrumentGlobal(global);
+  }
+}
+
+bool LowfatMechanism::globalCannotBeInstrumented(
+    const GlobalVariable &gv) const {
+
+  // If there already is a section annotation, the code will likely break if we
+  // simply replace it. Leave it unsafe or throw an error.
+  if (gv.hasSection()) {
+    AlreadyHasSection++;
+    if (!AllowUnsafeGlobals) {
+      MemInstrumentError::report("Global variable already has a section "
+                                 "annotation. Safety cannot be assured: ",
+                                 &gv);
+    }
+    return true;
+  }
+
+  switch (gv.getLinkage()) {
+  case GlobalValue::ExternalLinkage:
+  case GlobalValue::InternalLinkage:
+  case GlobalValue::PrivateLinkage:
+    // All these linkage types can be annotated with a section attribute and
+    // hence made safe.
+    return false;
+  case GlobalValue::LinkOnceAnyLinkage:
+  case GlobalValue::LinkOnceODRLinkage:
+  case GlobalValue::WeakAnyLinkage:
+  case GlobalValue::WeakODRLinkage:
+    // For us, the difference in the semantics of (linkonce|weak)[odr] should
+    // not matter, handle them equally.
+    return false;
+  case GlobalValue::AvailableExternallyLinkage:
+    MemInstrumentError::report(
+        "Global variable has 'available externally' linkage, it should have "
+        "been removed by a previous pass ('EliminateAvailableExternallyPass')."
+        "\nFound: ",
+        &gv);
+  case GlobalValue::CommonLinkage:
+    // Symbols with common linkage are not allowed to have a section annotation.
+  case GlobalValue::AppendingLinkage:
+  case GlobalValue::ExternalWeakLinkage:
+    // TODO Some of these cases might not be an issues, we just didn't look
+    // into them.
+    if (!AllowUnsafeGlobals) {
+      MemInstrumentError::report("Global variable has an unsupported linkage "
+                                 "kind, safety cannot be assured: ",
+                                 &gv);
+    }
+    return true;
+  }
+
+  llvm_unreachable("Unexpected linkage kind.");
+}
+
+void LowfatMechanism::instrumentGlobal(GlobalVariable &gv) const {
+
+  // Determine the size of the global variable
+  auto *type = gv.getType()->getElementType();
+  const auto &DL = gv.getParent()->getDataLayout();
+  auto baseSize = DL.getTypeAllocSize(type);
+
+  // Determine the region index for the given size
+  auto index = __builtin_clzll(baseSize);
+
+  if (index <= __builtin_clzll(MAX_GLOBAL_ALLOC_SIZE)) {
+    MemInstrumentError::report("Global variable is too large. Found: ", &gv);
+  }
+
+  // TODO check why plus 1
+  auto algn = Align(~STACK_MASKS[index] + 1);
+
+  // Make sure to use a proper alignment
+  auto currentAlgn = gv.getAlign();
+  if (!currentAlgn.hasValue() || currentAlgn.getValue() < algn) {
+    gv.setAlignment(algn);
+  }
+
+  auto newSize = STACK_SIZES[index];
+
+  // Annotate the globals with the lowfat region section
+  std::string sectionStr("lf_section_");
+  raw_string_ostream stream(sectionStr);
+  if (gv.isConstant()) {
+    stream << "read_only_";
+  }
+  stream << newSize;
+  gv.setSection(sectionStr);
 }
 
 void LowfatMechanism::mirrorPointerAndReplaceAlloca(IRBuilder<> &builder,
@@ -425,7 +565,7 @@ void LowfatMechanism::instrumentAlloca(AllocaInst *alloc) const {
 
   // Make sure the allocation is small enough to be handled by the mechanism
   // (few leading zeros, large number)
-  if (index <= __builtin_clzll(MAX_PERMITTED_LF_STACK_ALLOC_SIZE)) {
+  if (index <= __builtin_clzll(MAX_STACK_ALLOC_SIZE)) {
     LLVM_DEBUG(dbgs() << "Allocation is too large\n";);
     return;
   }

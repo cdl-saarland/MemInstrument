@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
+// RUN: %clang -mcmodel=large -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
 // RUN: %not --crash %t 2> /dev/null
 
 #include <stdio.h>

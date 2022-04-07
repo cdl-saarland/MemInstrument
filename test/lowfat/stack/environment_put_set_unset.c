@@ -1,5 +1,7 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
+// RUN: %clang -mcmodel=large -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
 // RUN: %t
+
+// XFAIL: *
 
 // Checks whether accesses to the environment work after modifying it using the
 // C library functions provided for this purpose. Note that the purpose of

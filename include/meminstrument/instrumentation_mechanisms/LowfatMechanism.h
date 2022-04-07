@@ -94,6 +94,9 @@ private:
 
   void initTypes(llvm::LLVMContext &);
   void insertFunctionDeclarations(llvm::Module &);
+  void prepareGlobals(llvm::Module &) const;
+  bool globalCannotBeInstrumented(const llvm::GlobalVariable &) const;
+  void instrumentGlobal(llvm::GlobalVariable &) const;
   void instrumentAlloca(llvm::AllocaInst *) const;
   void handleVariableLengthArray(llvm::AllocaInst *) const;
   void mirrorPointerAndReplaceAlloca(llvm::IRBuilder<> &,
