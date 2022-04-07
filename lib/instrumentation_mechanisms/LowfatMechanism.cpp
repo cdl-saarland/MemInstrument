@@ -420,7 +420,7 @@ void LowfatMechanism::instrumentAlloca(AllocaInst *alloc) const {
   // least one byte larger to avoid one-past-end errors)
   // TODO might actually not be all too reasonable to use the intrinsic here, as
   // CT is not what we care about
-  auto index = __builtin_clzll((allocatedSize.getValue() / 8) + 1);
+  auto index = __builtin_clzll((allocatedSize.getValue() / 8));
   LLVM_DEBUG(dbgs() << "Index: " << index << "\n";);
 
   // Make sure the allocation is small enough to be handled by the mechanism
