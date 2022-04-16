@@ -444,6 +444,10 @@ void LowfatMechanism::instrumentGlobal(GlobalVariable &gv) const {
     gv.setAlignment(algn);
   }
 
+  if (gv.hasAtLeastLocalUnnamedAddr()) {
+    gv.setUnnamedAddr(GlobalValue::UnnamedAddr::None);
+  }
+
   // Annotate the globals with the lowfat region section
   std::string sectionStr("lf_section_");
   raw_string_ostream stream(sectionStr);
