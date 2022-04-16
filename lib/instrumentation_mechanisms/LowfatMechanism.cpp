@@ -435,16 +435,14 @@ void LowfatMechanism::instrumentGlobal(GlobalVariable &gv) const {
     MemInstrumentError::report("Global variable is too large. Found: ", &gv);
   }
 
-  // TODO check why plus 1
-  auto algn = Align(~STACK_MASKS[index] + 1);
+  auto newSize = STACK_SIZES[index];
 
   // Make sure to use a proper alignment
+  auto algn = Align(newSize);
   auto currentAlgn = gv.getAlign();
   if (!currentAlgn.hasValue() || currentAlgn.getValue() < algn) {
     gv.setAlignment(algn);
   }
-
-  auto newSize = STACK_SIZES[index];
 
   // Annotate the globals with the lowfat region section
   std::string sectionStr("lf_section_");
