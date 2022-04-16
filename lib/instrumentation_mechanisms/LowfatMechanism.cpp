@@ -37,6 +37,8 @@ STATISTIC(AlreadyHasSection, "Global already has a section.");
 STATISTIC(GlobalsCommonLinkage,
           "[LF possible error source] Number of globals with common linkage");
 
+STATISTIC(UndefArgs, "Function calls with undef arguments");
+
 using namespace llvm;
 using namespace meminstrument;
 
@@ -179,6 +181,12 @@ void LowfatMechanism::insertCheck(ITarget &Target) const {
     ++LowfatNumDereferenceChecks;
   } else {
     assert(Target.isInvariant());
+    if (isa<UndefValue>(WitnessVal)) {
+      assert(isa<UndefValue>(CastVal));
+      ++UndefArgs;
+      return;
+    }
+
     insertCall(Builder, CheckOOBFunction,
                std::vector<Value *>{WitnessVal, CastVal});
     ++LowfatNumInboundsChecks;
