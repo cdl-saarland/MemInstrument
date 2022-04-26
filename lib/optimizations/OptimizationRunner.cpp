@@ -157,17 +157,15 @@ void OptimizationRunner::validate(
     const std::map<Function *, ITargetVector> &targetsPerFun) const {
 
   for (const auto &entry : targetsPerFun) {
-    auto *fun = entry.first;
-    const auto &targets = entry.second;
 
     DEBUG_ALSO_WITH_TYPE("meminstrument-opt", {
       dbgs() << "updated instrumentation targets after optimization:\n";
-      for (auto &target : targets) {
+      for (auto &target : entry.second) {
         dbgs() << "  " << *target << "\n";
       }
     });
 
     assert(ITargetBuilder::validateITargets(
-        mip.getAnalysis<DominatorTreeWrapperPass>(*fun).getDomTree(), targets));
+        mip.getAnalysis<DominatorTreeWrapperPass>(*entry.first).getDomTree(), entry.second));
   }
 }

@@ -73,8 +73,8 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
       }
     }
   }
-  size_t Num = ITargetBuilder::getNumValidITargets(Vec);
-  LLVM_DEBUG(dbgs() << "number of remaining valid targets: " << Num << "\n";);
+  LLVM_DEBUG(dbgs() << "number of remaining valid targets: "
+                    << ITargetBuilder::getNumValidITargets(Vec) << "\n";);
   // add new targets to the ITarget vector
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }
