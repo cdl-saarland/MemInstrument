@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 void do_print(char *p) {
-    printf("%c", *p);
+    printf("%d", *((int *)p));
 }
 
 int main(int argc, char const *argv[]) {
