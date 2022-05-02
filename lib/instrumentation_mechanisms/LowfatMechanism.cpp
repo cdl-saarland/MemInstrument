@@ -72,6 +72,12 @@ cl::opt<bool> NoVLAProtection(
     cl::desc("Use lowfat without variable length array protection"),
     cl::init(false));
 
+cl::opt<bool> LazyBase(
+    "mi-lf-calculate-base-lazy",
+    cl::desc("Allow the propagation of this witness pointer as an inner "
+             "pointer. Calculate the base pointer within the check."),
+    cl::init(false));
+
 Value *LowfatWitness::getLowerBound(void) const { return LowerBound; }
 
 Value *LowfatWitness::getUpperBound(void) const { return UpperBound; }
@@ -98,10 +104,10 @@ void LowfatMechanism::insertWitnesses(ITarget &Target) const {
   auto instrumentee = Target.getInstrumentee();
 
   if (!instrumentee->getType()->isAggregateType()) {
-    auto *CastVal = insertCast(WitnessType, Target.getInstrumentee(),
-                               Target.getLocation(), "_witness");
+    auto the_witness =
+        getWitness(Target.getInstrumentee(), Target.getLocation());
     Target.setSingleBoundWitness(
-        std::make_shared<LowfatWitness>(CastVal, Target.getLocation()));
+        std::make_shared<LowfatWitness>(the_witness, Target.getLocation()));
 
     ++LowfatNumWitnessLookups;
     return;
@@ -116,9 +122,9 @@ void LowfatMechanism::insertWitnesses(ITarget &Target) const {
     for (auto index : indices) {
       // Extract the pointer to have the witness at hand.
       auto ptr = builder.CreateExtractValue(instrumentee, index);
-      auto *castVal = insertCast(WitnessType, ptr, builder);
+      auto the_witness = getWitness(ptr, Target.getLocation());
       Target.setBoundWitness(
-          std::make_shared<LowfatWitness>(castVal, Target.getLocation()),
+          std::make_shared<LowfatWitness>(the_witness, Target.getLocation()),
           index);
     }
     return;
@@ -131,10 +137,9 @@ void LowfatMechanism::insertWitnesses(ITarget &Target) const {
   auto indexToPtr =
       InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
   for (auto KV : indexToPtr) {
-    auto *CastVal =
-        insertCast(WitnessType, KV.second, Target.getLocation(), "_witness");
+    auto the_witness = getWitness(KV.second, Target.getLocation());
     Target.setBoundWitness(
-        std::make_shared<LowfatWitness>(CastVal, Target.getLocation()),
+        std::make_shared<LowfatWitness>(the_witness, Target.getLocation()),
         KV.first);
 
     ++LowfatNumWitnessLookups;
@@ -329,10 +334,18 @@ void LowfatMechanism::insertFunctionDeclarations(Module &M) {
   auto &Ctx = M.getContext();
   auto *VoidTy = Type::getVoidTy(Ctx);
 
-  CheckDerefFunction = insertFunDecl(M, "__lowfat_check_deref", VoidTy,
-                                     WitnessType, PtrArgType, SizeType);
+  if (LazyBase) {
+    CheckDerefFunction =
+        insertFunDecl(M, "__lowfat_check_deref_inner_witness", VoidTy,
+                      WitnessType, PtrArgType, SizeType);
+  } else {
+    CheckDerefFunction = insertFunDecl(M, "__lowfat_check_deref", VoidTy,
+                                       WitnessType, PtrArgType, SizeType);
+  }
   CheckOOBFunction =
       insertFunDecl(M, "__lowfat_check_oob", VoidTy, WitnessType, PtrArgType);
+  CalcBaseFunction = insertFunDecl(M, "__lowfat_ptr_base_without_index",
+                                   WitnessType, WitnessType);
   GetUpperBoundFunction =
       insertFunDecl(M, "__lowfat_get_upper_bound", PtrArgType, WitnessType);
   GetLowerBoundFunction =
@@ -600,4 +613,20 @@ void LowfatMechanism::instrumentAlloca(AllocaInst *alloc) const {
   // Mirror the pointer and replace its uses
   mirrorPointerAndReplaceAlloca(builder, alloc, newAllocAligned,
                                 builder.getInt64(offset));
+}
+
+auto LowfatMechanism::getWitness(Value *incoming, Instruction *location) const
+    -> Value * {
+  auto *casted = insertCast(WitnessType, incoming, location, "_witness");
+  if (LazyBase) {
+    return casted;
+  }
+  Value *final = casted;
+  // Don't produce base calculation calls on undef values
+  if (!isa<UndefValue>(incoming)) {
+    IRBuilder<> builder(location);
+    final = insertCall(builder, CalcBaseFunction, casted,
+                       casted->getName() + "_base");
+  }
+  return final;
 }

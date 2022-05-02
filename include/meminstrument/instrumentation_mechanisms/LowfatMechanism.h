@@ -81,6 +81,7 @@ public:
 private:
   llvm::FunctionCallee CheckDerefFunction = nullptr;
   llvm::FunctionCallee CheckOOBFunction = nullptr;
+  llvm::FunctionCallee CalcBaseFunction = nullptr;
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
   llvm::FunctionCallee StackMirrorFunction = nullptr;
@@ -103,6 +104,8 @@ private:
                                      llvm::AllocaInst *oldAlloc,
                                      llvm::Instruction *newAlloc,
                                      llvm::Value *offset) const;
+  auto getWitness(llvm::Value *incoming, llvm::Instruction *location) const
+      -> llvm::Value *;
 };
 
 } // namespace meminstrument
