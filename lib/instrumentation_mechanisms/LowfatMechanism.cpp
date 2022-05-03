@@ -31,6 +31,8 @@ STATISTIC(LowfatNumAllocsEncountered, "The # of allocas encountered");
 STATISTIC(LowfatNumAllocs, "The # of allocas transformed");
 STATISTIC(LowfatNumVariableLengthArrays,
           "The # of variable length arrays encountered");
+STATISTIC(BaseCalcAvoidedForGetMirrorCalls,
+          "The # of base calculations avoided for mirrored pointers");
 
 STATISTIC(AlreadyHasSection, "Global already has a section.");
 
@@ -621,12 +623,40 @@ auto LowfatMechanism::getWitness(Value *incoming, Instruction *location) const
   if (LazyBase) {
     return casted;
   }
-  Value *final = casted;
+
   // Don't produce base calculation calls on undef values
-  if (!isa<UndefValue>(incoming)) {
-    IRBuilder<> builder(location);
-    final = insertCall(builder, CalcBaseFunction, casted,
-                       casted->getName() + "_base");
+  if (isa<UndefValue>(incoming)) {
+    return casted;
   }
+
+  // Look through bitcasts
+  Value *toInspect = incoming;
+  while (auto castedToInspect = dyn_cast<BitCastInst>(toInspect)) {
+    toInspect = castedToInspect->getOperand(0);
+  }
+
+  // If the incoming value is the result of a stack allocation mirroring, we
+  // know that the result is a low-fat base pointer and therefore don't need to
+  // compute its base as a non-lazy witness.
+  if (auto call = dyn_cast<CallInst>(toInspect)) {
+    auto calledFun = call->getCalledFunction();
+    if (calledFun) {
+      // While it is tempting to also handle malloc etc like this, thoese calls
+      // can still sometimes produce non-low-fat pointers, for which we need to
+      // get the right base that enables wide bounds.
+      if (calledFun->getName() == "__lowfat_get_mirror") {
+        // TODO it would be better to check the function against
+        // StackMirrorFunction.getCallee() to check the name against
+        // StackMirrorFunction.getCallee()->getName() but const qualifiers
+        // forbid that.
+        ++BaseCalcAvoidedForGetMirrorCalls;
+        return casted;
+      }
+    }
+  }
+
+  IRBuilder<> builder(location);
+  auto final = insertCall(builder, CalcBaseFunction, casted,
+                          casted->getName() + "_base");
   return final;
 }
