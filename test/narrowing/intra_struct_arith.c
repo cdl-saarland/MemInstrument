@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O3 %s -mllvm -mi-config=softbound -emit-llvm -S -o - 2>&1 | %filecheck %s
+// RUN: %clang -O3 %s -emit-llvm -S -o - 2>&1 | %filecheck %s
 
 // CHECK: load i32, i32* getelementptr inbounds (%struct.a_simple_pair, %struct.a_simple_pair* @P, i64 0, i32 0)
 
@@ -14,13 +14,11 @@ struct a_simple_pair {
     int y;
 } P;
 
-void do_stuff(int *some_ptr) {
-    printf("The value is %d\n", *(some_ptr - 1));
+void print_value(int *some_ptr) {
+    printf("The value is %d\n", *some_ptr);
 }
 
 int main() {
-    P.x = 2;
-    P.y = 3;
-    do_stuff(&P.y);
+    print_value(&P.y - 1);
     return 0;
 }
