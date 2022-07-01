@@ -1,12 +1,8 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -debug-only=softbound,pointerboundspolicy -mllvm -mi-config=softbound -emit-llvm -S -o %t0.ll 2> %t.log
-// RUN: %clang %t0.ll %linksb -o %t
-// RUN: %t
-
-// REQUIRES: asserts
+// RUN: %not %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -emit-llvm -S 2>&1 | %filecheck %s
 
 // Varargs are currently only supported for the common case that the va_list
 // which stores them is a simple stack allocation
-// XFAIL: *
+// CHECK: Meminstrument Error
 
 #include <stdio.h>
 #include <stdlib.h>

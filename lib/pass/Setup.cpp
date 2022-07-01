@@ -79,6 +79,19 @@ cl::opt<std::string> FunctionsToSkip(
     cl::desc("Do not instrument functions listed in the given file. The file "
              "should contain one function name per line."));
 
+bool isVarArgIntrinsic(const Instruction &inst) {
+  if (auto *intrInst = dyn_cast<IntrinsicInst>(&inst)) {
+    switch (intrInst->getIntrinsicID()) {
+    case Intrinsic::vastart:
+    case Intrinsic::vacopy:
+    case Intrinsic::vaend: {
+      return true;
+    }
+    }
+  }
+  return false;
+}
+
 /// Mark instruction that are only there to manage varargs and do not actually
 /// belong to the source code. Currently, va_arg is rarely (not at all?) used in
 /// LLVM, and its implementation leaks into the code. We cannot check if this
@@ -117,18 +130,10 @@ bool markVarargInsts(Function &fun) {
     unsigned propLevel;
     std::tie(entry, propLevel) = worklist.pop_back_val();
 
-    // Label vararg specific calls.
     if (auto *intrInst = dyn_cast<IntrinsicInst>(entry)) {
-      switch (intrInst->getIntrinsicID()) {
-      case Intrinsic::vastart:
-      case Intrinsic::vacopy:
-      case Intrinsic::vaend: {
-        // Mark the call as vararg related
+      // Label vararg specific calls.
+      if (isVarArgIntrinsic(*intrInst)) {
         setVarArgHandling(intrInst);
-        break;
-      }
-      default:
-        break;
       }
       continue;
     }
@@ -183,6 +188,22 @@ bool markVarargInsts(Function &fun) {
   }
 
   return true;
+}
+
+bool hasUnmarkedVarArgIntrinsic(const Function &fun) {
+
+  for (const auto &bb : fun) {
+    for (const auto &inst : bb) {
+      if (isVarArgIntrinsic(inst)) {
+        if (hasVarArgHandling(&inst)) {
+          continue;
+        }
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /// Transform the given call byval arguments (if any) to hand over a pointer
@@ -719,6 +740,13 @@ void meminstrument::prepareModule(Module &module) {
     // stores for the vararg handling as such.
     if (markVarargInsts(fun)) {
       NumVarArgs++;
+    }
+
+    // Report if we can identify that the test has unsupported vaarg cases
+    if (hasUnmarkedVarArgIntrinsic(fun)) {
+      MemInstrumentError::report(
+          "Some functions use va_lists in an uncommon fashion (stored in a "
+          "global variable or on the heap). This is currently not supported.");
     }
 
     if (!NoTransformObfuscatedPointer) {
