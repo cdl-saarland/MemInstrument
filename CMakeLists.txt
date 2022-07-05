@@ -63,14 +63,28 @@ else()
   set(HAS_SQLITE3 0)
 endif()
 
-# Search for the splay run-time library
-find_path(MEMINSTRUMENT_RT_PATH lib/libsplay.a)
+# Define the path to the run-time and provide a target that defines how to build
+# it
+set(MEMINSTRUMENT_RT_PATH "${MEMINSTRUMENT_SOURCE_DIR}/runtime")
 
-if(NOT MEMINSTRUMENT_RT_PATH)
-  message(FATAL_ERROR "Cannot find meminstrument run-time libs")
-endif()
+add_custom_target(
+   instrumentation-mechanisms
+   COMMENT "Build the instrumentation mechanisms..."
+   COMMAND make
+   WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
+)
 
-message(STATUS "Found run-time libraries in ${MEMINSTRUMENT_RT_PATH}")
+# Allow to automatically build the LTO-enabled mechanisms; this will only work
+# if gold is available
+set(GOLD_PATH "${LLVM_LIBRARY_DIR}/LLVMgold.so")
+
+add_custom_target(
+   instrumentation-mechanisms-lto
+   COMMENT "Build the lto-enabled instrumentation mechanisms..."
+   COMMAND export LLVM_GOLD="${GOLD_PATH}" && make lto
+   DEPENDS "${GOLD_PATH}"
+   WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
+)
 
 set(RT_INCLUDE_PATH "${MEMINSTRUMENT_RT_PATH}/include")
 

@@ -1,0 +1,3 @@
+[submodule "runtime"]
+	path = runtime
+	url = https://github.com/cdl-saarland/MemInstrument-Runtime.git
