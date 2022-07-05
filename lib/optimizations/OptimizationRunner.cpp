@@ -156,7 +156,7 @@ auto OptimizationRunner::computeSelectedOpts(MemInstrumentPass &mi)
 void OptimizationRunner::validate(
     const std::map<Function *, ITargetVector> &targetsPerFun) const {
 
-  for (const auto &entry : targetsPerFun) {
+  for ([[maybe_unused]] const auto &entry : targetsPerFun) {
 
     DEBUG_ALSO_WITH_TYPE("meminstrument-opt", {
       dbgs() << "updated instrumentation targets after optimization:\n";

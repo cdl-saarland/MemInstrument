@@ -557,7 +557,7 @@ void LowfatMechanism::handleVariableLengthArray(AllocaInst *alloc) const {
       Intrinsic::getDeclaration(alloc->getModule(), Intrinsic::stackrestore);
 
   LLVM_DEBUG(dbgs() << "Stack restore function: " << *stackRestoreFun << "\n";);
-  auto stackRestoreCall = insertCall(builder, stackRestoreFun, alignAlloc);
+  [[maybe_unused]] auto stackRestoreCall = insertCall(builder, stackRestoreFun, alignAlloc);
 
   LLVM_DEBUG(dbgs() << "Stack restore: " << *stackRestoreCall << "\n";);
 
