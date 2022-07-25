@@ -16,7 +16,7 @@ Start in your project root folder. Clone the [LLVM sources from the monorepo](ht
 
 ### 2. Setting up meminstrument
 
-Clone this repository and the [`lifetimekiller`](https://gitlab.cs.uni-saarland.de/cdl/safe-c/lifetimekiller) pass into `llvm-project/llvm/projects`.
+Clone this repository into `llvm-project/llvm/projects`.
 
 ### 3. Building LLVM+Clang+meminstrument
 

@@ -50,7 +50,6 @@ target_include_directories(
   meminstrumentobjlib BEFORE
   PUBLIC $<BUILD_INTERFACE:${MEMINSTRUMENT_SOURCE_DIR}/include>
          $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/include>
-         $<BUILD_INTERFACE:${LIFETIMEKILLER_BASE}/include>
          $<BUILD_INTERFACE:${RT_INCLUDE_PATH}>
          $<INSTALL_INTERFACE:include>)
 
@@ -85,8 +84,6 @@ function(setup_meminstrument_library name)
   # List external library dependencies that need to be linked to your library
   # (see project/myproject level CMakelists to enforce that these libraries are
   # found)
-  target_link_libraries(${name} PUBLIC lifetimekiller)
-
   if(PICO_AVAILABLE)
     # TODO we currently have a cyclic dependency between PICO and meminstrument,
     # this will fail in a shared lib build.

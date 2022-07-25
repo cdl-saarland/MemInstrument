@@ -57,6 +57,12 @@ STATISTIC(IntroducedPtrToIntCasts, "Number of ptrtoint casts introduced when "
 STATISTIC(RemovedIntToPtrCast,
           "Number of inttoptr casts removed by directly loading a pointer");
 
+cl::opt<bool> KeepLifeTimeIntrinsics(
+    "mi-keep-lifetime-intrinsics",
+    cl::desc("Keep lifetime.start/.end markers (note that this may cause "
+             "errors with some instrumentations)."),
+    cl::init(false));
+
 cl::opt<bool> LabelAccesses(
     "mi-label-accesses",
     cl::desc("Add unique ids as metadata to load an store instructions"),
@@ -78,6 +84,20 @@ cl::opt<std::string> FunctionsToSkip(
     "mi-ignored-functions-file",
     cl::desc("Do not instrument functions listed in the given file. The file "
              "should contain one function name per line."));
+
+void removeLifeTimeIntrinsics(Function &fun) {
+  for (auto &bb : fun) {
+    for (auto instIt = bb.begin(); instIt != bb.end();) {
+      if (isLifeTimeIntrinsic(&(*instIt))) {
+        // Remove the intrinsic instruction. The erase function return the
+        // iterator pointing to the next instruction.
+        instIt = instIt->eraseFromParent();
+        continue;
+      }
+      ++instIt;
+    }
+  }
+}
 
 bool isVarArgIntrinsic(const Instruction &inst) {
   if (auto *intrInst = dyn_cast<IntrinsicInst>(&inst)) {
@@ -730,6 +750,10 @@ void meminstrument::prepareModule(Module &module) {
   for (auto &fun : module) {
     if (fun.isDeclaration()) {
       continue;
+    }
+
+    if (!KeepLifeTimeIntrinsics) {
+      removeLifeTimeIntrinsics(fun);
     }
 
     if (LabelAccesses) {

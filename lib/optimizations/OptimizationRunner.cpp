@@ -166,6 +166,7 @@ void OptimizationRunner::validate(
     });
 
     assert(ITargetBuilder::validateITargets(
-        mip.getAnalysis<DominatorTreeWrapperPass>(*entry.first).getDomTree(), entry.second));
+        mip.getAnalysis<DominatorTreeWrapperPass>(*entry.first).getDomTree(),
+        entry.second));
   }
 }

@@ -266,10 +266,7 @@ void LowfatMechanism::initialize(Module &module) {
         if (isLifeTimeIntrinsic(&inst)) {
           MemInstrumentError::report(
               "Found a call to a lifetime intrinsic, but the lowfat stack "
-              "protection does not support them. Don't use "
-              "`-mi-no-lifetime-killer` with clang+lowfat+stack. In case you "
-              "use opt, make sure to add `-lifetimekiller` before "
-              "`-meminstrument`.");
+              "protection does not support them.");
         }
       }
     }
@@ -557,7 +554,8 @@ void LowfatMechanism::handleVariableLengthArray(AllocaInst *alloc) const {
       Intrinsic::getDeclaration(alloc->getModule(), Intrinsic::stackrestore);
 
   LLVM_DEBUG(dbgs() << "Stack restore function: " << *stackRestoreFun << "\n";);
-  [[maybe_unused]] auto stackRestoreCall = insertCall(builder, stackRestoreFun, alignAlloc);
+  [[maybe_unused]] auto stackRestoreCall =
+      insertCall(builder, stackRestoreFun, alignAlloc);
 
   LLVM_DEBUG(dbgs() << "Stack restore: " << *stackRestoreCall << "\n";);
 

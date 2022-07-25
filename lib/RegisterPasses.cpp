@@ -15,8 +15,6 @@
 #include "meminstrument/optimizations/HotnessBasedCheckRemovalPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
-#include "lifetimekiller/LifeTimeKillerPass.h"
-
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -34,13 +32,6 @@ ModulePass *createMemInstrumentPass() { return new MemInstrumentPass(); }
 } // namespace llvm
 
 namespace {
-cl::opt<bool> DontUseLifeTimeKillerOpt(
-    "mi-no-lifetime-killer",
-    cl::desc("Do not eliminate llvm.lifetime.* intrinsics "
-             "before the memory safety instrumentation. Note that some "
-             "instrumentations require the removal of lifetime intrinsics to "
-             "work properly."),
-    cl::init(false));
 cl::opt<bool> NoMemInstrumentOpt(
     "mi-no-meminstrument",
     cl::desc(
@@ -82,10 +73,6 @@ static RegisterPass<DummyExternalChecksPass>
 
 static void registerMeminstrumentPass(const PassManagerBuilder &,
                                       legacy::PassManagerBase &PM) {
-  if (!DontUseLifeTimeKillerOpt) {
-    PM.add(createLifeTimeKillerPass());
-  }
-
   if (NoMemInstrumentOpt) {
     return;
   }

@@ -11,17 +11,6 @@ endif(NOT DEFINED LLVM_MAIN_SRC_DIR)
 set(MEMINSTRUMENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(MEMINSTRUMENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-# Search for lifetimekiller
-find_path(
-  LIFETIMEKILLER_BASE "include/lifetimekiller/LifeTimeKillerPass.h"
-  PATHS "${LLVM_MAIN_SRC_DIR}/projects"
-  PATH_SUFFIXES "/lifetimekiller")
-if(LIFETIMEKILLER_BASE)
-  message(STATUS "Found LifeTimeKiller in ${LIFETIMEKILLER_BASE}")
-else()
-  message(FATAL_ERROR "LifeTimeKiller not found.")
-endif()
-
 message(STATUS "Looking for PMDA + PICO...")
 
 find_path(

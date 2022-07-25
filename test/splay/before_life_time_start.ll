@@ -1,4 +1,4 @@
-; RUN: %not %opt %loadlibs -mem2reg -meminstrument %s -mi-config=splay -S 2>&1 | %filecheck %s
+; RUN: %not %opt %loadlibs -mem2reg -meminstrument %s -mi-config=splay -mi-keep-lifetime-intrinsics -S 2>&1 | %filecheck %s
 
 ; CHECK: {{.*}}Meminstrument Error{{.*}}lifetime intrinsic
 
