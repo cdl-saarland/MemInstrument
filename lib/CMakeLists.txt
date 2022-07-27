@@ -66,11 +66,12 @@ add_dependencies(meminstrumentobjlib intrinsics_gen)
 
 # Make sure the instrumentation mechanisms are built before meminstrument, they
 # provide auto-generated header files required to built meminstrument
-add_dependencies(meminstrumentobjlib instrumentation-mechanisms)
 
-# Build the LTO-enabled stuff if possible
 if(LLVM_BINUTILS_INCDIR)
+  # Build the LTO-enabled stuff if possible
   add_dependencies(meminstrumentobjlib instrumentation-mechanisms-lto)
+else()
+  add_dependencies(meminstrumentobjlib instrumentation-mechanisms)
 endif()
 
 configure_file("../include/meminstrument/Definitions.h.in"

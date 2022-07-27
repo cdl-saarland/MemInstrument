@@ -52,6 +52,8 @@ else()
   set(HAS_SQLITE3 0)
 endif()
 
+set(CLANG_PATH "${LLVM_BINARY_DIR}/bin/clang")
+
 # Define the path to the run-time and provide a target that defines how to build
 # it
 set(MEMINSTRUMENT_RT_PATH "${MEMINSTRUMENT_SOURCE_DIR}/runtime")
@@ -59,7 +61,8 @@ set(MEMINSTRUMENT_RT_PATH "${MEMINSTRUMENT_SOURCE_DIR}/runtime")
 add_custom_target(
    instrumentation-mechanisms
    COMMENT "Build the instrumentation mechanisms..."
-   COMMAND make
+   COMMAND export CLANG="${CLANG_PATH}" && make
+   DEPENDS "${CLANG_PATH}"
    WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
 )
 
@@ -70,14 +73,13 @@ set(GOLD_PATH "${LLVM_LIBRARY_DIR}/LLVMgold.so")
 add_custom_target(
    instrumentation-mechanisms-lto
    COMMENT "Build the lto-enabled instrumentation mechanisms..."
-   COMMAND export LLVM_GOLD="${GOLD_PATH}" && make lto
-   DEPENDS "${GOLD_PATH}"
+   COMMAND export LLVM_GOLD="${GOLD_PATH}" && export CLANG="${CLANG_PATH}" && make
+   DEPENDS "${GOLD_PATH}" "${CLANG_PATH}"
    WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
 )
 
 set(RT_INCLUDE_PATH "${MEMINSTRUMENT_RT_PATH}/include")
 
-set(CLANG_CMD "${LLVM_BINARY_DIR}/bin/clang")
 set(MI_LIB_PATH "${LLVM_LIBRARY_DIR}/LLVMmeminstrument.so")
 set(RT_LIBS_PATH "${MEMINSTRUMENT_RT_PATH}/lib")
 
