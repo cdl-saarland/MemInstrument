@@ -1,60 +1,57 @@
-# Instrumentation passes for enforcing memory safety.
+# The MemInstrument framework
+
+The MemInstrument framework offers several memory safety instrumentations implemented as compiler extension for LLVM/Clang 12.
+When an instrumentation is enabled, the compiler inserts code that checks memory accesses for their validity.
+The inserted code is then executed at the runtime of the program, and reports an error if a memory safety violation is detected.
+
+A high-level project description can be found [here](https://compilers.cs.uni-saarland.de/projects/meminstrument/).
+
+Find details on the provided memory safety instrumentations in `runtime/README.md`.
 
 ## Getting Started
 
-### 0. Requirements
+### Requirements
 
-  * a modern Linux operating system with a modern C++ compiler (e.g. `g++`, other operating systems might also work but are not officially supported)
-  * `git`
-  * `cmake` (version as required by LLVM)
-  * a supported build system, e.g. `ninja` (recommended) or GNU make
-  * the built C part of the implementation, the [instrumentation-mechanisms](https://gitlab.cs.uni-saarland.de/cdl/safe-c/instrumentation-mechanisms)
+LLVM and our project require various C/C++ related packages (`cmake`, `ninja`, a C++ compiler, `ctags`, the `uuid` library+headers).
 
-### 1. Setting up LLVM
-
-Start in your project root folder. Clone the [LLVM sources from the monorepo](https://github.com/llvm/llvm-project) as `llvm-project` and checkout the required branch (currently supported: `release/12.x`).
-
-### 2. Setting up meminstrument
-
-Clone this repository into `llvm-project/llvm/projects`.
-
-### 3. Building LLVM+Clang+meminstrument
-
-Create a new folder `build` in your project root folder and `cd` into it. Create build files via `cmake` with the following command:
-
+On a plain Ubuntu Server 20.04 LTS, the following commands will set up everything you need to build MemInstrument:
 ```
-cmake -G <build tool> -DLLVM_ENABLE_PROJECTS='clang' -DCMAKE_INCLUDE_PATH=</path/to/instrumentation-mechanisms> <additional flags> ../llvm-project/llvm/
+# Dependencies for LLVM
+apt-get install cmake ninja-build build-essential
+# Dependencies for MemInstrument
+apt-get install uuid-dev universal-ctags
 ```
 
-where `<build tool>` is your preferred build tool (e.g. `Ninja`).
-Interesting additional flags for development are:
+### Building LLVM and MemInstrument
 
-  * `-DPICO_USE_MEMINSTRUMENT=1` to tell [PICO](https://gitlab.cs.uni-saarland.de/cdl/safe-c/PICO) that it will be used by meminstrument (only if you also build PICO)
-  * `-DLLVM_ENABLE_ASSERTIONS=1` to enforce assertions in the code
-  * `-DCMAKE_BUILD_TYPE=Debug` to enable a debug build for better error messages and debugging capabilities
-  * `-DLLVM_PARALLEL_LINK_JOBS=<n>` to limit the number of concurrent link jobs to `<n>`. This should be rather low for systems with less than 8GB of RAM as linking `clang` can require considerable amounts of memory (especially when building a debug build)
-  * `-DLLVM_TARGETS_TO_BUILD=X86` to reduce build time by building only the X86 backend
-  * `-DCMAKE_INSTALL_PREFIX=</path/to/install/directory>` to specify an installation directory for llvm
+The build script clones several repositories and creates an LLVM release build.
+Note that you can expect a memory usage of around 6GB in total.
 
-When the build files are generated, use your build system to build the project (e.g. by typing `ninja`). This might take a while.
+Download `build.sh` to the folder where you want MemInstrument to live.
 
-Note that an LLVM debug build currently requires around 60GB of memory.
+Execute it with
 
-### 4. Build Targets
+`./build.sh`
 
-`meminstrument` defines additional build targets to use with the build system:
+Afterwards, you will have two folders:
 
-  * `check-meminstrument` to run the `meminstrument` test suite
-  * `meminstrument-update-format` to run `clangformat` on all `meminstrument` source files
+* `meminstrument-repos`, where the LLVM, binutils, and MemInstrument sources are
+* `meminstrument-build`, which contains your self-built LLVM with MemInstrument
+
+### Note
+
+`Binutils` are not strictly required to build MemInstrument.
+However, especially the performance of SoftBound heavily depends on the usage of LTO (you can expect multiple times the regular runtime without LTO).
+Therefore, we build the lto-ready runtime library by default, which requires `binutils`.
 
 ## Using the Instrumentation Passes
 
 ### Basic usage
 
-... with clang:
+... with (the just built) clang:
 
 ```
-clang -Ox -Xclang -load -Xclang <path to LLVM build>/lib/LLVMmeminstrument.so
+clang -O<x> -Xclang -load -Xclang <path to LLVM build>/lib/LLVMmeminstrument.so
 ```
 Note that at least optimization level `-O1` is required, without it the instrumentation will not be run.
 
@@ -71,6 +68,7 @@ Various different instrumentations are available, the default is `splay`. To run
 ```
 
 The most interesting options for `<instrumentation>` are `splay`, `lowfat` and `softbound`.
+For `lowfat`, the additional flag `-mcmodel=large` is required (or you have to disable the global variable extension).
 
 Note: If you want to pass arguments for the instrumentation to `clang`, add `-mllvm` in front of each of them (e.g. `-mllvm -mi-config=lowfat -mllvm -mi-mode=setup`).
 
@@ -80,16 +78,10 @@ The compiled program needs to be linked against the C part of the instrumentatio
 Use
 
 ```
--L</path/to/instrumentation-mechanisms>/lib -ldl -l:lib<instrumentation>.a
+-L<path to LLVM source>/llvm/projects/meminstrument/runtime/lib -ldl -l:lib<instrumentation>.a
 ```
 
-to link the library.
-
-For SoftBound(CETS) use:
-
-```
--L</path/to/instrumentation-mechanisms>/lib -lm -lrt -lsoftboundcets_rt -luuid -ldl -lcrypt
-```
+to link the library. For SoftBound, additionally append following linker flags: ` -luuid -lm -lrt -lcrypt`
 
 ### Full list of available options
 
@@ -98,3 +90,22 @@ The available command line flags for the instrumentations can be found under "Me
 ```
 opt -load <path to LLVM build>/lib/LLVMmeminstrument.so --help
 ```
+
+### Testing
+
+MemInstrument uses the built-in testing framework of LLVM. To execute the tests, use
+
+```
+cd <path to LLVM build>
+ninja check-meminstrument
+```
+
+## Contributions
+
+The framework was set up by **Fabian Ritter** and further developed by **Tina Jung**.
+
+**Fabian Ritter** contributed the splay instrumentation, as well as various statistics and testing mechanisms.
+
+The lowfat implementation (heap protection) was contributed by **Philip Gebel** and extended by the stack and global variable protection by **Tina Jung**.
+
+The SoftBound implementation is by **Tina Jung**.
