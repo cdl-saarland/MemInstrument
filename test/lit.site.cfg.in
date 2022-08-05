@@ -27,6 +27,11 @@ if is_set('@LLVM_ENABLE_ASSERTIONS@'):
 else:
   config.available_features.add("noasserts")
 
+if is_set('@LTO_AVAILABLE@'):
+  config.available_features.add("lto")
+else:
+  config.available_features.add("nolto")
+
 config.substitutions.append(('%loadlibs', '-load ' + config.llvm_lib_dir + '/LLVMmeminstrument.so'))
 
 # Let the main config do the real work.

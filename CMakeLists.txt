@@ -52,6 +52,13 @@ else()
   set(HAS_SQLITE3 0)
 endif()
 
+# Define a variable used by the testing to identify whether the LTO-enabled
+# libraries are available
+set(LTO_AVAILABLE 0)
+if(LLVM_BINUTILS_INCDIR)
+  set(LTO_AVAILABLE 1)
+endif()
+
 set(CLANG_PATH "${LLVM_BINARY_DIR}/bin/clang")
 
 # Define the path to the run-time and provide a target that defines how to build

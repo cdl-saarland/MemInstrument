@@ -83,6 +83,11 @@ Use
 
 to link the library. For SoftBound, additionally append following linker flags: ` -luuid -lm -lrt -lcrypt`
 
+### Link-Time Optimizations (LTO)
+
+In order to use LTO, append `-flto -fuse-ld=gold` to your linker flags.
+Instead of the libraries in `lib`, use those in `lib/lto`.
+
 ### Full list of available options
 
 The available command line flags for the instrumentations can be found under "MemInstrument Options" in the help of `opt`.
