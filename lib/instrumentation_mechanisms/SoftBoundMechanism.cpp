@@ -1082,7 +1082,7 @@ void SoftBoundMechanism::handleIntrinsicInvariant(
     return;
   }
   case Intrinsic::memset: {
-    // TODO FIXME what if an in-memory pointer is overwritten here?
+    // TODO what if an in-memory pointer is overwritten here?
     return;
   }
   case Intrinsic::vastart: {

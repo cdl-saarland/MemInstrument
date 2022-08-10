@@ -33,7 +33,7 @@ STATISTIC(SplayNumAllocas, "The # of allocas registered");
 using namespace llvm;
 using namespace meminstrument;
 
-// FIXME currently, all out-of-bounds pointers are marked invalid here,
+// TODO currently, all out-of-bounds pointers are marked invalid here,
 // including legal one-after-allocation ones.
 
 Value *SplayWitness::getLowerBound(void) const { return LowerBound; }

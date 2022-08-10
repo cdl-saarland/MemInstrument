@@ -22,8 +22,8 @@
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #include "llvm/Transforms/Utils.h"
 
-using namespace meminstrument;
 using namespace llvm;
+using namespace meminstrument;
 
 namespace llvm {
 ModulePass *createEliminateAvailableExternallyPass();
@@ -31,13 +31,19 @@ ModulePass *createStripDeadPrototypesPass();
 ModulePass *createMemInstrumentPass() { return new MemInstrumentPass(); }
 } // namespace llvm
 
-namespace {
 cl::opt<bool> NoMemInstrumentOpt(
     "mi-no-meminstrument",
     cl::desc(
         "Do not add meminstrument and required passes into the clang pipeline"),
     cl::init(false));
-} // namespace
+
+cl::opt<bool> HandleInvoke(
+    "mi-handle-invoke",
+    cl::desc("For benchmarks that contain invoke instructions, MemInstrument "
+             "needs to break critical edges first. Hand this flag over in case "
+             "your benchmarks contains invokes. Note that not every mechanism "
+             "properly supports C++, where invokes often occur."),
+    cl::init(false));
 
 namespace meminstrument {
 static RegisterPass<MemInstrumentPass>
@@ -79,12 +85,16 @@ static void registerMeminstrumentPass(const PassManagerBuilder &,
 
   PM.add(createPromoteMemoryToRegisterPass());
   PM.add(createCFGSimplificationPass());
-  // This is necessary for instrumenting invoke instructions that occur in C++
-  // exception handling:
-  // PM.add(createBreakCriticalEdgesPass());
-  // TODO this is only a requirement for SoftBound
+  if (HandleInvoke) {
+    // This is necessary for instrumenting invoke instructions that occur in C++
+    // exception handling
+    PM.add(createBreakCriticalEdgesPass());
+  }
   // Cut out functions for which no code will be generated (they conflict with
-  // the standard library wrappers of the run-time library)
+  // the standard library wrappers of the run-time library).
+  // TODO `Available externally` is only an issue for some mechanisms, so it
+  // might be reasonable to make this pass optional for others. However, this
+  // might have an impact on the performance comparability.
   PM.add(createEliminateAvailableExternallyPass());
   PM.add(createStripDeadPrototypesPass());
   PM.add(createMemInstrumentPass());

@@ -230,9 +230,9 @@ void AfterInflowStrategy::addRequired(WitnessGraphNode *Node) const {
     for (auto *V : Pointers) {
       // Generate witnesses for globals and constants at the beginning of the
       // function.
-      // TODO It might be interesting to have global witnesses for these.
+      // TODO There might be better locations for this witness, maybe experiment
+      // with some others to see what is best.
       requireSource(Node, V, EntryLoc);
-      // TODO do we really want to have witnesses for constant null pointers?
     }
     return;
   }
