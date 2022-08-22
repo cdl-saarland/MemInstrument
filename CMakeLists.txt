@@ -66,24 +66,23 @@ set(CLANG_PATH "${LLVM_BINARY_DIR}/bin/clang")
 set(MEMINSTRUMENT_RT_PATH "${MEMINSTRUMENT_SOURCE_DIR}/runtime")
 
 add_custom_target(
-   instrumentation-mechanisms
-   COMMENT "Build the instrumentation mechanisms..."
-   COMMAND export CLANG="${CLANG_PATH}" && make
-   DEPENDS "${CLANG_PATH}"
-   WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
-)
+  instrumentation-mechanisms
+  COMMENT "Build the instrumentation mechanisms..."
+  COMMAND export CLANG="${CLANG_PATH}" && make
+  DEPENDS "${CLANG_PATH}"
+  WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}")
 
 # Allow to automatically build the LTO-enabled mechanisms; this will only work
 # if gold is available
 set(GOLD_PATH "${LLVM_LIBRARY_DIR}/LLVMgold.so")
 
 add_custom_target(
-   instrumentation-mechanisms-lto
-   COMMENT "Build the lto-enabled instrumentation mechanisms..."
-   COMMAND export LLVM_GOLD="${GOLD_PATH}" && export CLANG="${CLANG_PATH}" && make
-   DEPENDS "${GOLD_PATH}" "${CLANG_PATH}"
-   WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}"
-)
+  instrumentation-mechanisms-lto
+  COMMENT "Build the lto-enabled instrumentation mechanisms..."
+  COMMAND export LLVM_GOLD="${GOLD_PATH}" && export CLANG="${CLANG_PATH}" &&
+          make
+  DEPENDS "${GOLD_PATH}" "${CLANG_PATH}"
+  WORKING_DIRECTORY "${MEMINSTRUMENT_RT_PATH}")
 
 set(RT_INCLUDE_PATH "${MEMINSTRUMENT_RT_PATH}/include")
 
