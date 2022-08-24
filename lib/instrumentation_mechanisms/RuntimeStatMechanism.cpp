@@ -7,16 +7,16 @@
 
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
 
+#include "meminstrument/Config.h"
+#include "meminstrument/pass/Util.h"
+
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-
-#include "meminstrument/Config.h"
-
-#include "meminstrument/pass/Util.h"
+#include "llvm/Support/CommandLine.h"
 
 STATISTIC(RTStatNumNormalLoads, "The static # of unmarked loads");
 STATISTIC(RTStatNumNormalStores, "The static # of unmarked stores");
@@ -37,13 +37,10 @@ STATISTIC(RTStatNumPMDAbad, "The static # of PMDAbad memory operations");
 // TODO this could (and probably should) be made more parametric in the
 // statistics to gather
 
-namespace {
-const char *markString = "nosanitize";
-// const char *markString = "temporallySafe";
-} // namespace
-
 using namespace llvm;
 using namespace meminstrument;
+
+extern cl::opt<std::string> RemovalAnnotationString;
 
 Value *RuntimeStatWitness::getLowerBound(void) const { return nullptr; }
 
@@ -98,7 +95,7 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     const auto &It = StringMap.find(Target.getLocation());
     assert(It != StringMap.end() &&
            "RT instrumentation required for unknown instruction!");
-    if (Target.getLocation()->getMetadata(markString)) {
+    if (Target.getLocation()->getMetadata(RemovalAnnotationString)) {
       ++RTStatNumNoSan;
     } else {
       ++RTStatNumWild;
@@ -106,12 +103,12 @@ void RuntimeStatMechanism::insertCheck(ITarget &Target) const {
     idx = It->second.idx;
   } else {
     if (isa<LoadInst>(Target.getLocation()) &&
-        Target.getLocation()->getMetadata(markString)) {
+        Target.getLocation()->getMetadata(RemovalAnnotationString)) {
       idx = 5 * NoSanLoadIdx;
       ++RTStatNumNoSanLoads;
       ++RTStatNumNoSan;
     } else if (isa<StoreInst>(Target.getLocation()) &&
-               Target.getLocation()->getMetadata(markString)) {
+               Target.getLocation()->getMetadata(RemovalAnnotationString)) {
       idx = 5 * NoSanStoreIdx;
       ++RTStatNumNoSanStores;
       ++RTStatNumNoSan;
@@ -174,7 +171,7 @@ uint64_t RuntimeStatMechanism::populateStringMap(Module &M) {
     for (auto &BB : F) {
       for (auto &I : BB) {
         const char *Kind = nullptr;
-        if (I.getMetadata(markString)) {
+        if (I.getMetadata(RemovalAnnotationString)) {
           if (isa<LoadInst>(I)) {
             Kind = "marked load";
           } else if (isa<StoreInst>(I)) {
