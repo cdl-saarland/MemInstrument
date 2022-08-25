@@ -28,7 +28,7 @@ using WitnessMap = std::map<unsigned, WitnessPtr>;
 /// A Witness is the information that an instrumentation needs to verify that
 /// an access to a pointer is valid. This is typically a set of LLVM values that
 /// hold some kind of bounds information.
-/// Witnesses are closely related to InstructionMechanisms and should be
+/// Witnesses are closely related to InstrumentationMechanisms and should be
 /// implemented with them.
 struct Witness {
 public:
