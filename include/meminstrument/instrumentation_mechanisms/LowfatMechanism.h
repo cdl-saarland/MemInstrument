@@ -5,7 +5,24 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// Low-Fat Pointers manipulate memory allocations in such a way that the bounds
+/// of the allocation can be inferred from the address of the pointer.
+/// Therefore, no specific datastructure is required to store the bound
+/// information, and as all low-fat pointers have regular addresses, the
+/// interoperability with uninstrumented libraries is high. However, the size
+/// of the low-fat allocation is larger than the allocation size requested by
+/// the programmer, which results in missing error reports for accesses to the
+/// padding. In-bounds checks are performed whenever a pointer is dereferenced,
+/// when it is stored to memory, handed over at a call site or the like.
+/// Therefore, not only out-of-bounds accesses, but also some out-of-bounds
+/// pointer arithmetic is reported.
+///
+/// Find more details on how stack, heap, and global variables are handled in
+/// the original publications by Duck, Yap, and Cavallaro:
+///   https://dblp.org/rec/conf/cc/DuckY16
+///   https://dblp.org/rec/conf/ndss/DuckYC17
+///   https://dblp.org/rec/journals/corr/abs-1804-04812
 ///
 //===----------------------------------------------------------------------===//
 

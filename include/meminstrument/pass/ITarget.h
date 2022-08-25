@@ -5,7 +5,19 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// InstrumentationTargets describe which kind of code should be inserted at
+/// which code location. They are independent of the mechanism, the strategy or
+/// the like. For example, a check target describes that a check for a memory
+/// access should be generated, given the pointer that is accessed and a
+/// location where the check should be placed. The specific memory safety
+/// instrumentation later on defines which code is generated for the individual
+/// targets. A policy collects the targets for a program, and the mechanism
+/// later on simply needs to specify which code should be generated for which
+/// target. This enables us to reuse policies for memory safety instrumentations
+/// which require the same targets. It also allows to define optimizations
+/// purely working on targets, without the need to tailor them to a specific
+/// instrumentation.
 ///
 //===----------------------------------------------------------------------===//
 

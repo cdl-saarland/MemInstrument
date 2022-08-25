@@ -5,7 +5,10 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This optimization filters out check targets for instructions marked with
+/// metadata that indicates they need not be checked. The metadata string for
+/// the filter can be configured by a command line flag.
 ///
 //===----------------------------------------------------------------------===//
 #ifndef MEMINSTRUMENT_OPTIMIZATION_ANNOTATIONBASEDCHECKREMOVALPASS_H

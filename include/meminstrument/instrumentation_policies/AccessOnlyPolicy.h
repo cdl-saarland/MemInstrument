@@ -5,7 +5,9 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This policy creates only check targets. They are generated for loads,
+/// stores, and intrinsics that access memory.
 ///
 //===----------------------------------------------------------------------===//
 

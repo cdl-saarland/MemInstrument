@@ -5,7 +5,14 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This pass demonstrates the usage of the optimization interface for an
+/// advanced optimization that not only filters out targets, but also replaces
+/// targets by others. Optimizations can, for example, query bounds from a
+/// memory safety instrumentation and use these bounds to place checks at
+/// different locations in the program. For this purpose, the optimization can
+/// insert additional bounds targets, and drop check targets for memory accesses
+/// that it guards with its own checks.
 ///
 //===----------------------------------------------------------------------===//
 

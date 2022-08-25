@@ -5,7 +5,10 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This mechanism is not a safety instrumentation. It inserts code to generate
+/// runtime access counts for statically marked accesses. This is currently
+/// highly tailored to the usage with PMDA.
 ///
 //===----------------------------------------------------------------------===//
 

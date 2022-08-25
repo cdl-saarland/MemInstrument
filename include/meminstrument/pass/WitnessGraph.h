@@ -5,7 +5,9 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// The WitnessGraph represents data flow from definitions of pointer values to
+/// ITargets which require witness information.
 ///
 //===----------------------------------------------------------------------===//
 

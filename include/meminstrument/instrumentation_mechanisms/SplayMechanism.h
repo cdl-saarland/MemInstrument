@@ -5,7 +5,18 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// "Splay", our short name for the memory safety instrumentation presented by
+/// Jones & Kelly in "Backwards-Compatible Bounds Checking for Arrays and
+/// Pointers in C Programs", is an approach that stores base and bounds of
+/// pointers in a splay-tree datastructure. In-bounds checks are performed
+/// whenever a pointer is dereferenced, stored to memory, handed over to a
+/// function at a call site or the like. Hence, it will not only report
+/// out-of-bounds pointer accesses, but also some cases of out-of-bounds pointer
+/// arithmetic.
+///
+/// Find all details in the original paper:
+/// https://dblp.org/rec/conf/aadebug/JonesK97
 ///
 //===----------------------------------------------------------------------===//
 

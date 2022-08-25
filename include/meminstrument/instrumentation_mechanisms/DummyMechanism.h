@@ -5,7 +5,9 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This mechanism does not implement a real safety instrumentation. It
+/// demonstrates the minimal usage of the InstrumentationMechanism interface.
 ///
 //===----------------------------------------------------------------------===//
 

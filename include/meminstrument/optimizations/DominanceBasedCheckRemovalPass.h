@@ -5,7 +5,13 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// Whenever the same memory location is accessed multiple times, and the first
+/// access dominates the others, the subsequent spatial checks can be elided.
+/// This optimization filters out targets for such dominated accesses.
+///
+/// Some instrumentations have invariants that perform in-bounds checks. This
+/// optimization can filter dominated invariants upon request.
 ///
 //===----------------------------------------------------------------------===//
 

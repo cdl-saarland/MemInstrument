@@ -5,7 +5,15 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// The instrumentation policy describes which locations in the code /
+/// instructions of the program require instrumentation. A typical example are
+/// in-bounds checks that should be placed at loads or stores. The specific
+/// policy (a subclass of this abstract one) describes the kinds of
+/// instrumentation that will be made. E.g., it describes locations where checks
+/// are placed or at which invariants are established. What the checks
+/// or invariants look like is defined by the specific instrumentation
+/// mechanism, and not the task of the policy.
 ///
 //===----------------------------------------------------------------------===//
 

@@ -5,7 +5,11 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// An InstrumentationMechanism describes how a specific memory safety approach
+/// ensures the safety of the program. It contains the information on which code
+/// needs to be inserted to check a dereference, derive bounds or propagate
+/// witnesses.
 ///
 //===----------------------------------------------------------------------===//
 

@@ -6,8 +6,13 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// SoftBound memory safety instrumentation originally developed by Santosh
-/// Nagarakatte, Jianzhou Zhao, Milo M. K. Martin and Steve Zdancewic.
+/// SoftBound tracks tight bounds for all pointers in the program explicitly,
+/// and checks whether an access is valid whenever a pointer dereference is
+/// performed. Pointers that are stored to memory use a specific datastructure
+/// and require bounds look-ups whenever they are loaded.
+///
+/// It was originally developed by Santosh Nagarakatte, Jianzhou
+/// Zhao, Milo M. K. Martin and Steve Zdancewic.
 ///
 /// Publications, links to the original implementation etc. can be found here:
 /// https://www.cs.rutgers.edu/~santosh.nagarakatte/softbound/

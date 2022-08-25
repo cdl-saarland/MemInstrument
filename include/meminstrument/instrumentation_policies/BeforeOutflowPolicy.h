@@ -5,7 +5,12 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This policy creates check targets for loads, stores, and function pointer
+/// calls. Additionally, it creates invariant targets for all locations where a
+/// pointer "escapes"/"flows out"/"leaves a context". Such locations include
+/// storing a pointer to memory, returning it from a function, passing it as an
+/// argument to a function, and storing it into an aggregate.
 ///
 //===----------------------------------------------------------------------===//
 

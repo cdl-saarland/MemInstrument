@@ -4,10 +4,7 @@
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-///
-/// \file TODO
-///
-//===----------------------------------------------------------------------===//
+
 #include "meminstrument/pass/Setup.h"
 
 #include "meminstrument/pass/Util.h"

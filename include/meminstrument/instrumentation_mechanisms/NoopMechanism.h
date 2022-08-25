@@ -5,7 +5,12 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// This mechanism does not actually provide any safety guarantees. It simulates
+/// possible costs of inserting checks at memory dereferences. The checks it
+/// places for this purpose are volatile loads of (fake) base and bound values
+/// from global variables, and a comparison of the dereferenced pointer to these
+/// bounds.
 ///
 //===----------------------------------------------------------------------===//
 

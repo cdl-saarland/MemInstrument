@@ -5,7 +5,11 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file TODO
+/// \file
+/// A witness provides the information that is necessary to perform a memory
+/// safety check. The information that is stored in the witness is specific to
+/// the InstrumentationMechanism, and hence, each one defines its own kind of
+/// witness.
 ///
 //===----------------------------------------------------------------------===//
 
