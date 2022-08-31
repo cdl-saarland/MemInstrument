@@ -7,7 +7,7 @@ MISRC=https://github.com/cdl-saarland/MemInstrument.git
 BINUTILS=git://sourceware.org/git/binutils-gdb.git
 
 # Basic structure
-INSTALL_ROOT=.
+INSTALL_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 MIREPOS=$INSTALL_ROOT/meminstrument-repos
 MIBUILD=$INSTALL_ROOT/meminstrument-build
 mkdir -p $MIREPOS $MIBUILD
@@ -17,7 +17,6 @@ cd $MIREPOS
 git clone $BINUTILS
 
 # Clone LLVM
-cd $MIREPOS
 git clone $LLVMSRC
 
 # Check out the correct release
@@ -26,7 +25,7 @@ git checkout release/12.x
 
 # Check out MemInstrument
 cd llvm/projects
-git clone $MISRC
+git clone $MISRC meminstrument
 cd meminstrument
 git submodule init && git submodule update
 
