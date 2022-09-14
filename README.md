@@ -25,7 +25,7 @@ apt-get install uuid-dev universal-ctags
 ### Building LLVM and MemInstrument
 
 The build script clones several repositories and creates an LLVM release build.
-Note that you can expect a memory usage of around 6GB in total.
+Note that you can expect that around 4GB storage will be used in total.
 
 Download `build.sh` to the folder where you want MemInstrument to live.
 

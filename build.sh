@@ -14,17 +14,13 @@ mkdir -p $MIREPOS $MIBUILD
 
 # Setup binutils
 cd $MIREPOS
-git clone $BINUTILS
+git clone $BINUTILS -b gdb-12-branchpoint --depth 1
 
-# Clone LLVM
-git clone $LLVMSRC
-
-# Check out the correct release
-cd llvm-project
-git checkout release/12.x
+# Clone LLVM 12
+git clone $LLVMSRC -b release/12.x --depth 1
 
 # Check out MemInstrument
-cd llvm/projects
+cd llvm-project/llvm/projects
 git clone $MISRC meminstrument
 cd meminstrument
 git submodule init && git submodule update
