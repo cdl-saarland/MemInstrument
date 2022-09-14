@@ -27,7 +27,7 @@ apt-get install uuid-dev universal-ctags
 The build script clones several repositories and creates an LLVM release build.
 Note that you can expect that around 4GB storage will be used in total.
 
-Download `build.sh` to the folder where you want MemInstrument to live.
+Download [build.sh](https://raw.githubusercontent.com/cdl-saarland/MemInstrument/main/build.sh) to the folder where you want MemInstrument to live.
 
 Execute it with
 
