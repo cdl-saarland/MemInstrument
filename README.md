@@ -12,7 +12,7 @@ Find details on the provided memory safety instrumentations in `runtime/README.m
 
 ### Requirements
 
-LLVM and our project require various C/C++ related packages (`cmake`, `ninja`, a C++ compiler, `ctags`, the `uuid` library+headers).
+LLVM and our project require various C/C++ related packages (`cmake`, `ninja`, a C++ compiler, `GNU ld`, `ctags`, the `uuid` library+headers).
 
 On a plain Ubuntu Server 20.04 LTS, the following commands will set up everything you need to build MemInstrument:
 ```
