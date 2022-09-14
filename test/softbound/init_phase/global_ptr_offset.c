@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %clang -O1 -c -S -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: Handle initializer i32* bitcast (i8* getelementptr (i8, i8* bitcast ([15 x i32]* @Ar to i8*), i64 28) to i32*)
 // CHECK-NEXT: Base: {{.*}} @Ar

@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -Xclang -load -Xclang %passlib -mllvm -mi-config=splay -emit-llvm -c -S -o %t1.ll %s
+// RUN: %clang -O1 -fplugin=%passlib -mllvm -mi-config=splay -emit-llvm -c -S -o %t1.ll %s
 // RUN: fgrep "splay" %t1.ll
 
 #include <stdlib.h>

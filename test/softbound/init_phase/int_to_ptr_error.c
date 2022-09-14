@@ -1,4 +1,4 @@
-// RUN: %not %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -mi-sb-inttoptr-disallow -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %not %clang -O1 -c -S -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -mi-sb-inttoptr-disallow -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: Meminstrument Error{{.*}}Integer to pointer cast found{{.*}}
 

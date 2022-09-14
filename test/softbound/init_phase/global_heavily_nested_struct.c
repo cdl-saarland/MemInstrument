@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -stats -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %clang -O1 -c -S -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -mllvm -stats -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: 38 softbound{{.*}}Number of metadata stores inserted
 

@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=splay %linksplay -o %t
+// RUN: %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=splay %linksplay -o %t
 // RUN: %t
 
 #include <stdio.h>

@@ -1,4 +1,4 @@
-// RUN: %not %clang -O1 -Xclang -load -Xclang %passlib %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -emit-llvm -S -o - 2>&1 | %filecheck %s
+// RUN: %not %clang -O1 -fplugin=%passlib %s -mllvm -mi-config=softbound -mllvm -mi-mode=setup -emit-llvm -S -o - 2>&1 | %filecheck %s
 
 // CHECK: Meminstrument Error{{.*}}varargs and byvalue arguments{{.*}}
 

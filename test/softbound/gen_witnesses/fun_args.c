@@ -1,4 +1,4 @@
-// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genwitnesses -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %clang -c -S -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-mode=genwitnesses -mllvm -debug-only=softbound -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: Insert witness {{.*}}source target for q at entry
 // CHECK: Base{{.*}} @__softboundcets_load_base_shadow_stack(i32 1)

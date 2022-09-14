@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound %linksb -o %t
+// RUN: %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound %linksb -o %t
 // RUN: %not --crash %t 2> /dev/null
 
 // The non-overlap is currently not checked

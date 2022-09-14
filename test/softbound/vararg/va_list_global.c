@@ -1,4 +1,4 @@
-// RUN: %not %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -emit-llvm -S 2>&1 | %filecheck %s
+// RUN: %not %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -emit-llvm -S 2>&1 | %filecheck %s
 
 // Varargs are currently only supported for the common case that the va_list
 // which stores them is a simple stack allocation

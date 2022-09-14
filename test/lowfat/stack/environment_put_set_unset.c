@@ -1,4 +1,4 @@
-// RUN: %clang -mcmodel=large -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
+// RUN: %clang -mcmodel=large -fplugin=%passlib -O1 %s -mllvm -mi-config=lowfat %linklowfat -o %t
 // RUN: %t
 
 // Checks whether accesses to the environment work after modifying it using the

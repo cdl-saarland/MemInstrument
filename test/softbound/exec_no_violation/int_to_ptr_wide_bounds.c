@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-sb-inttoptr-wide-bounds %linksb -o %t
+// RUN: %clang -O1 -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-sb-inttoptr-wide-bounds %linksb -o %t
 // RUN: %t
 
 #include <stdio.h>

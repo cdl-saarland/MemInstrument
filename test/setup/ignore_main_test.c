@@ -1,4 +1,4 @@
-// RUN: %clang -O1 -c -S -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-ignored-functions-file=%testfolder/setup/ignoreMainFun.list -mllvm -stats -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %clang -O1 -c -S -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -mllvm -mi-ignored-functions-file=%testfolder/setup/ignoreMainFun.list -mllvm -stats -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: define{{.*}}softboundcets_pseudo_main
 // CHECK-NOT: call{{.*}}dereference_check

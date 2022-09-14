@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound -c -emit-llvm -o %t.ll
+// RUN: %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound -c -emit-llvm -o %t.ll
 // RUN: %clang -O1 %t.ll %linkltosb -o %t
 // RUN: %not --crash %t 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2> /dev/null
 

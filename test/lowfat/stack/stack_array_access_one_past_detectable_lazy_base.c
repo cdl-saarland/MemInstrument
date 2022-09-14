@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -mcmodel=large -O1 %s -mllvm -mi-config=lowfat -mllvm -mi-lf-calculate-base-lazy -emit-llvm -S -o %t.ll
+// RUN: %clang -fplugin=%passlib -mcmodel=large -O1 %s -mllvm -mi-config=lowfat -mllvm -mi-lf-calculate-base-lazy -emit-llvm -S -o %t.ll
 // RUN: %clang -mcmodel=large %t.ll %linklowfat -o %t
 // RUN: %not --crash %t 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2>&1 | %filecheck %s
 

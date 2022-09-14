@@ -51,7 +51,7 @@ Therefore, we build the lto-ready runtime library by default, which requires `bi
 ... with (the just built) clang:
 
 ```
-clang -O<x> -Xclang -load -Xclang <path to LLVM build>/lib/LLVMmeminstrument.so
+clang -O<x> -fplugin=<path to LLVM build>/lib/LLVMmeminstrument.so
 ```
 Note that at least optimization level `-O1` is required, without it the instrumentation will not be run.
 

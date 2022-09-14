@@ -1,4 +1,4 @@
-// RUN: %clang -mcmodel=large -Xclang -load -Xclang %passlib -O1 -mllvm -mi-config=lowfat %linklowfat -o %t -mllvm -stats %s 2>&1 | %filecheck %s
+// RUN: %clang -mcmodel=large -fplugin=%passlib -O1 -mllvm -mi-config=lowfat %linklowfat -o %t -mllvm -stats %s 2>&1 | %filecheck %s
 // RUN: %t
 
 // CHECK: 1{{.*}}dereference checks inserted

@@ -1,4 +1,4 @@
-// RUN: %clink -Xclang -load -Xclang %passlib -mllvm -mi-config=rt_stat -mllvm -mi-opt-pico -mllvm -placeMeta -ldl -l:librt_stat.a -g -O1 -o %t0 %s
+// RUN: %clink -fplugin=%passlib -mllvm -mi-config=rt_stat -mllvm -mi-opt-pico -mllvm -placeMeta -ldl -l:librt_stat.a -g -O1 -o %t0 %s
 // RUN: %t0 2> %t1.log
 // RUN: grep -e "\.c - l 12 - c 10 - marked store .* : 20" %t1.log
 // RUN: grep -e "\.c - l 18 - c 12 - marked load .* : 20" %t1.log

@@ -8,5 +8,5 @@ MI_LIB_PATH=@MI_LIB_PATH@
 
 RT_LIBS_PATH=@RT_LIBS_PATH@
 
-$CLANG_CMD -Xclang -load -Xclang $MI_LIB_PATH -L $RT_LIBS_PATH -ldl -l:lib$IMECHANISM.a $@
+$CLANG_CMD -fplugin=$MI_LIB_PATH -L $RT_LIBS_PATH -ldl -l:lib$IMECHANISM.a $@
 

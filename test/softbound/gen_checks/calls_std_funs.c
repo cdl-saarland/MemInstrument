@@ -1,4 +1,4 @@
-// RUN: %clang -c -S -Xclang -load -Xclang %passlib -O1  %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound-genchecks  -emit-llvm -o - 2>&1 | %filecheck %s
+// RUN: %clang -c -S -fplugin=%passlib -O1  %s -mllvm -mi-config=softbound -mllvm -mi-mode=genchecks -mllvm -debug-only=softbound-genchecks  -emit-llvm -o - 2>&1 | %filecheck %s
 
 // CHECK: call invariant for softboundcets_strcpy with 2 arg(s)
 // CHECK-NEXT: __softboundcets_allocate_shadow_stack_space(i32 3)

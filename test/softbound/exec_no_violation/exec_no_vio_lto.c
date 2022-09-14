@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound %linkltosb -o %t
+// RUN: %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound %linkltosb -o %t
 // RUN: %t 2 2 2 2 2 2 2 2 2 2 2 2 2 2
 
 // REQUIRES: lto

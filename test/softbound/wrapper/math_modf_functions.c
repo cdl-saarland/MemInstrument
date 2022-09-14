@@ -1,4 +1,4 @@
-// RUN: %clang -Xclang -load -Xclang %passlib -O1 %s -mllvm -mi-config=softbound %linksb -mllvm --debug-only=softbound,meminstrument -o %t
+// RUN: %clang -fplugin=%passlib -O1 %s -mllvm -mi-config=softbound %linksb -mllvm --debug-only=softbound,meminstrument -o %t
 // RUN: %t
 
 // REQUIRES: asserts
