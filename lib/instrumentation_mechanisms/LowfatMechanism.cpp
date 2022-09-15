@@ -61,7 +61,7 @@ cl::opt<bool> TransformCommonToWeakLinkage(
         "Lowfat protects globals by moving them to specific sections in which "
         "the alignment and size constraints of the allocations are ensured. "
         "Variables with common linkage cannot have a section annotation, and "
-        "hence not be moved. This flag enables chaning the linkage to be weak, "
+        "hence not be moved. This flag enables changing the linkage to be weak, "
         "such that the section annotation can be placed."),
     cl::init(false));
 
