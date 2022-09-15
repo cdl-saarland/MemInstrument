@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument -mi-config=rt_stat -mi-verbose=0 -S %s > %t1.ll
+; RUN: %opt %loadlibs -meminstrument -mi-config=rt-stat -mi-verbose=0 -S %s > %t1.ll
 ; RUN: %clink -ldl -l:librt_stat.a -o %t2 %t1.ll
 ; RUN: %t2 2> %t3.stats
 ; RUN: egrep "unmarked loads.*: 1" %t3.stats

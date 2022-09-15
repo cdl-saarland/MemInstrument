@@ -55,7 +55,7 @@ cl::opt<ConfigKind> ConfigKindOpt(
         clEnumValN(ConfigKind::optimization_checks_only,
                    "optimization-checks-only",
                    "instrumentation that inserts only external checks"),
-        clEnumValN(ConfigKind::rt_stat, "rt_stat",
+        clEnumValN(ConfigKind::rt_stat, "rt-stat",
                    "instrumentation for collection run-time statistics only"),
         clEnumValN(ConfigKind::noop, "noop",
                    "noop instrumentation that just adds runtime overheads"),
