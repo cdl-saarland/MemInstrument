@@ -9,7 +9,7 @@
 #include "meminstrument/Definitions.h"
 #include "meminstrument/optimizations/AnnotationBasedRemovalPass.h"
 #include "meminstrument/optimizations/DominanceBasedCheckRemovalPass.h"
-#include "meminstrument/optimizations/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/ExampleExternalChecksPass.h"
 #include "meminstrument/optimizations/HotnessBasedCheckRemovalPass.h"
 #include "meminstrument/pass/Util.h"
 
@@ -28,14 +28,15 @@ using namespace meminstrument;
 
 cl::list<InstrumentationOptimizations> OptimizationList(
     cl::desc("Available Optimizations:"),
-    cl::values(
-        clEnumValN(annotation_checkrem, "mi-opt-annotation",
-                   "Annotation based filter"),
-        clEnumValN(dominance_checkrem, "mi-opt-dominance",
-                   "Dominance based filter"),
-        clEnumValN(hotness_checkrem, "mi-opt-hotness", "Hotness based filter"),
-        clEnumValN(dummy_checkopt, "mi-opt-dummy", "Dummy external checks"),
-        clEnumValN(pico_checkopt, "mi-opt-pico", "PICO")));
+    cl::values(clEnumValN(annotation_checkrem, "mi-opt-annotation",
+                          "Annotation based filter"),
+               clEnumValN(dominance_checkrem, "mi-opt-dominance",
+                          "Dominance based filter"),
+               clEnumValN(hotness_checkrem, "mi-opt-hotness",
+                          "Hotness based filter"),
+               clEnumValN(example_checkopt, "mi-opt-example",
+                          "Example external checks"),
+               clEnumValN(pico_checkopt, "mi-opt-pico", "PICO")));
 
 OptimizationRunner::OptimizationRunner(MemInstrumentPass &mip)
     : mip(mip), selectedOpts(computeSelectedOpts(mip)) {}
@@ -92,8 +93,8 @@ void OptimizationRunner::addRequiredAnalyses(AnalysisUsage &analysisUsage) {
     case InstrumentationOptimizations::hotness_checkrem:
       analysisUsage.addRequired<HotnessBasedCheckRemovalPass>();
       break;
-    case InstrumentationOptimizations::dummy_checkopt:
-      analysisUsage.addRequired<DummyExternalChecksPass>();
+    case InstrumentationOptimizations::example_checkopt:
+      analysisUsage.addRequired<ExampleExternalChecksPass>();
       break;
     case InstrumentationOptimizations::pico_checkopt:
 #if !PICO_AVAILABLE
@@ -133,8 +134,8 @@ auto OptimizationRunner::computeSelectedOpts(MemInstrumentPass &mi)
     case InstrumentationOptimizations::hotness_checkrem:
       opts.push_back(&mi.getAnalysis<HotnessBasedCheckRemovalPass>());
       break;
-    case InstrumentationOptimizations::dummy_checkopt:
-      opts.push_back(&mi.getAnalysis<DummyExternalChecksPass>());
+    case InstrumentationOptimizations::example_checkopt:
+      opts.push_back(&mi.getAnalysis<ExampleExternalChecksPass>());
       break;
     case InstrumentationOptimizations::pico_checkopt:
 #if !PICO_AVAILABLE

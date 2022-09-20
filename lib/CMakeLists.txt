@@ -11,7 +11,7 @@ add_library(
   pass/WitnessGraph.cpp
   optimizations/AnnotationBasedRemovalPass.cpp
   optimizations/DominanceBasedCheckRemovalPass.cpp
-  optimizations/DummyExternalChecksPass.cpp
+  optimizations/ExampleExternalChecksPass.cpp
   optimizations/HotnessBasedCheckRemovalPass.cpp
   optimizations/OptimizationInterface.cpp
   optimizations/OptimizationRunner.cpp

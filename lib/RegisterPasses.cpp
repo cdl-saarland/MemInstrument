@@ -11,7 +11,7 @@
 
 #include "meminstrument/optimizations/AnnotationBasedRemovalPass.h"
 #include "meminstrument/optimizations/DominanceBasedCheckRemovalPass.h"
-#include "meminstrument/optimizations/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/ExampleExternalChecksPass.h"
 #include "meminstrument/optimizations/HotnessBasedCheckRemovalPass.h"
 #include "meminstrument/pass/MemInstrumentPass.h"
 
@@ -71,11 +71,11 @@ static RegisterPass<HotnessBasedCheckRemovalPass>
                                          false, // CFGOnly
                                          true); // isAnalysis
 
-static RegisterPass<DummyExternalChecksPass>
-    RegisterDummyExternalChecksPass("mi-dummy-external-checks",
-                                    "Dummy External Checks",
-                                    false, // CFGOnly
-                                    true); // isAnalysis
+static RegisterPass<ExampleExternalChecksPass>
+    RegisterExampleExternalChecksPass("mi-example-external-checks",
+                                      "Example External Checks",
+                                      false, // CFGOnly
+                                      true); // isAnalysis
 
 static void registerMeminstrumentPass(const PassManagerBuilder &,
                                       legacy::PassManagerBase &PM) {

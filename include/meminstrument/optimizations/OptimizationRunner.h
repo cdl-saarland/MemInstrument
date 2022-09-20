@@ -34,7 +34,7 @@ enum InstrumentationOptimizations {
   annotation_checkrem,
   dominance_checkrem,
   hotness_checkrem,
-  dummy_checkopt,
+  example_checkopt,
   pico_checkopt
 };
 

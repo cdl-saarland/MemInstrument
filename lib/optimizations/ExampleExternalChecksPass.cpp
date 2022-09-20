@@ -1,11 +1,11 @@
-//===- DummyExternalChecksPass.cpp - Dummy Checks -------------------------===//
+//===- ExampleExternalChecksPass.cpp - Example Checks ---------------------===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/optimizations/DummyExternalChecksPass.h"
+#include "meminstrument/optimizations/ExampleExternalChecksPass.h"
 
 #include "meminstrument/Config.h"
 #include "meminstrument/instrumentation_mechanisms/InstrumentationMechanism.h"
@@ -22,34 +22,34 @@ using namespace llvm;
 
 //===--------------------------- ModulePass -------------------------------===//
 
-char DummyExternalChecksPass::ID = 0;
+char ExampleExternalChecksPass::ID = 0;
 
-DummyExternalChecksPass::DummyExternalChecksPass() : ModulePass(ID) {}
+ExampleExternalChecksPass::ExampleExternalChecksPass() : ModulePass(ID) {}
 
-bool DummyExternalChecksPass::runOnModule(Module &) {
+bool ExampleExternalChecksPass::runOnModule(Module &) {
 
   LLVM_DEBUG(dbgs() << "Running External Checks Pass\n";);
   return false;
 }
 
-void DummyExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void ExampleExternalChecksPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
 
-bool DummyExternalChecksPass::doFinalization(Module &) {
+bool ExampleExternalChecksPass::doFinalization(Module &) {
   WorkList.clear();
   return false;
 }
 
-void DummyExternalChecksPass::print(raw_ostream &OS, const Module *M) const {
-  OS << "Running Dummy External Checks Pass on\n" << *M << "\n";
+void ExampleExternalChecksPass::print(raw_ostream &OS, const Module *M) const {
+  OS << "Running Example External Checks Pass on\n" << *M << "\n";
 }
 
 //===--------------------- OptimizationInterface --------------------------===//
 
-void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
-                                                        ITargetVector &Vec,
-                                                        Function &F) {
+void ExampleExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
+                                                          ITargetVector &Vec,
+                                                          Function &F) {
   // we store our relevant targets in a worklist for later materialization
   auto &CurrentWL = WorkList[&F];
 
@@ -79,7 +79,7 @@ void DummyExternalChecksPass::updateITargetsForFunction(MemInstrumentPass &P,
   Vec.insert(Vec.end(), CurrentWL.begin(), CurrentWL.end());
 }
 
-void DummyExternalChecksPass::materializeExternalChecksForFunction(
+void ExampleExternalChecksPass::materializeExternalChecksForFunction(
     MemInstrumentPass &P, ITargetVector &, Function &F) {
   auto &CFG = P.getConfig();
   auto &IM = CFG.getInstrumentationMechanism();

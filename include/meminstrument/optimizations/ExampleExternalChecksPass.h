@@ -1,4 +1,4 @@
-//===- meminstrument/DummyExternalChecksPass.h - Dummy Checks ---*- C++ -*-===//
+//===- meminstrument/ExampleExternalChecksPass.h - Example Pass -*- C++ -*-===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
@@ -16,8 +16,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MEMINSTRUMENT_OPTIMIZATION_DUMMYEXTERNALCHECKSPASS_H
-#define MEMINSTRUMENT_OPTIMIZATION_DUMMYEXTERNALCHECKSPASS_H
+#ifndef MEMINSTRUMENT_OPTIMIZATION_EXAMPLEEXTERNALCHECKSPASS_H
+#define MEMINSTRUMENT_OPTIMIZATION_EXAMPLEEXTERNALCHECKSPASS_H
 
 #include "meminstrument/optimizations/OptimizationInterface.h"
 #include "meminstrument/pass/ITarget.h"
@@ -27,8 +27,8 @@
 
 namespace meminstrument {
 
-class DummyExternalChecksPass : public llvm::ModulePass,
-                                public OptimizationInterface {
+class ExampleExternalChecksPass : public llvm::ModulePass,
+                                  public OptimizationInterface {
 public:
   // ModulePass methods
 
@@ -36,7 +36,7 @@ public:
   static char ID;
 
   /// Default constructor to initialize the module pass interface
-  DummyExternalChecksPass();
+  ExampleExternalChecksPass();
 
   virtual bool runOnModule(llvm::Module &) override;
 

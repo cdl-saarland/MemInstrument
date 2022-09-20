@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=optimization-checks-only -mi-opt-dummy -debug-only=meminstrument -S > %t1.ll 2> %t2.log
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=splay -mi-opt-example -debug-only=meminstrument -S > %t1.ll 2> %t2.log
 
 ; RUN: fgrep "call void @__mi_fail" %t1.ll
 ; RUN: fgrep "running preparatory code for 1 optimizations" %t2.log
