@@ -5,8 +5,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-typedef struct dummy { int i; int j; } dummyS;
-typedef struct bad { double k; int l; dummyS* ptr; } badS;
+typedef struct some { int i; int j; } someS;
+typedef struct bad { double k; int l; someS* ptr; } badS;
 
 void va_arg_and_by_val(char *fmt, ...) {
   va_list ap;
@@ -19,7 +19,7 @@ void va_arg_and_by_val(char *fmt, ...) {
 }
 
 int main() {
-  dummyS du = {36, 'a'};
+  someS du = {36, 'a'};
   badS badStruct = {101.1, 102, &du};
 
   va_arg_and_by_val("1", badStruct);
