@@ -93,6 +93,11 @@ public:
 
   virtual bool invariantsAreChecks() const override;
 
+protected:
+  llvm::Type *WitnessType = nullptr;
+  llvm::Type *PtrArgType = nullptr;
+  llvm::Type *SizeType = nullptr;
+
 private:
   llvm::FunctionCallee GlobalAllocFunction = nullptr;
   llvm::FunctionCallee AllocFunction = nullptr;
@@ -101,12 +106,6 @@ private:
   llvm::FunctionCallee GetUpperBoundFunction = nullptr;
   llvm::FunctionCallee GetLowerBoundFunction = nullptr;
   llvm::FunctionCallee ExtCheckCounterFunction = nullptr;
-
-  llvm::FunctionCallee ConfigFunction = nullptr;
-
-  llvm::Type *WitnessType = nullptr;
-  llvm::Type *PtrArgType = nullptr;
-  llvm::Type *SizeType = nullptr;
 
   // Map mapping location/instrumentee/index tuples to materialized lower and
   // upper bounds
@@ -117,7 +116,6 @@ private:
 
   void initTypes(llvm::LLVMContext &Ctx);
   void insertFunctionDeclarations(llvm::Module &M);
-  void setupInitCall(llvm::Module &M);
   void setupGlobals(llvm::Module &M);
   void instrumentAlloca(llvm::Module &M, llvm::AllocaInst *AI);
 };

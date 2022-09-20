@@ -17,10 +17,10 @@ add_library(
   optimizations/OptimizationRunner.cpp
   optimizations/PerfData.cpp
   instrumentation_mechanisms/InstrumentationMechanism.cpp
-  instrumentation_mechanisms/DummyMechanism.cpp
+  instrumentation_mechanisms/SleepMechanism.cpp
   instrumentation_mechanisms/SplayMechanism.cpp
   instrumentation_mechanisms/LowfatMechanism.cpp
-  instrumentation_mechanisms/NoopMechanism.cpp
+  instrumentation_mechanisms/ExampleMechanism.cpp
   instrumentation_mechanisms/RuntimeStatMechanism.cpp
   instrumentation_mechanisms/SoftBoundMechanism.cpp
   instrumentation_mechanisms/softbound/InternalSoftBoundConfig.cpp
@@ -50,8 +50,7 @@ target_include_directories(
   meminstrumentobjlib BEFORE
   PUBLIC $<BUILD_INTERFACE:${MEMINSTRUMENT_SOURCE_DIR}/include>
          $<BUILD_INTERFACE:${MEMINSTRUMENT_BINARY_DIR}/include>
-         $<BUILD_INTERFACE:${RT_INCLUDE_PATH}>
-         $<INSTALL_INTERFACE:include>)
+         $<BUILD_INTERFACE:${RT_INCLUDE_PATH}> $<INSTALL_INTERFACE:include>)
 
 # LLVM globally defines whether RTTI + exceptions should be used, stick to that.
 if(NOT LLVM_ENABLE_RTTI)

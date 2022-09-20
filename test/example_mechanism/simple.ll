@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -meminstrument %s -mi-config=noop -mi-opt-hotness -mi-opt-hotness-filter-ratio=0.4 -mi-opt-hotness-random-filter-seed=424344 -S > %t1.ll
+; RUN: %opt %loadlibs -meminstrument %s -mi-config=example -mi-opt-hotness -mi-opt-hotness-filter-ratio=0.4 -mi-opt-hotness-random-filter-seed=424344 -S > %t1.ll
 ; RUN: egrep "store volatile .* @mi_check_result_location" %t1.ll | wc -l | grep 6
 ; RUN: %clang -O3 -c -S -o %t2.s %t1.ll
 ; RUN: egrep "\<ja\>" %t2.s | wc -l | grep 12
@@ -50,4 +50,3 @@ bb:
 
   ret i32 42
 }
-

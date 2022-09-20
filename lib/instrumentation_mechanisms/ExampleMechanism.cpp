@@ -1,11 +1,11 @@
-//===- NoopMechanism.cpp - Add Wide Bound Checks --------------------------===//
+//===- ExampleMechanism.cpp - Add Wide Bound Checks -----------------------===//
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
 
-#include "meminstrument/instrumentation_mechanisms/NoopMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/ExampleMechanism.h"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
@@ -16,18 +16,18 @@
 
 #include "meminstrument/pass/Util.h"
 
-STATISTIC(NoopMechanismAnnotated, "The number of full bound checks placed");
+STATISTIC(ExampleChecksPlaced, "The number of full bound checks placed");
 
 using namespace llvm;
 using namespace meminstrument;
 
-Value *NoopWitness::getLowerBound(void) const { return nullptr; }
+Value *ExampleWitness::getLowerBound(void) const { return nullptr; }
 
-Value *NoopWitness::getUpperBound(void) const { return nullptr; }
+Value *ExampleWitness::getUpperBound(void) const { return nullptr; }
 
-NoopWitness::NoopWitness(void) : Witness(WK_Noop) {}
+ExampleWitness::ExampleWitness(void) : Witness(WK_Example) {}
 
-void NoopMechanism::insertWitnesses(ITarget &Target) const {
+void ExampleMechanism::insertWitnesses(ITarget &Target) const {
   assert(Target.isValid());
   // There should be no targets without an instrumentee
   assert(Target.hasInstrumentee());
@@ -35,7 +35,7 @@ void NoopMechanism::insertWitnesses(ITarget &Target) const {
   auto instrumentee = Target.getInstrumentee();
 
   if (!instrumentee->getType()->isAggregateType()) {
-    Target.setSingleBoundWitness(std::make_shared<NoopWitness>());
+    Target.setSingleBoundWitness(std::make_shared<ExampleWitness>());
     return;
   }
 
@@ -43,7 +43,7 @@ void NoopMechanism::insertWitnesses(ITarget &Target) const {
     // Find all locations of pointer values in the aggregate type
     auto indices = computePointerIndices(instrumentee->getType());
     for (auto index : indices) {
-      Target.setBoundWitness(std::make_shared<NoopWitness>(), index);
+      Target.setBoundWitness(std::make_shared<ExampleWitness>(), index);
     }
     return;
   }
@@ -55,16 +55,16 @@ void NoopMechanism::insertWitnesses(ITarget &Target) const {
   auto indexToPtr =
       InstrumentationMechanism::getAggregatePointerIndicesAndValues(con);
   for (auto KV : indexToPtr) {
-    Target.setBoundWitness(std::make_shared<NoopWitness>(), KV.first);
+    Target.setBoundWitness(std::make_shared<ExampleWitness>(), KV.first);
   }
 }
 
-WitnessPtr NoopMechanism::getRelocatedClone(const Witness &,
-                                            Instruction *) const {
-  return std::make_shared<NoopWitness>();
+WitnessPtr ExampleMechanism::getRelocatedClone(const Witness &,
+                                               Instruction *) const {
+  return std::make_shared<ExampleWitness>();
 }
 
-void NoopMechanism::insertCheck(ITarget &Target) const {
+void ExampleMechanism::insertCheck(ITarget &Target) const {
   assert(Target.isValid());
   assert(Target.isCheck());
   IRBuilder<> Builder(Target.getLocation());
@@ -99,18 +99,18 @@ void NoopMechanism::insertCheck(ITarget &Target) const {
                       /* isVolatile */ true);
   Builder.CreateCall(getFailFunction());
 
-  ++NoopMechanismAnnotated;
+  ++ExampleChecksPlaced;
 }
 
-void NoopMechanism::materializeBounds(ITarget &) {
+void ExampleMechanism::materializeBounds(ITarget &) {
   llvm_unreachable("Explicit bounds are not supported by this mechanism!");
 }
 
-FunctionCallee NoopMechanism::getFailFunction(void) const {
+FunctionCallee ExampleMechanism::getFailFunction(void) const {
   return failFunction;
 }
 
-void NoopMechanism::initialize(Module &M) {
+void ExampleMechanism::initialize(Module &M) {
 
   // Register common functions
   insertCommonFunctionDeclarations(M);
@@ -138,18 +138,18 @@ void NoopMechanism::initialize(Module &M) {
       ConstantInt::get(SizeType, 0), "mi_check_result_location");
 }
 
-WitnessPtr NoopMechanism::getWitnessPhi(PHINode *) const {
+WitnessPtr ExampleMechanism::getWitnessPhi(PHINode *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
-void NoopMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
-                                            BasicBlock *) const {
+void ExampleMechanism::addIncomingWitnessToPhi(WitnessPtr &, WitnessPtr &,
+                                               BasicBlock *) const {
   llvm_unreachable("Phis are not supported by this mechanism!");
 }
 
-WitnessPtr NoopMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
-                                           WitnessPtr &) const {
+WitnessPtr ExampleMechanism::getWitnessSelect(SelectInst *, WitnessPtr &,
+                                              WitnessPtr &) const {
   llvm_unreachable("Selects are not supported by this mechanism!");
 }
 
-bool NoopMechanism::invariantsAreChecks() const { return false; }
+bool ExampleMechanism::invariantsAreChecks() const { return false; }

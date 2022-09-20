@@ -1,4 +1,4 @@
-; RUN: %opt %loadlibs -mi-config=splay -mi-imechanism=dummy -meminstrument -mi-mode=setup -S %s | %filecheck %s
+; RUN: %opt %loadlibs -mi-config=example -meminstrument -mi-mode=setup -S %s | %filecheck %s
 
 ; CHECK: %args = alloca [1 x %struct.__va_list_tag]{{.*}} !meminstrument
 ; CHECK: call void @llvm.va_start({{.*}}), !meminstrument

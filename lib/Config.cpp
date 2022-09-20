@@ -7,10 +7,10 @@
 
 #include "meminstrument/Config.h"
 
-#include "meminstrument/instrumentation_mechanisms/DummyMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/ExampleMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/LowfatMechanism.h"
-#include "meminstrument/instrumentation_mechanisms/NoopMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/RuntimeStatMechanism.h"
+#include "meminstrument/instrumentation_mechanisms/SleepMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SoftBoundMechanism.h"
 #include "meminstrument/instrumentation_mechanisms/SplayMechanism.h"
 #include "meminstrument/instrumentation_policies/AccessOnlyPolicy.h"
@@ -39,9 +39,10 @@ cl::OptionCategory
 
 enum class ConfigKind {
   splay,
+  sleep,
   rt_stat,
   optimization_checks_only,
-  noop,
+  example,
   lowfat,
   softbound,
   default_val,
@@ -52,13 +53,13 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::values(
         clEnumValN(ConfigKind::splay, "splay",
                    "splay-tree-based instrumentation"),
+        clEnumValN(ConfigKind::sleep, "sleep", "sleep instrumentation"),
         clEnumValN(ConfigKind::optimization_checks_only,
                    "optimization-checks-only",
                    "instrumentation that inserts only external checks"),
         clEnumValN(ConfigKind::rt_stat, "rt-stat",
                    "instrumentation for collection run-time statistics only"),
-        clEnumValN(ConfigKind::noop, "noop",
-                   "noop instrumentation that just adds runtime overheads"),
+        clEnumValN(ConfigKind::example, "example", "example instrumentation"),
         clEnumValN(ConfigKind::lowfat, "lowfat",
                    "low fat pointer based instrumentation"),
         clEnumValN(ConfigKind::softbound, "softbound",
@@ -66,10 +67,10 @@ cl::opt<ConfigKind> ConfigKindOpt(
     cl::cat(MemInstrumentCat), cl::init(ConfigKind::default_val));
 
 enum class IMKind {
-  dummy,
   splay,
+  sleep,
+  example,
   rt_stat,
-  noop,
   lowfat,
   softbound,
   default_val,
@@ -77,34 +78,31 @@ enum class IMKind {
 
 cl::opt<IMKind> IMOpt(
     "mi-imechanism", cl::desc("Override InstructionMechanism:"),
-    cl::values(
-        clEnumValN(IMKind::dummy, "dummy",
-                   "only insert dummy calls for instrumentation"),
-        clEnumValN(IMKind::splay, "splay",
-                   "use splay tree for instrumentation"),
-        clEnumValN(
-            IMKind::noop, "noop",
-            "use noop instrumentation that just adds performance overhead"),
-
-        clEnumValN(IMKind::rt_stat, "rt_stat",
-                   "only instrument for collecting run-time statistics"),
-        clEnumValN(IMKind::lowfat, "lowfat",
-                   "use low fat pointers for instrumentation"),
-        clEnumValN(IMKind::softbound, "softbound",
-                   "use SoftBound for instrumentation")),
+    cl::values(clEnumValN(IMKind::splay, "splay",
+                          "use splay tree for instrumentation"),
+               clEnumValN(IMKind::sleep, "sleep",
+                          "use sleep for instrumentation"),
+               clEnumValN(IMKind::example, "example",
+                          "use the example instrumentation"),
+               clEnumValN(IMKind::rt_stat, "rt_stat",
+                          "only instrument for collecting run-time statistics"),
+               clEnumValN(IMKind::lowfat, "lowfat",
+                          "use low fat pointers for instrumentation"),
+               clEnumValN(IMKind::softbound, "softbound",
+                          "use SoftBound for instrumentation")),
     cl::cat(MemInstrumentCat), cl::init(IMKind::default_val));
 
 InstrumentationMechanism *createInstrumentationMechanism(GlobalConfig &cfg,
                                                          IMKind k) {
   switch (k) {
-  case IMKind::dummy:
-    return new DummyMechanism(cfg);
   case IMKind::splay:
     return new SplayMechanism(cfg);
+  case IMKind::sleep:
+    return new SleepMechanism(cfg);
   case IMKind::rt_stat:
     return new RuntimeStatMechanism(cfg);
-  case IMKind::noop:
-    return new NoopMechanism(cfg);
+  case IMKind::example:
+    return new ExampleMechanism(cfg);
   case IMKind::lowfat:
     return new LowfatMechanism(cfg);
   case IMKind::softbound:
@@ -243,70 +241,6 @@ bool getValOrDefault(cl::boolOrDefault val, bool defaultVal) {
   llvm_unreachable("Invalid BOU value!");
 }
 
-cl::opt<int> DefaultTime("mi-noop-time-default",
-                         cl::desc("default time that operations should take as "
-                                  "a noop if not overwritten"),
-                         cl::cat(MemInstrumentCat),
-                         cl::init(0) // default
-);
-
-cl::opt<int>
-    GenBoundsTime("mi-noop-time-gen-bounds",
-                  cl::desc("time that generating bounds should take as a noop"),
-                  cl::cat(MemInstrumentCat),
-                  cl::init(-1) // default
-    );
-
-cl::opt<int> DerefCheckTime(
-    "mi-noop-time-deref-check",
-    cl::desc("time that a dereference check should take as a noop"),
-    cl::cat(MemInstrumentCat),
-    cl::init(-1) // default
-);
-
-cl::opt<int> InvarCheckTime(
-    "mi-noop-time-invar-check",
-    cl::desc("time that an inbounds check should take as a noop"),
-    cl::cat(MemInstrumentCat),
-    cl::init(-1) // default
-);
-
-cl::opt<int> StackAllocTime(
-    "mi-noop-time-stack-alloc",
-    cl::desc("time that a stack allocation should take as a noop"),
-    cl::cat(MemInstrumentCat),
-    cl::init(-1) // default
-);
-
-cl::opt<int>
-    HeapAllocTime("mi-noop-time-heap-alloc",
-                  cl::desc("time that a heap allocation should take as a noop"),
-                  cl::cat(MemInstrumentCat),
-                  cl::init(-1) // default
-    );
-
-cl::opt<int> GlobalAllocTime(
-    "mi-noop-time-global-alloc",
-    cl::desc("time that a global allocation should take as a noop"),
-    cl::cat(MemInstrumentCat),
-    cl::init(-1) // default
-);
-
-cl::opt<int> HeapFreeTime(
-    "mi-noop-time-heap-free",
-    cl::desc("time that a heap deallocation should take as a noop"),
-    cl::cat(MemInstrumentCat),
-    cl::init(-1) // default
-);
-
-uint32_t getNoopValOrDefault(int32_t v) {
-  if (v != -1) {
-    return v;
-  } else {
-    return DefaultTime;
-  }
-}
-
 } // namespace
 
 namespace meminstrument {
@@ -350,6 +284,15 @@ public:
   virtual const char *getName(void) const override { return "Splay"; }
 };
 
+class SleepConfig : public SplayConfig {
+public:
+  virtual ~SleepConfig() {}
+  virtual IMKind getInstrumentationMechanism() const override {
+    return IMKind::sleep;
+  }
+  virtual const char *getName() const override { return "Sleep"; }
+};
+
 /// A configuration to perform only instrumentation for external checks.
 class OptimizationChecksOnlyConfig : public SplayConfig {
 public:
@@ -386,17 +329,17 @@ public:
   virtual const char *getName(void) const override { return "RTStat"; }
 };
 
-/// A configuration to perform noop instrumentation that just adds performance
-/// overheads.
-class NoopConfig : public Config {
+/// A configuration to perform the example instrumentation that adds performance
+/// overhead but does not provide safety guarantees.
+class ExampleConfig : public Config {
 public:
-  virtual ~NoopConfig(void) {}
+  virtual ~ExampleConfig(void) {}
 
   virtual IPKind getInstrumentationPolicy(void) const override {
     return IPKind::accessOnly;
   }
   virtual IMKind getInstrumentationMechanism(void) const override {
-    return IMKind::noop;
+    return IMKind::example;
   }
   virtual WSKind getWitnessStrategy(void) const override {
     return WSKind::none;
@@ -406,7 +349,7 @@ public:
   }
   virtual bool hasPrintWitnessGraph(void) const override { return false; }
   virtual bool hasInstrumentVerbose(void) const override { return false; }
-  virtual const char *getName(void) const override { return "Noop"; }
+  virtual const char *getName(void) const override { return "Example"; }
 };
 
 /// A configuration to perform instrumentation based on low fat pointers
@@ -457,10 +400,12 @@ Config *Config::create(ConfigKind k) {
   switch (k) {
   case ConfigKind::splay:
     return new SplayConfig();
+  case ConfigKind::sleep:
+    return new SleepConfig();
   case ConfigKind::rt_stat:
     return new RTStatConfig();
-  case ConfigKind::noop:
-    return new NoopConfig();
+  case ConfigKind::example:
+    return new ExampleConfig();
   case ConfigKind::optimization_checks_only:
     return new OptimizationChecksOnlyConfig();
   case ConfigKind::lowfat:
@@ -504,31 +449,6 @@ GlobalConfig::GlobalConfig(Config *Cfg, const Module &M) {
   configName = Cfg->getName();
 
   delete Cfg;
-}
-
-#define GET_NOOP_METHOD(x)                                                     \
-  uint32_t GlobalConfig::getNoop##x##Time(void) {                              \
-    return getNoopValOrDefault(x##Time);                                       \
-  }
-
-GET_NOOP_METHOD(GenBounds)
-GET_NOOP_METHOD(DerefCheck)
-GET_NOOP_METHOD(InvarCheck)
-GET_NOOP_METHOD(StackAlloc)
-GET_NOOP_METHOD(HeapAlloc)
-GET_NOOP_METHOD(GlobalAlloc)
-GET_NOOP_METHOD(HeapFree)
-
-bool GlobalConfig::hasUseNoop(void) {
-  bool res = false;
-  res = res || (GenBoundsTime != -1);
-  res = res || (DerefCheckTime != -1);
-  res = res || (InvarCheckTime != -1);
-  res = res || (StackAllocTime != -1);
-  res = res || (HeapAllocTime != -1);
-  res = res || (GlobalAllocTime != -1);
-  res = res || (HeapFreeTime != -1);
-  return res;
 }
 
 std::unique_ptr<GlobalConfig> GlobalConfig::create(const Module &M) {

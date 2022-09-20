@@ -38,10 +38,9 @@ struct Witness {
 public:
   /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)
   enum WitnessKind {
-    WK_Dummy,
     WK_Splay,
     WK_RuntimeStat,
-    WK_Noop,
+    WK_Example,
     WK_Lowfat,
     WK_SoftBound,
     WK_SoftBoundVarArg,

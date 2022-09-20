@@ -1,6 +1,6 @@
-// RUN: %clang -fplugin=%passlib -emit-llvm -O3 -c -S -mllvm -mi-config=splay -mllvm -mi-noop-time-deref-check=10000000 -o %t0.ll %s 2> %t3.log
-// RUN: %clink -ldl -l:libsleep.a -o %t1 %t0.ll
-// RUN: %t1
+// RUN: %clang -fplugin=%passlib -emit-llvm -O3 -c -S -mllvm -mi-config=example -o %t.ll %s 2> %t3.log
+// RUN: %clink -o %t %t.ll -ldl -l:libexample.a
+// RUN: %t
 
 #include <stdlib.h>
 

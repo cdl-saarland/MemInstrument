@@ -292,11 +292,6 @@ void SplayMechanism::insertFunctionDeclarations(Module &M) {
 
   ExtCheckCounterFunction =
       insertFunDecl(M, "__splay_inc_external_counter", VoidTy);
-
-  if (globalConfig.hasUseNoop()) {
-    ConfigFunction =
-        insertFunDecl(M, "__mi_config", VoidTy, SizeType, SizeType);
-  }
 }
 
 void SplayMechanism::setupGlobals(Module &M) {
@@ -407,44 +402,12 @@ void SplayMechanism::initTypes(LLVMContext &Ctx) {
   SizeType = Type::getInt64Ty(Ctx);
 }
 
-void SplayMechanism::setupInitCall(Module &M) {
-  auto &Ctx = M.getContext();
-  auto FunTy = FunctionType::get(Type::getVoidTy(Ctx), false);
-  auto *Fun = Function::Create(FunTy, GlobalValue::WeakAnyLinkage,
-                               "__mi_init_callback__", &M);
-  setNoInstrument(Fun);
-
-  auto *BB = BasicBlock::Create(Ctx, "bb", Fun, 0);
-  IRBuilder<> Builder(BB);
-
-  Constant *TimeVal = nullptr;
-  Constant *IndexVal = nullptr;
-
-#define ADD_TIME_VAL(i, x)                                                     \
-  IndexVal = ConstantInt::get(SizeType, i);                                    \
-  TimeVal = ConstantInt::get(SizeType, globalConfig.getNoop##x##Time());       \
-  insertCall(Builder, ConfigFunction, std::vector<Value *>{IndexVal, TimeVal});
-
-  ADD_TIME_VAL(0, DerefCheck)
-  ADD_TIME_VAL(1, InvarCheck)
-  ADD_TIME_VAL(2, GenBounds)
-  ADD_TIME_VAL(3, StackAlloc)
-  ADD_TIME_VAL(4, HeapAlloc)
-  ADD_TIME_VAL(5, GlobalAlloc)
-  ADD_TIME_VAL(6, HeapFree)
-  Builder.CreateRetVoid();
-}
-
 void SplayMechanism::initialize(Module &M) {
   initTypes(M.getContext());
 
   insertFunctionDeclarations(M);
 
   setupGlobals(M);
-
-  if (globalConfig.hasUseNoop()) {
-    setupInitCall(M);
-  }
 
   for (auto &F : M) {
     if (F.isDeclaration() || hasNoInstrument(&F))

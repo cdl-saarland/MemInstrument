@@ -71,16 +71,6 @@ public:
 
   bool hasInstrumentVerbose(void) { return instrumentVerbose; }
 
-  uint32_t getNoopGenBoundsTime(void);
-  uint32_t getNoopDerefCheckTime(void);
-  uint32_t getNoopInvarCheckTime(void);
-  uint32_t getNoopStackAllocTime(void);
-  uint32_t getNoopHeapAllocTime(void);
-  uint32_t getNoopGlobalAllocTime(void);
-  uint32_t getNoopHeapFreeTime(void);
-
-  bool hasUseNoop(void);
-
   static std::unique_ptr<GlobalConfig> create(const llvm::Module &);
 
   void dump(llvm::raw_ostream &) const;
