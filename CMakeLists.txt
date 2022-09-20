@@ -121,6 +121,7 @@ file(GLOB_RECURSE files *.h *.cpp)
 set(check_format_depends)
 set(update_format_depends)
 set(i 0)
+list(FILTER files EXCLUDE REGEX ".*runtime/.*")
 foreach(file IN LISTS files)
   add_custom_command(
     OUTPUT meminstrument-check-format${i}
